@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThoughtCabinet - Dashboard A</title>
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-card: #ffffff;
+            --text-primary: #1a1a2e;
+            --text-secondary: #6c757d;
+            --accent-gold: #d4a574;
+            --accent-red: #e74c3c;
+            --accent-green: #27ae60;
+            --accent-blue: #3498db;
+            --border-color: #e9ecef;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-card: #0f3460;
+            --text-primary: #eaeaea;
+            --text-secondary: #a0a0a0;
+            --accent-gold: #f0c674;
+            --border-color: #2a3f5f;
+            --shadow: 0 2px 12px rgba(0,0,0,0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-card);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-red));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn:hover {
+            background: var(--accent-gold);
+            color: white;
+        }
+
+        .btn-primary {
+            background: var(--accent-gold);
+            color: white;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            padding: 8px 12px;
+            font-size: 1.2em;
+            background: transparent;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Stats Cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .stats-container { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s;
+            border-left: 4px solid var(--accent-gold);
+        }
+
+        .stat-card:hover { transform: translateY(-4px); }
+        .stat-card:nth-child(2) { border-left-color: var(--accent-red); }
+        .stat-card:nth-child(3) { border-left-color: var(--accent-green); }
+        .stat-card:nth-child(4) { border-left-color: var(--accent-blue); }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: var(--accent-gold);
+        }
+
+        .stat-card:nth-child(2) .stat-value { color: var(--accent-red); }
+        .stat-card:nth-child(3) .stat-value { color: var(--accent-green); }
+        .stat-card:nth-child(4) .stat-value { color: var(--accent-blue); }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+
+        /* Activity Streams */
+        .streams-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            padding: 0 24px 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 900px) {
+            .streams-container { grid-template-columns: 1fr; }
+        }
+
+        .stream-column {
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .stream-header {
+            background: var(--accent-gold);
+            color: white;
+            padding: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stream-column:nth-child(2) .stream-header { background: var(--accent-red); }
+        .stream-column:nth-child(3) .stream-header { background: var(--accent-blue); }
+
+        .stream-items {
+            padding: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .stream-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .stream-item:hover {
+            border-left-color: var(--accent-gold);
+            background: var(--bg-primary);
+        }
+
+        .stream-item-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .stream-item-meta {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            background: var(--accent-gold);
+            color: white;
+            margin-right: 4px;
+        }
+
+        .tag.urgent { background: var(--accent-red); }
+        .tag.info { background: var(--accent-blue); }
+
+        /* Quick Actions */
+        .quick-actions {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px 24px;
+        }
+
+        .time-capsule {
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-red));
+            border-radius: 12px;
+            padding: 24px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .time-capsule h3 {
+            font-size: 1.3em;
+        }
+
+        .time-capsule-btn {
+            background: white;
+            color: var(--accent-gold);
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .time-capsule-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Vault Status */
+        .vault-status {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: var(--bg-card);
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .vault-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--bg-secondary);
+            display: none;
+        }
+
+        .progress-bar.active { display: block; }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-gold), var(--accent-red));
+            width: 45%;
+            animation: progress 2s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progressBar">
+        <div class="progress-fill"></div>
+    </div>
+
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">🧠</div>
+            <span>ThoughtCabinet</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn" onclick="toggleTask('scan')">🔄 Scan</button>
+            <button class="btn" onclick="toggleTask('analyze')">⚡ Analyze</button>
+            <button class="btn">📤 Export</button>
+            <button class="btn theme-toggle" onclick="toggleTheme()">🌓</button>
+        </div>
+    </header>
+
+    <section class="stats-container">
+        <div class="stat-card">
+            <div class="stat-value">1,234</div>
+            <div class="stat-label">Total Notes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">23</div>
+            <div class="stat-label">Pending Review</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">15</div>
+            <div class="stat-label">High Value</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">8</div>
+            <div class="stat-label">Cognitive Gaps</div>
+        </div>
+    </section>
+
+    <section class="streams-container">
+        <div class="stream-column">
+            <div class="stream-header">📋 Review Queue</div>
+            <div class="stream-items">
+                <div class="stream-item">
+                    <div class="stream-item-title">完善 React Hooks 笔记</div>
+                    <div class="stream-item-meta"><span class="tag">Idea</span> 2h ago</div>
+                </div>
+                <div class="stream-item">
+                    <div class="stream-item-title">分布式系统读书笔记</div>
+                    <div class="stream-item-meta"><span class="tag">Note</span> 5h ago</div>
+                </div>
+                <div class="stream-item">
+                    <div class="stream-item-title">AI Agent 调研</div>
+                    <div class="stream-item-meta"><span class="tag urgent">Urgent</span> 1d ago</div>
+                </div>
+                <div class="stream-item">
+                    <div class="stream-item-title">Rust 所有权机制理解</div>
+                    <div class="stream-item-meta"><span class="tag">Note</span> 2d ago</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stream-column">
+            <div class="stream-header">🎯 Focus Projects</div>
+            <div class="stream-items">
+                <div class="stream-item">
+                    <div class="stream-item-title">Web3 支付系统</div>
+                    <div class="stream-item-meta"><span class="tag info">Doing</span> 进度: 65%</div>
+                </div>
+                <div class="stream-item">
+                    <div class="stream-item-title">个人知识管理系统</div>
+                    <div class="stream-item-meta"><span class="tag info">Doing</span> 进度: 40%</div>
+                </div>
+                <div class="stream-item">
+                    <div class="stream-item-title">LLM 应用开发</div>
+                    <div class="stream-item-meta"><span class="tag info">Planning</span> 进度: 20%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stream-column">
+            <div class="stream-header">🚨 Cognitive Alerts</div>
+            <div class="stream-items">
+                <div class="stream-item">
+                    <div class="stream-item-title">知识缺口: Web3 支付</div>
+                    <div class="stream-item-meta">建议补充: 闪电网络、状态通道</div>
+                </div>
+                <div class="stream-item">
+                    <div class="stream-item-title">知识缺口: React 性能</div>
+                    <div class="stream-item-meta">建议补充: Virtual DOM、Reconciliation</div>
+                </div>
+                <div class="stream-item">
+                    <div class="stream-item-title">观点冲突检测</div>
+                    <div class="stream-item-meta">"RAG vs 上下文窗口"观点矛盾</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="quick-actions">
+        <div class="time-capsule">
+            <div>
+                <h3>⏱️ I have 30 minutes</h3>
+                <p>推荐 3 个耗时 ≤30min 的任务</p>
+            </div>
+            <button class="time-capsule-btn">开始任务 →</button>
+        </div>
+    </section>
+
+    <div class="vault-status">
+        <span class="vault-dot"></span>
+        <span>Vault: ~/thoughts (1,234 notes)</span>
+    </div>
+
+    <script>
+        // Theme Management
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Initialize theme
+        const savedTheme = localStorage.getItem('theme') || 
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        // Demo: Toggle task progress
+        let taskRunning = false;
+        function toggleTask(type) {
+            const bar = document.getElementById('progressBar');
+            taskRunning = !taskRunning;
+            bar.classList.toggle('active', taskRunning);
+        }
+    </script>
+</body>
+</html>

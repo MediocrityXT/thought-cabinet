@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>思维阁 ThoughtCabinet</title>
+    <style>
+        /* ============================================
+           THEME: 天空之城 / 躺椅思考 / 放松港湾
+           ============================================ */
+        
+        :root {
+            /* Dark Theme - 夜空模式 */
+            --bg-deep: #070b14;
+            --bg-primary: #0c1424;
+            --bg-card: #131d2e;
+            --bg-elevated: #1a2740;
+            --bg-hover: #223050;
+            
+            --text-primary: #e4e8f0;
+            --text-secondary: #8896b0;
+            --text-muted: #5a6a7e;
+            
+            /* 天空主题色 - 晨曦金 + 晚霞紫 + 星光蓝 */
+            --sky-gold: #e8c88a;
+            --sky-gold-soft: #c9a96c;
+            --sky-dusk: #9b8abf;
+            --sky-dawn: #7eb8da;
+            --sky-night: #4a6fa5;
+            
+            --status-blue: #7eb8da;
+            --status-green: #8bc9a6;
+            --status-amber: #e8c88a;
+            --status-red: #d48b8b;
+            
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --shadow-glow: 0 0 60px rgba(232, 200, 138, 0.1);
+            --border-subtle: rgba(232, 200, 138, 0.1);
+            --glass: rgba(19, 29, 46, 0.8);
+            
+            --radius-sm: 10px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+        }
+
+        [data-theme="light"] {
+            /* Light Theme - 白天模式 */
+            --bg-deep: #e8eef5;
+            --bg-primary: #f4f8fc;
+            --bg-card: #ffffff;
+            --bg-elevated: #ffffff;
+            --bg-hover: #eef3f9;
+            
+            --text-primary: #2a3a4f;
+            --text-secondary: #6b7a90;
+            --text-muted: #9aa8b8;
+            
+            --sky-gold: #c9a96c;
+            --sky-gold-soft: #b8956a;
+            --sky-dusk: #8b7aaa;
+            --sky-dawn: #5a9bc4;
+            --sky-night: #4a6fa5;
+            
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.06);
+            --shadow-glow: 0 0 60px rgba(232, 200, 138, 0.15);
+            --border-subtle: rgba(201, 169, 108, 0.15);
+            --glass: rgba(255, 255, 255, 0.85);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background 0.5s ease, color 0.5s ease;
+        }
+
+        /* ============================================
+           SKY ATMOSPHERE - 天空氛围背景
+           ============================================ */
+        
+        .sky-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            background: 
+                /* 顶部星光区域 */
+                radial-gradient(ellipse 100% 60% at 50% 0%, rgba(74, 111, 165, 0.15) 0%, transparent 50%),
+                /* 中部渐变过渡 */
+                radial-gradient(ellipse 80% 50% at 30% 30%, rgba(155, 138, 191, 0.08) 0%, transparent 40%),
+                radial-gradient(ellipse 70% 40% at 70% 40%, rgba(232, 200, 138, 0.06) 0%, transparent 40%),
+                /* 底部温暖区域 */
+                radial-gradient(ellipse 100% 50% at 50% 100%, rgba(232, 200, 138, 0.12) 0%, transparent 50%);
+        }
+
+        /* Stars */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .star {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle 4s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; transform: scale(0.8); }
+            50% { opacity: 0.9; transform: scale(1.2); }
+        }
+
+        /* Floating clouds */
+        .clouds {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .cloud {
+            position: absolute;
+            background: var(--bg-elevated);
+            border-radius: 50px;
+            opacity: 0.3;
+            animation: drift 60s linear infinite;
+        }
+
+        @keyframes drift {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(100vw); }
+        }
+
+        /* ============================================
+           LAYOUT
+           ============================================ */
+        
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-primary);
+            border-right: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 10;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .workspace {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .workspace:hover {
+            background: var(--bg-hover);
+            transform: translateX(4px);
+        }
+
+        .workspace-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--sky-gold), var(--sky-gold-soft));
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3em;
+            box-shadow: 0 4px 16px rgba(232, 200, 138, 0.3);
+        }
+
+        .workspace-info {
+            flex: 1;
+        }
+
+        .workspace-name {
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .workspace-sub {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Navigation */
+        .nav-section {
+            padding: 20px 12px;
+        }
+
+        .nav-label {
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            margin-bottom: 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.95em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--sky-gold);
+            transform: scaleY(0);
+            transition: transform 0.3s;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            padding-left: 20px;
+        }
+
+        .nav-item.active {
+            background: var(--bg-card);
+            color: var(--sky-gold);
+        }
+
+        .nav-item.active::before {
+            transform: scaleY(1);
+        }
+
+        .nav-icon {
+            font-size: 1.15em;
+            width: 24px;
+            text-align: center;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: linear-gradient(135deg, var(--sky-gold), var(--sky-gold-soft));
+            color: var(--bg-deep);
+            font-size: 0.7em;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .topbar {
+            height: 64px;
+            padding: 0 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-subtle);
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+            color: var(--text-secondary);
+        }
+
+        .breadcrumb span:first-child {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .search-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 10px 18px;
+            font-size: 0.85em;
+            width: 220px;
+            color: var(--text-primary);
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-box:focus {
+            border-color: var(--sky-gold);
+            box-shadow: var(--shadow-glow);
+            width: 260px;
+        }
+
+        .search-box::placeholder {
+            color: var(--text-muted);
+        }
+
+        .lang-toggle {
+            display: flex;
+            background: var(--bg-card);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .lang-btn {
+            padding: 8px 14px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s;
+        }
+
+        .lang-btn.active {
+            background: var(--sky-gold);
+            color: var(--bg-deep);
+        }
+
+        .icon-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-sm);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.3s;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-hover);
+            color: var(--sky-gold);
+        }
+
+        /* Content Area */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 44px 52px;
+        }
+
+        /* Welcome */
+        .welcome {
+            margin-bottom: 44px;
+        }
+
+        .welcome-title {
+            font-size: 2.4em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--text-primary), var(--sky-dawn));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.08em;
+        }
+
+        .welcome-subtitle span {
+            color: var(--sky-gold);
+            font-weight: 500;
+        }
+
+        /* Stats */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 22px;
+            margin-bottom: 48px;
+        }
+
+        @media (max-width: 1000px) {
+            .stats-row { grid-template-columns: 1fr; }
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, var(--sky-gold) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-soft);
+            border-color: var(--sky-gold-soft);
+        }
+
+        .stat-card:hover::after {
+            opacity: 0.1;
+        }
+
+        .stat-icon-wrap {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.7em;
+            flex-shrink: 0;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover .stat-icon-wrap {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .stat-icon-wrap.blue {
+            background: linear-gradient(135deg, rgba(126, 184, 218, 0.2), rgba(126, 184, 218, 0.08));
+            color: var(--sky-dawn);
+        }
+
+        .stat-icon-wrap.gold {
+            background: linear-gradient(135deg, rgba(232, 200, 138, 0.2), rgba(232, 200, 138, 0.08));
+            color: var(--sky-gold);
+        }
+
+        .stat-icon-wrap.green {
+            background: linear-gradient(135deg, rgba(139, 201, 166, 0.2), rgba(139, 201, 166, 0.08));
+            color: var(--status-green);
+        }
+
+        .stat-info h3 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .stat-info p {
+            color: var(--text-secondary);
+            font-size: 0.92em;
+        }
+
+        /* Timeline */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 22px;
+        }
+
+        .section-title {
+            font-size: 1.25em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 22px;
+            background: linear-gradient(180deg, var(--sky-gold), var(--sky-dusk));
+            border-radius: 2px;
+        }
+
+        .view-all {
+            color: var(--sky-gold);
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .view-all:hover {
+            opacity: 0.7;
+        }
+
+        .timeline {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .timeline-item {
+            padding: 22px 28px;
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+            border-bottom: 1px solid var(--border-subtle);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .timeline-item:last-child { border-bottom: none; }
+
+        .timeline-item:hover {
+            background: var(--bg-hover);
+            padding-left: 34px;
+        }
+
+        .timeline-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-top: 7px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .timeline-dot::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 0.4; }
+        }
+
+        .timeline-dot.blue { 
+            background: var(--sky-dawn); 
+            box-shadow: 0 0 12px var(--sky-dawn);
+        }
+        .timeline-dot.blue::after { background: var(--sky-dawn); }
+        
+        .timeline-dot.gold { 
+            background: var(--sky-gold); 
+            box-shadow: 0 0 12px var(--sky-gold);
+        }
+        .timeline-dot.gold::after { background: var(--sky-gold); }
+        
+        .timeline-dot.green { 
+            background: var(--status-green); 
+            box-shadow: 0 0 12px var(--status-green);
+        }
+        .timeline-dot.green::after { background: var(--status-green); }
+        
+        .timeline-dot.dusk { 
+            background: var(--sky-dusk); 
+            box-shadow: 0 0 12px var(--sky-dusk);
+        }
+        .timeline-dot.dusk::after { background: var(--sky-dusk); }
+
+        .timeline-content { flex: 1; }
+        
+        .timeline-title {
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .timeline-meta {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+        }
+
+        .timeline-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.75em;
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            margin-left: 10px;
+        }
+
+        /* Quick Add */
+        .quick-add {
+            position: fixed;
+            bottom: 36px;
+            right: 36px;
+            z-index: 100;
+        }
+
+        .quick-add-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--sky-gold), var(--sky-gold-soft));
+            color: var(--bg-deep);
+            border: none;
+            font-size: 1.6em;
+            cursor: pointer;
+            box-shadow: var(--shadow-soft), 0 0 40px rgba(232, 200, 138, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quick-add-btn:hover {
+            transform: scale(1.15) rotate(90deg);
+            box-shadow: 0 12px 48px rgba(232, 200, 138, 0.5);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -260px;
+                top: 0;
+                bottom: 0;
+                z-index: 1000;
+                transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .sidebar.open { left: 0; }
+            .content { padding: 28px; }
+            .welcome-title { font-size: 1.8em; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sky Atmosphere -->
+    <div class="sky-bg"></div>
+    <div class="stars" id="stars"></div>
+    <div class="clouds" id="clouds"></div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="workspace">
+                    <div class="workspace-icon">🏠</div>
+                    <div class="workspace-info">
+                        <div class="workspace-name">思维阁</div>
+                        <div class="workspace-sub">ThoughtCabinet</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="nav-section">
+                <div class="nav-label">导航</div>
+                <div class="nav-item active">
+                    <span class="nav-icon">📊</span>
+                    <span data-lang="zh">总览</span>
+                    <span data-lang="en" style="display:none">Dashboard</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">📥</span>
+                    <span data-lang="zh">待处理</span>
+                    <span data-lang="en" style="display:none">Inbox</span>
+                    <span class="nav-badge">3</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">🧠</span>
+                    <span data-lang="zh">知识图谱</span>
+                    <span data-lang="en" style="display:none">Knowledge Graph</span>
+                </div>
+            </nav>
+
+            <nav class="nav-section">
+                <div class="nav-label">模块</div>
+                <div class="nav-item">
+                    <span class="nav-icon">🏭</span>
+                    <span data-lang="zh">信息精炼厂</span>
+                    <span data-lang="en" style="display:none">The Refinery</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">🧹</span>
+                    <span data-lang="zh">熵减整理器</span>
+                    <span data-lang="en" style="display:none">The Organizer</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">⚖️</span>
+                    <span data-lang="zh">价值评估局</span>
+                    <span data-lang="en" style="display:none">The Evaluator</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">🎯</span>
+                    <span data-lang="zh">战术指挥室</span>
+                    <span data-lang="en" style="display:none">The Planner</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">🗺️</span>
+                    <span data-lang="zh">认知蓝图</span>
+                    <span data-lang="en" style="display:none">Knowledge Blueprint</span>
+                </div>
+            </nav>
+
+            <nav class="sidebar-footer">
+                <div class="nav-item" onclick="toggleSidebar()">
+                    <span class="nav-icon">⚙️</span>
+                    <span data-lang="zh">设置</span>
+                    <span data-lang="en" style="display:none">Settings</span>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="breadcrumb">
+                    <span>思维阁</span>
+                    <span>/</span>
+                    <span data-lang="zh">总览</span>
+                    <span data-lang="en" style="display:none">Dashboard</span>
+                </div>
+                <div class="topbar-actions">
+                    <div class="lang-toggle">
+                        <button class="lang-btn active" onclick="setLang('zh')">中</button>
+                        <button class="lang-btn" onclick="setLang('en')">EN</button>
+                    </div>
+                    <input type="text" class="search-box" placeholder="搜索...">
+                    <button class="icon-btn">🔔</button>
+                    <button class="icon-btn" onclick="toggleSidebar()">☰</button>
+                </div>
+            </header>
+
+            <div class="content">
+                <section class="welcome">
+                    <h1 class="welcome-title" data-lang="zh">欢迎回来，Star ☁️</h1>
+                    <h1 class="welcome-title" data-lang="en" style="display:none">Welcome back, Star ☁️</h1>
+                    <p class="welcome-subtitle">
+                        <span data-lang="zh">今天是</span>
+                        <span data-lang="en" style="display:none">Today is</span>
+                        <span>2026年2月28日</span>
+                        <span data-lang="zh">，天空宁静，适合思考</span>
+                        <span data-lang="en" style="display:none">, the sky is peaceful, perfect for contemplation</span>
+                    </p>
+                </section>
+
+                <section class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-icon-wrap blue">📋</div>
+                        <div class="stat-info">
+                            <h3>23</h3>
+                            <p data-lang="zh">待处理事项</p>
+                            <p data-lang="en" style="display:none">Pending Tasks</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrap gold">🎯</div>
+                        <div class="stat-info">
+                            <h3>8</h3>
+                            <p data-lang="zh">重点项目</p>
+                            <p data-lang="en" style="display:none">Focus Projects</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrap green">⚠️</div>
+                        <div class="stat-info">
+                            <h3>4</h3>
+                            <p data-lang="zh">待关注</p>
+                            <p data-lang="en" style="display:none">To Watch</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="section-header">
+                        <h2 class="section-title" data-lang="zh">最近动态</h2>
+                        <h2 class="section-title" data-lang="en" style="display:none">Recent Activity</h2>
+                        <span class="view-all" data-lang="zh">查看全部 →</span>
+                        <span class="view-all" data-lang="en" style="display:none">View all →</span>
+                    </div>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-dot green"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title" data-lang="zh">完成分析: React 性能优化</div>
+                                <div class="timeline-title" data-lang="en" style="display:none">Completed: React Performance</div>
+                                <div class="timeline-meta" data-lang="zh">2 小时前 · 信息精炼厂</div>
+                                <div class="timeline-meta" data-lang="en" style="display:none">2h ago · The Refinery</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-dot gold"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title" data-lang="zh">新想法: 去中心化存储方案</div>
+                                <div class="timeline-title" data-lang="en" style="display:none">New Idea: Decentralized Storage</div>
+                                <div class="timeline-meta" data-lang="zh">5 小时前 · 闪念胶囊</div>
+                                <div class="timeline-meta" data-lang="en" style="display:none">5h ago · Thought Capsule</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-dot blue"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title" data-lang="zh">项目进度: Web3 支付系统 <span class="timeline-tag">65%</span></div>
+                                <div class="timeline-title" data-lang="en" style="display:none">Progress: Web3 Payment <span class="timeline-tag">65%</span></div>
+                                <div class="timeline-meta" data-lang="zh">1 天前 · 战术指挥室</div>
+                                <div class="timeline-meta" data-lang="en" style="display:none">1d ago · The Planner</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-dot dusk"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title" data-lang="zh">发现认知缺口: Web3 支付</div>
+                                <div class="timeline-title" data-lang="en" style="display:none">Knowledge Gap: Web3 Payment</div>
+                                <div class="timeline-meta" data-lang="zh">2 天前 · 认知蓝图</div>
+                                <div class="timeline-meta" data-lang="en" style="display:none">2d ago · Blueprint</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div class="quick-add">
+        <button class="quick-add-btn" onclick="toggleTheme()">+</button>
+    </div>
+
+    <script>
+        // Theme
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('cabinet-theme', newTheme);
+        }
+
+        const savedTheme = localStorage.getItem('cabinet-theme') || 
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        // Language
+        function setLang(lang) {
+            document.querySelectorAll('[data-lang]').forEach(el => {
+                if (el.dataset.lang === lang) {
+                    el.style.display = el.tagName === 'SPAN' && el.classList.contains('timeline-tag') ? 'inline-block' : '';
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(lang));
+            });
+            localStorage.setItem('cabinet-lang', lang);
+        }
+
+        const savedLang = localStorage.getItem('cabinet-lang') || 'zh';
+        setLang(savedLang);
+
+        // Sidebar
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        // Stars
+        function createStars() {
+            const container = document.getElementById('stars');
+            for (let i = 0; i < 30; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 4 + 's';
+                star.style.width = (2 + Math.random() * 2) + 'px';
+                star.style.height = star.style.width;
+                container.appendChild(star);
+            }
+        }
+
+        // Clouds
+        function createClouds() {
+            const container = document.getElementById('clouds');
+            for (let i = 0; i < 3; i++) {
+                const cloud = document.createElement('div');
+                cloud.className = 'cloud';
+                cloud.style.width = (100 + Math.random() * 100) + 'px';
+                cloud.style.height = (30 + Math.random() * 20) + 'px';
+                cloud.style.top = (20 + Math.random() * 40) + '%';
+                cloud.style.left = (-20 + i * 40) + '%';
+                cloud.style.animationDelay = (i * 20) + 's';
+                container.appendChild(cloud);
+            }
+        }
+
+        createStars();
+        createClouds();
+    </script>
+</body>
+</html>
