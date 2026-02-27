@@ -1,4 +1,4 @@
-  # 🌟 ThoughtCabinet 2.0: Active Cognitive OS
+  # 🌟 ThoughtCabinet: Active Cognitive OS
   ## Module 0. Dashboard (指挥舱) - 全局态势感知
   设计目标：用户进入系统第一眼看到的不是“静态列表”，而是“认知系统运转状态”和“最近进展“，“当前焦点”，“做点什么“
 
