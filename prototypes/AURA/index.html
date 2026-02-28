@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA - ThoughtCabinet | 液态极简</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: {
+              white: '#FFFFFF',
+              light: '#F8FAFC',
+              mist: '#F1F5F9',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          borderRadius: {
+            'full-xl': '9999px',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #FFFFFF;
+      min-height: 100vh;
+      color: #334155;
+      overflow-x: hidden;
+    }
+
+    /* 液态渐变球背景 */
+    .blob-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.5;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .blob-1 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+      top: -100px;
+      left: -100px;
+      animation-delay: 0s;
+    }
+
+    .blob-2 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%);
+      top: 50%;
+      right: -100px;
+      animation-delay: -7s;
+    }
+
+    .blob-3 {
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, transparent 70%);
+      bottom: -100px;
+      left: 30%;
+      animation-delay: -14s;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translate(0, 0) scale(1);
+      }
+      33% {
+        transform: translate(30px, -50px) scale(1.1);
+      }
+      66% {
+        transform: translate(-20px, 20px) scale(0.9);
+      }
+    }
+
+    /* 无边框卡片 */
+    .card-borderless {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 32px;
+      transition: all 0.3s ease;
+    }
+
+    .card-borderless:hover {
+      background: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+      transform: translateY(-4px);
+    }
+
+    /* 液态按钮 */
+    .btn-liquid {
+      background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+      color: #FFFFFF;
+      border-radius: 9999px;
+      padding: 14px 32px;
+      font-size: 15px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(139, 92, 246, 0.25);
+    }
+
+    .btn-liquid:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 40px rgba(139, 92, 246, 0.35);
+    }
+
+    .btn-liquid.secondary {
+      background: #FFFFFF;
+      color: #334155;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .btn-liquid.secondary:hover {
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 渐变文字 */
+    .gradient-text {
+      background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .gradient-text-blue {
+      background: linear-gradient(135deg, #0EA5E9 0%, #14B8A6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* 统计数字 */
+    .stat-number {
+      font-size: 48px;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+    }
+
+    /* 导航链接 */
+    .nav-link {
+      position: relative;
+      padding: 8px 16px;
+      color: #64748B;
+      font-size: 15px;
+      font-weight: 400;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .nav-link:hover {
+      color: #334155;
+    }
+
+    .nav-link.active {
+      color: #8B5CF6;
+    }
+
+    .nav-link.active::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #8B5CF6;
+    }
+
+    /* 进度条 */
+    .progress-liquid {
+      height: 8px;
+      background: #F1F5F9;
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #8B5CF6 0%, #EC4899 100%);
+      border-radius: 9999px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 徽章 */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .badge-purple { background: rgba(139, 92, 246, 0.1); color: #8B5CF6; }
+    .badge-green { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+    .badge-yellow { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+    .badge-blue { background: rgba(14, 165, 233, 0.1); color: #0EA5E9; }
+    .badge-pink { background: rgba(236, 72, 153, 0.1); color: #EC4899; }
+
+    /* 活动项 */
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 6px;
+    }
+
+    /* 自定义滚动条 */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #F8FAFC;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #E2E8F0;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #CBD5E1;
+    }
+
+    /* 顶部导航 */
+    .nav-floating {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+    }
+  </style>
+</head>
+<body>
+  <!-- 液态背景球 -->
+  <div class="blob-container">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- 顶部导航 -->
+  <header class="fixed top-6 left-1/2 -translate-x-1/2 z-50">
+    <nav class="nav-floating px-6 py-3">
+      <div class="flex items-center gap-1">
+        <div class="flex items-center gap-3 mr-8">
+          <div class="w-8 h-8 rounded-full-xl flex items-center justify-center text-white text-sm font-semibold" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);">A</div>
+          <span class="font-medium text-slate-800">Thought<span class="gradient-text">Cabinet</span></span>
+        </div>
+        <a href="#" class="nav-link active">总览</a>
+        <a href="#" class="nav-link">精炼厂</a>
+        <a href="#" class="nav-link">整理器</a>
+        <a href="#" class="nav-link">评估局</a>
+        <a href="#" class="nav-link">指挥室</a>
+        <a href="#" class="nav-link">蓝图</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- 主内容区域 -->
+  <main class="relative z-10 pt-32 pb-20 px-6">
+    <div class="max-w-5xl mx-auto">
+      <!-- 欢迎区域 -->
+      <div class="text-center mb-16">
+        <h1 class="text-4xl font-light text-slate-800 mb-3">欢迎回来，Star</h1>
+        <p class="text-slate-500 font-light">2026 年 2 月 28 日 · 适合深度思考的好天气</p>
+      </div>
+
+      <!-- 统计卡片 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div class="card-borderless text-center">
+          <p class="text-sm text-slate-500 mb-3 font-light">总笔记</p>
+          <p class="stat-number gradient-text mb-2">1,234</p>
+          <span class="badge badge-green">↑ 12%</span>
+        </div>
+        <div class="card-borderless text-center">
+          <p class="text-sm text-slate-500 mb-3 font-light">待评估</p>
+          <p class="stat-number" style="color: #F59E0B;">56</p>
+          <span class="badge badge-yellow">↓ 2</span>
+        </div>
+        <div class="card-borderless text-center">
+          <p class="text-sm text-slate-500 mb-3 font-light">进行中</p>
+          <p class="stat-number" style="color: #0EA5E9;">12</p>
+          <span class="badge badge-blue">→ 稳定</span>
+        </div>
+        <div class="card-borderless text-center">
+          <p class="text-sm text-slate-500 mb-3 font-light">高价值</p>
+          <p class="stat-number gradient-text mb-2">8</p>
+          <span class="badge badge-pink">★ 新增</span>
+        </div>
+      </div>
+
+      <!-- 两栏布局 -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- 活动流 -->
+        <div class="lg:col-span-2 card-borderless">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-lg font-medium text-slate-800">最近进展</h2>
+            <a href="#" class="text-sm text-violet-500 hover:text-violet-600 transition-colors">查看全部 →</a>
+          </div>
+          <div class="space-y-0">
+            <div class="activity-item">
+              <span class="activity-dot" style="background: #10B981;"></span>
+              <div class="flex-1">
+                <p class="text-slate-700">完成分析 <span class="text-violet-500">《React 性能优化》</span></p>
+                <p class="text-sm text-slate-400 mt-1">2 小时前</p>
+              </div>
+            </div>
+            <div class="activity-item">
+              <span class="activity-dot" style="background: #F59E0B;"></span>
+              <div class="flex-1">
+                <p class="text-slate-700">新想法 <span class="text-violet-500">「去中心化存储方案」</span></p>
+                <p class="text-sm text-slate-400 mt-1">5 小时前</p>
+              </div>
+            </div>
+            <div class="activity-item">
+              <span class="activity-dot" style="background: #0EA5E9;"></span>
+              <div class="flex-1">
+                <p class="text-slate-700">项目进度 <span class="text-violet-500">Web3 支付 65%</span></p>
+                <p class="text-sm text-slate-400 mt-1">1 天前</p>
+              </div>
+            </div>
+            <div class="activity-item">
+              <span class="activity-dot" style="background: #8B5CF6;"></span>
+              <div class="flex-1">
+                <p class="text-slate-700">发现认知缺口：<span class="text-violet-500">"区块链共识机制"</span></p>
+                <p class="text-sm text-slate-400 mt-1">2 天前</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧栏 -->
+        <div class="space-y-6">
+          <!-- 快速入口 -->
+          <div class="card-borderless">
+            <h3 class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-4">快速入口</h3>
+            <div class="space-y-3">
+              <a href="#" class="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/50 transition-colors group">
+                <div class="w-10 h-10 rounded-full-xl flex items-center justify-center" style="background: rgba(139, 92, 246, 0.1);">
+                  <svg class="w-5 h-5" style="color: #8B5CF6;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <span class="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">精炼厂</span>
+                  <p class="text-xs text-slate-400">从信息到洞察</p>
+                </div>
+              </a>
+              <a href="#" class="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/50 transition-colors group">
+                <div class="w-10 h-10 rounded-full-xl flex items-center justify-center" style="background: rgba(14, 165, 233, 0.1);">
+                  <svg class="w-5 h-5" style="color: #0EA5E9;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <span class="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">整理器</span>
+                  <p class="text-xs text-slate-400">从混乱到有序</p>
+                </div>
+              </a>
+              <a href="#" class="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/50 transition-colors group">
+                <div class="w-10 h-10 rounded-full-xl flex items-center justify-center" style="background: rgba(236, 72, 153, 0.1);">
+                  <svg class="w-5 h-5" style="color: #EC4899;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <span class="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">评估局</span>
+                  <p class="text-xs text-slate-400">从想法到项目</p>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- 时间胶囊 -->
+          <div class="card-borderless">
+            <h3 class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-4">⏱️ 我有 30 分钟</h3>
+            <div class="space-y-2">
+              <div class="p-3 rounded-2xl bg-white/40 hover:bg-white/60 transition-colors cursor-pointer">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-slate-700">阅读 React19 新特性</span>
+                  <span class="text-xs text-violet-500">25 分钟</span>
+                </div>
+              </div>
+              <div class="p-3 rounded-2xl bg-white/40 hover:bg-white/60 transition-colors cursor-pointer">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-slate-700">整理待办事项</span>
+                  <span class="text-xs text-violet-500">15 分钟</span>
+                </div>
+              </div>
+              <div class="p-3 rounded-2xl bg-white/40 hover:bg-white/60 transition-colors cursor-pointer">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-slate-700">补充 Rust 基础笔记</span>
+                  <span class="text-xs text-violet-500">20 分钟</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 三列动态流 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- 待办审批 -->
+        <div class="card-borderless">
+          <h3 class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-4">📋 待办审批</h3>
+          <div class="space-y-3">
+            <div class="p-3 rounded-2xl bg-white/40 hover:bg-white/60 transition-colors cursor-pointer">
+              <span class="text-sm font-medium text-slate-700">评估 AI 助手想法</span>
+              <div class="mt-2">
+                <span class="badge badge-yellow">待评估</span>
+              </div>
+            </div>
+            <div class="p-3 rounded-2xl bg-white/40 hover:bg-white/60 transition-colors cursor-pointer">
+              <span class="text-sm font-medium text-slate-700">整理读书笔记</span>
+              <div class="mt-2">
+                <span class="badge badge-blue">待分类</span>
+              </div>
+            </div>
+            <div class="p-3 rounded-2xl bg-white/40 hover:bg-white/60 transition-colors cursor-pointer">
+              <span class="text-sm font-medium text-slate-700">补充 Rust 基础知识</span>
+              <div class="mt-2">
+                <span class="badge badge-purple">待补充</span>
+              </div>
+            </div>
+          </div>
+          <a href="#" class="flex items-center justify-center gap-1 mt-4 text-sm text-violet-500 hover:text-violet-600 transition-colors">
+            前往评估局 →
+          </a>
+        </div>
+
+        <!-- 重点项目 -->
+        <div class="card-borderless">
+          <h3 class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-4">🎯 重点项目</h3>
+          <div class="space-y-5">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-slate-700">Web3 支付系统</span>
+                <span class="text-xs text-violet-500 font-mono">65%</span>
+              </div>
+              <div class="progress-liquid">
+                <div class="progress-fill" style="width: 65%;"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-slate-700">个人博客重构</span>
+                <span class="text-xs" style="color: #A855F7; font-family: 'JetBrains Mono', monospace;">30%</span>
+              </div>
+              <div class="progress-liquid">
+                <div class="progress-fill" style="width: 30%; background: linear-gradient(90deg, #A855F7 0%, #C084FC 100%);"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-slate-700">AI 代码审查工具</span>
+                <span class="text-xs" style="color: #F43F5E; font-family: 'JetBrains Mono', monospace;">10%</span>
+              </div>
+              <div class="progress-liquid">
+                <div class="progress-fill" style="width: 10%; background: linear-gradient(90deg, #F43F5E 0%, #FB7185 100%);"></div>
+              </div>
+            </div>
+          </div>
+          <a href="#" class="flex items-center justify-center gap-1 mt-4 text-sm text-violet-500 hover:text-violet-600 transition-colors">
+            查看详情 →
+          </a>
+        </div>
+
+        <!-- 认知警报 -->
+        <div class="card-borderless">
+          <h3 class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-4">🧠 认知警报</h3>
+          <div class="space-y-3">
+            <div class="p-3 rounded-2xl bg-amber-50/50 hover:bg-amber-50 transition-colors cursor-pointer">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-2 h-2 rounded-full" style="background: #F59E0B;"></span>
+                <span class="text-sm font-medium text-slate-700">区块链共识机制</span>
+              </div>
+              <p class="text-xs text-slate-400">知识缺口检测</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-amber-50/50 hover:bg-amber-50 transition-colors cursor-pointer">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-2 h-2 rounded-full" style="background: #F59E0B;"></span>
+                <span class="text-sm font-medium text-slate-700">React 性能优化</span>
+              </div>
+              <p class="text-xs text-slate-400">知识缺口检测</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-rose-50/50 hover:bg-rose-50 transition-colors cursor-pointer">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-2 h-2 rounded-full" style="background: #F43F5E;"></span>
+                <span class="text-sm font-medium text-slate-700">分布式系统设计</span>
+              </div>
+              <p class="text-xs text-slate-400">严重知识缺口</p>
+            </div>
+          </div>
+          <a href="#" class="flex items-center justify-center gap-1 mt-4 text-sm text-violet-500 hover:text-violet-600 transition-colors">
+            创建学习计划 →
+          </a>
+        </div>
+      </div>
+
+      <!-- 行动按钮 -->
+      <div class="text-center">
+        <button class="btn-liquid">
+          开始新的想法
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 模拟进度条动画
+    document.addEventListener('DOMContentLoaded', () => {
+      const progressBars = document.querySelectorAll('.progress-fill');
+      progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+          bar.style.width = width;
+        }, 100);
+      });
+    });
+  </script>
+</body>
+</html>

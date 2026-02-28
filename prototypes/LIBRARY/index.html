@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LIBRARY - ThoughtCabinet | 图书馆</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Serif+4:ital,opsz,wght@0,9..54,400;0,9..54,500;0,9..54,600;1,9..54,400&family=JetBrains+Mono:wght@400;500&family=Cinzel:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            wood: {
+              light: '#D4A574',
+              medium: '#8B6F47',
+              dark: '#5C4033',
+              rich: '#3E2723',
+            },
+            leather: {
+              light: '#C4A777',
+              medium: '#A0855B',
+              dark: '#6B5D4F',
+            },
+            paper: {
+              cream: '#F5F1E8',
+              aged: '#E8DCC4',
+              vintage: '#D4C4A8',
+            },
+            brass: {
+              light: '#E8C58A',
+              medium: '#B8956B',
+              dark: '#8B7355',
+            },
+            ink: {
+              blue: '#1E3A5F',
+              black: '#2C2420',
+              red: '#8B3A3A',
+            }
+          },
+          fontFamily: {
+            display: ['Playfair Display', 'serif'],
+            body: ['Source Serif 4', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            ornate: ['Cinzel', 'serif'],
+          },
+          backgroundImage: {
+            'wood-grain': 'repeating-linear-gradient(90deg, #8B6F47 0px, #9D7B50 2px, #8B6F47 4px, #7A5F3D 6px)',
+            'leather-texture': 'radial-gradient(ellipse at center, #C4A777 0%, #A0855B 100%)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Source Serif 4', serif;
+      background: #2C2420;
+      min-height: 100vh;
+      color: #2C2420;
+    }
+
+    /* 木质桌面纹理 */
+    .desk-surface {
+      background:
+        repeating-linear-gradient(90deg, rgba(92, 64, 51, 0.3) 0px, rgba(92, 64, 51, 0.1) 1px, transparent 2px, transparent 4px),
+        linear-gradient(135deg, #8B6F47 0%, #6B5540 50%, #5C4033 100%);
+      box-shadow:
+        inset 0 0 100px rgba(0, 0, 0, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1),
+        0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    /* 皮革躺椅 */
+    .leather-chair {
+      background:
+        radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        linear-gradient(135deg, #C4A777 0%, #A0855B 40%, #8B7355 100%);
+      box-shadow:
+        inset 0 0 30px rgba(0, 0, 0, 0.3),
+        0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    /* 黄铜装饰 */
+    .brass-accent {
+      background: linear-gradient(135deg, #E8C58A 0%, #B8956B 50%, #8B7355 100%);
+      box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* 纸张效果 */
+    .paper-sheet {
+      background:
+        radial-gradient(ellipse at center, rgba(245, 241, 232, 0.95) 0%, rgba(232, 220, 196, 0.9) 100%),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.2),
+        0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .paper-sheet::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(0, 0, 0, 0.03) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* 笔记本/日记本 */
+    .leather-journal {
+      background: linear-gradient(135deg, #6B5D4F 0%, #4A3F35 100%);
+      box-shadow:
+        inset 0 0 20px rgba(0, 0, 0, 0.4),
+        0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .journal-spine {
+      background: linear-gradient(90deg, #4A3F35 0%, #6B5D4F 20%, #4A3F35 80%, #3D3228 100%);
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* 书页 */
+    .book-page {
+      background: linear-gradient(180deg, #F5F1E8 0%, #E8DCC4 100%);
+      box-shadow:
+        inset 0 0 20px rgba(139, 111, 71, 0.1),
+        0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 复古地图 */
+    .vintage-map {
+      background:
+        radial-gradient(ellipse at center, #E8DCC4 0%, #D4C4A8 100%),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E");
+      border: 3px double #8B7355;
+    }
+
+    /* 台灯 */
+    .desk-lamp {
+      background: linear-gradient(135deg, #B8956B 0%, #8B7355 100%);
+      box-shadow:
+        0 0 60px rgba(232, 197, 138, 0.4),
+        0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .lamp-shade {
+      background: radial-gradient(ellipse at center, rgba(255, 240, 200, 0.9) 0%, rgba(255, 220, 160, 0.7) 100%);
+      box-shadow:
+        inset 0 0 30px rgba(255, 200, 100, 0.5),
+        0 0 100px rgba(255, 220, 160, 0.6);
+    }
+
+    /* 装饰性边框 */
+    .ornate-border {
+      border: 2px solid #B8956B;
+      position: relative;
+    }
+
+    .ornate-border::before {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border: 1px solid rgba(184, 149, 107, 0.5);
+      pointer-events: none;
+    }
+
+    .corner-ornament {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #B8956B;
+    }
+
+    .corner-ornament.tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+    .corner-ornament.tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+    .corner-ornament.bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+    .corner-ornament.br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+    /* 卡片 */
+    .card-catalog {
+      background: linear-gradient(180deg, #F5F1E8 0%, #E8DCC4 100%);
+      border: 1px solid #D4C4A8;
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.1),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    }
+
+    .card-catalog::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 20%;
+      right: 20%;
+      height: 2px;
+      background: rgba(139, 111, 71, 0.2);
+      border-radius: 50%;
+      filter: blur(2px);
+    }
+
+    /* 进度条 - 书签样式 */
+    .bookmark-progress {
+      height: 24px;
+      background: linear-gradient(180deg, #8B3A3A 0%, #6B2A2A 100%);
+      border-radius: 2px;
+      position: relative;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .bookmark-progress::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 8px solid #6B2A2A;
+    }
+
+    .bookmark-fill {
+      height: 100%;
+      background: linear-gradient(180deg, #A0855B 0%, #8B7355 100%);
+      border-radius: 2px;
+      transition: width 0.6s ease;
+      position: relative;
+    }
+
+    .bookmark-fill::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 4px;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 12px;
+      background: radial-gradient(circle, #E8C58A 0%, #B8956B 100%);
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    /* 标签 */
+    .label-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      background: linear-gradient(180deg, #F5F1E8 0%, #E8DCC4 100%);
+      border: 1px solid #D4C4A8;
+      border-radius: 2px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #5C4033;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .label-tag::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: -4px;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 6px;
+      background: #8B6F47;
+      border-radius: 50%;
+    }
+
+    /* 分类徽章 */
+    .category-seal {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #B8956B 0%, #8B7355 100%);
+      border: 3px double #E8C58A;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.3),
+        inset 0 1px 2px rgba(255, 255, 255, 0.3);
+    }
+
+    /* 导航链接 */
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 4px;
+      color: #6B5D4F;
+      font-family: 'Playfair Display', serif;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .nav-link:hover {
+      background: rgba(139, 111, 71, 0.1);
+      color: #3E2723;
+    }
+
+    .nav-link.active {
+      background: linear-gradient(180deg, rgba(184, 149, 107, 0.2) 0%, rgba(139, 111, 71, 0.15) 100%);
+      color: #3E2723;
+      border: 1px solid rgba(184, 149, 107, 0.3);
+    }
+
+    .nav-link.active::before {
+      content: '📖';
+      font-size: 12px;
+    }
+
+    /* 墨水效果文字 */
+    .ink-text {
+      color: #1E3A5F;
+      text-shadow: 0 0 1px rgba(30, 58, 95, 0.3);
+    }
+
+    .ink-handwriting {
+      font-family: 'Source Serif 4', serif;
+      font-style: italic;
+      color: #2C2420;
+    }
+
+    /* 书架背景 */
+    .bookshelf-bg {
+      background:
+        repeating-linear-gradient(90deg,
+          rgba(92, 64, 51, 0.5) 0px,
+          rgba(92, 64, 51, 0.5) 2px,
+          transparent 2px,
+          transparent 80px
+        ),
+        linear-gradient(180deg, #3E2723 0%, #2C2420 100%);
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.5);
+    }
+
+    /* 自定义滚动条 */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #2C2420;
+      border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #8B6F47 0%, #5C4033 100%);
+      border-radius: 5px;
+      border: 2px solid #2C2420;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #A0855B 0%, #6B5540 100%);
+    }
+
+    /* 羽毛笔光标效果 */
+    .quill-cursor {
+      cursor: text;
+    }
+
+    /* 光晕效果 */
+    .glow-soft {
+      box-shadow: 0 0 30px rgba(255, 220, 160, 0.2);
+    }
+
+    /* 阴影层叠 */
+    .shadow-layer {
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.1),
+        0 4px 8px rgba(0, 0, 0, 0.1),
+        0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    /* 活动项 */
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px dashed rgba(139, 111, 71, 0.3);
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 6px;
+      background: #8B6F47;
+      box-shadow: 0 0 4px rgba(139, 111, 71, 0.5);
+    }
+  </style>
+</head>
+<body class="bookshelf-bg">
+  <!-- 顶部装饰条 -->
+  <header class="fixed top-0 left-0 right-0 h-16 z-50" style="background: linear-gradient(180deg, #3E2723 0%, #2C2420 100%); border-bottom: 2px solid #8B7355;">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center gap-6">
+        <!-- Logo -->
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 brass-accent rounded-full flex items-center justify-center" style="box-shadow: 0 2px 8px rgba(0,0,0,0.4);">
+            <span class="text-wood-rich font-ornate font-bold text-lg">L</span>
+          </div>
+          <div>
+            <span class="text-xl font-bold font-display text-leather-light">Thought<span style="color: #B8956B;">Cabinet</span></span>
+            <p class="text-xs text-brass-light font-ornate tracking-wider">LIBRARY EDITION</p>
+          </div>
+        </div>
+        <!-- 开放时间 -->
+        <div class="hidden lg:flex items-center gap-3 px-4 py-2 rounded" style="background: rgba(139, 111, 71, 0.1); border: 1px solid rgba(184, 149, 107, 0.2);">
+          <span class="w-2 h-2 rounded-full" style="background: #E8C58A; box-shadow: 0 0 8px #E8C58A;"></span>
+          <span class="text-sm font-display text-leather-light">Open 24 Hours</span>
+        </div>
+      </div>
+
+      <!-- 台灯 -->
+      <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2">
+          <div class="lamp-shade w-8 h-6 rounded-t-full"></div>
+          <div class="w-1 h-4 brass-accent"></div>
+        </div>
+        <button class="w-9 h-9 brass-accent rounded flex items-center justify-center hover:opacity-90 transition-opacity">
+          <svg class="w-5 h-5 text-wood-rich" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </button>
+        <div class="w-9 h-9 brass-accent rounded-full flex items-center justify-center text-wood-rich font-ornate font-bold">S</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex pt-16 min-h-screen">
+    <!-- 侧边栏 - 书架 -->
+    <aside class="w-72 fixed left-0 top-16 bottom-0 p-4 overflow-y-auto" style="background: linear-gradient(90deg, rgba(0,0,0,0.3) 0%, transparent 100%); border-right: 1px solid rgba(139, 111, 71, 0.3);">
+      <!-- 书架装饰 -->
+      <div class="mb-6 p-4 ornate-border" style="background: linear-gradient(180deg, #F5F1E8 0%, #E8DCC4 100%);">
+        <div class="corner-ornament tl"></div>
+        <div class="corner-ornament tr"></div>
+        <div class="corner-ornament bl"></div>
+        <div class="corner-ornament br"></div>
+        <p class="text-center font-display font-bold text-wood-rich">"Knowledge is Power"</p>
+        <p class="text-center text-xs text-wood-medium mt-1 font-body italic">— Francis Bacon</p>
+      </div>
+
+      <nav class="space-y-1">
+        <a href="#" class="nav-link active">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          </svg>
+          <span>阅览厅 Dashboard</span>
+        </a>
+        <a href="#" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          </svg>
+          <span>摘记 Refinery</span>
+        </a>
+        <a href="#" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          </svg>
+          <span>归档 Organizer</span>
+        </a>
+        <a href="#" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <span>评鉴 Evaluator</span>
+        </a>
+        <a href="#" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+          <span>日志 Planner</span>
+        </a>
+        <a href="#" class="nav-link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+          </svg>
+          <span>图谱 Blueprint</span>
+        </a>
+      </nav>
+
+      <!-- 借阅卡 -->
+      <div class="mt-8 p-4 card-catalog absolute" style="bottom: 80px; left: 16px; right: 16px;">
+        <div class="text-center mb-3">
+          <p class="text-xs text-wood-medium uppercase tracking-wider">Library Card</p>
+          <p class="font-display font-bold text-wood-rich">Star Reader</p>
+        </div>
+        <div class="flex justify-between text-xs text-wood-medium">
+          <span>Member since 2024</span>
+          <span>No. 001234</span>
+        </div>
+        <div class="mt-3 pt-3 border-t border-dashed border-wood-medium/30">
+          <p class="text-xs text-wood-medium">Notes catalogued: <span class="font-bold text-wood-rich">1,234</span></p>
+        </div>
+      </div>
+
+      <div class="absolute bottom-4 left-4 right-4">
+        <button class="w-full py-3 px-4 brass-accent rounded flex items-center justify-center gap-2 hover:opacity-90 transition-opacity" style="box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+          <svg class="w-5 h-5 text-wood-rich" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          <span class="font-display font-bold text-wood-rich">新建笔记</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- 主内容区域 - 书桌 -->
+    <main class="flex-1 ml-72 p-8 desk-surface">
+      <!-- 欢迎卡片 - 摊开的笔记本 -->
+      <div class="mb-8 leather-journal rounded-lg overflow-hidden" style="max-width: 900px;">
+        <div class="journal-spine h-2"></div>
+        <div class="p-6 book-page">
+          <div class="flex items-start justify-between">
+            <div>
+              <h1 class="text-2xl font-bold font-display ink-text mb-2">欢迎回来，Star</h1>
+              <p class="font-body text-wood-dark italic">今天是 2026 年 2 月 28 日，星期五</p>
+              <p class="font-body text-wood-medium mt-2" style="max-width: 500px;">"在这静谧的图书馆角落，摊开你的思绪，如古籍般细细整理。每一张笔记都是知识的碎片，等待被编织成智慧的锦缎。"</p>
+            </div>
+            <div class="text-right">
+              <div class="inline-block p-3 brass-accent rounded-full" style="box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                <span class="text-2xl font-ornate font-bold text-wood-rich">9</span>
+              </div>
+              <p class="text-xs text-wood-medium mt-1">第 9 周</p>
+              <p class="text-xs text-wood-light">已记录 89 天</p>
+            </div>
+          </div>
+          <!-- 羽毛笔装饰 -->
+          <div class="absolute top-4 right-4 opacity-20">
+            <svg class="w-24 h-24 text-wood-rich" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M20.71 5.63l-2.34-2.34a1 1 0 00-1.41 0l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12a1 1 0 000-1.42z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 统计卡片 - 卡片目录柜 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" style="max-width: 900px;">
+        <div class="card-catalog p-5 relative">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs text-wood-medium uppercase tracking-wider">总藏书</span>
+            <div class="category-seal w-10 h-10 text-lg">📚</div>
+          </div>
+          <div class="text-3xl font-bold font-display ink-text mb-1">1,234</div>
+          <p class="text-xs text-wood-light">卷册编目</p>
+          <div class="absolute top-2 right-2">
+            <span class="label-tag" style="background: linear-gradient(180deg, #D1FAE5 0%, #A7F3D0 100%);">↑ 12%</span>
+          </div>
+        </div>
+
+        <div class="card-catalog p-5 relative">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs text-wood-medium uppercase tracking-wider">待整理</span>
+            <div class="category-seal w-10 h-10 text-lg">📝</div>
+          </div>
+          <div class="text-3xl font-bold font-display" style="color: #B45309;">56</div>
+          <p class="text-xs text-wood-light">散页笔记</p>
+          <div class="absolute top-2 right-2">
+            <span class="label-tag" style="background: linear-gradient(180deg, #FEF3C7 0%, #FDE68A 100%);">↓ 2</span>
+          </div>
+        </div>
+
+        <div class="card-catalog p-5 relative">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs text-wood-medium uppercase tracking-wider">研究中</span>
+            <div class="category-seal w-10 h-10 text-lg">🔍</div>
+          </div>
+          <div class="text-3xl font-bold font-display ink-blue">12</div>
+          <p class="text-xs text-wood-light">专题课题</p>
+          <div class="absolute top-2 right-2">
+            <span class="label-tag" style="background: linear-gradient(180deg, #DBEAFE 0%, #BFDBFE 100%);">→ 稳定</span>
+          </div>
+        </div>
+
+        <div class="card-catalog p-5 relative" style="background: linear-gradient(180deg, #FEF3C7 0%, #FDE68A 100%);">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs text-wood-medium uppercase tracking-wider">珍本</span>
+            <div class="category-seal w-10 h-10 text-lg">⭐</div>
+          </div>
+          <div class="text-3xl font-bold font-display" style="color: #7C3AED;">8</div>
+          <p class="text-xs text-wood-light">高价值洞察</p>
+          <div class="absolute top-2 right-2">
+            <span class="label-tag" style="background: linear-gradient(180deg, #F3E8FF 0%, #E9D5FF 100%);">★ 新增</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 两栏布局 -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" style="max-width: 900px;">
+        <!-- 最近活动 - 借阅记录 -->
+        <div class="lg:col-span-2 paper-sheet p-6 relative">
+          <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse at top, rgba(0,0,0,0.02) 0%, transparent 50%);"></div>
+          <div class="relative z-10">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-lg font-bold font-display ink-text">最近借阅记录</h2>
+              <a href="#" class="text-sm font-display ink-blue hover:underline">查看全部 →</a>
+            </div>
+            <div class="space-y-0">
+              <div class="activity-item">
+                <span class="activity-dot" style="background: #16A34A;"></span>
+                <div class="flex-1">
+                  <p class="text-sm font-body"><span class="font-bold ink-text">完成研读</span> <span class="ink-blue italic">《React 性能优化》</span></p>
+                  <p class="text-xs text-wood-light mt-1 font-mono">2 小时前 · 摘录 3 则</p>
+                </div>
+              </div>
+              <div class="activity-item">
+                <span class="activity-dot" style="background: #EA580C;"></span>
+                <div class="flex-1">
+                  <p class="text-sm font-body"><span class="font-bold ink-text">新笔记</span> <span class="ink-blue italic">「去中心化存储方案」</span></p>
+                  <p class="text-xs text-wood-light mt-1 font-mono">5 小时前 · 待归档</p>
+                </div>
+              </div>
+              <div class="activity-item">
+                <span class="activity-dot" style="background: #2563EB;"></span>
+                <div class="flex-1">
+                  <p class="text-sm font-body"><span class="font-bold ink-text">研究进度</span> <span class="ink-blue italic">Web3 支付 65%</span></p>
+                  <p class="text-xs text-wood-light mt-1 font-mono">1 天前 · 进展顺利</p>
+                </div>
+              </div>
+              <div class="activity-item">
+                <span class="activity-dot" style="background: #8B3A3A;"></span>
+                <div class="flex-1">
+                  <p class="text-sm font-body"><span class="font-bold ink-text">待查主题</span> <span class="ink-blue italic">"区块链共识机制"</span></p>
+                  <p class="text-xs text-wood-light mt-1 font-mono">2 天前 · 需进一步研究</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧栏 -->
+        <div class="space-y-4">
+          <!-- 快速入口 -->
+          <div class="paper-sheet p-5">
+            <h3 class="text-xs font-bold font-display text-wood-medium uppercase tracking-wider mb-4">快捷服务</h3>
+            <div class="space-y-2">
+              <a href="#" class="flex items-center gap-3 p-3 rounded hover:bg-wood-light/20 transition-colors group">
+                <div class="w-10 h-10 rounded flex items-center justify-center" style="background: linear-gradient(135deg, rgba(139, 111, 71, 0.2) 0%, rgba(139, 111, 71, 0.1) 100%); border: 1px solid rgba(139, 111, 71, 0.3);">
+                  <svg class="w-5 h-5" style="color: #8B6F47;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <span class="text-sm font-bold font-display text-wood-dark group-hover:text-wood-rich transition-colors">摘记台</span>
+                  <p class="text-xs text-wood-light">从阅读到理解</p>
+                </div>
+              </a>
+              <a href="#" class="flex items-center gap-3 p-3 rounded hover:bg-wood-light/20 transition-colors group">
+                <div class="w-10 h-10 rounded flex items-center justify-center" style="background: linear-gradient(135deg, rgba(21, 128, 61, 0.2) 0%, rgba(21, 128, 61, 0.1) 100%); border: 1px solid rgba(21, 128, 61, 0.3);">
+                  <svg class="w-5 h-5" style="color: #15803D;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <span class="text-sm font-bold font-display text-wood-dark group-hover:text-wood-rich transition-colors">档案室</span>
+                  <p class="text-xs text-wood-light">从散乱到有序</p>
+                </div>
+              </a>
+              <a href="#" class="flex items-center gap-3 p-3 rounded hover:bg-wood-light/20 transition-colors group">
+                <div class="w-10 h-10 rounded flex items-center justify-center" style="background: linear-gradient(135deg, rgba(139, 58, 58, 0.2) 0%, rgba(139, 58, 58, 0.1) 100%); border: 1px solid rgba(139, 58, 58, 0.3);">
+                  <svg class="w-5 h-5" style="color: #8B3A3A;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <span class="text-sm font-bold font-display text-wood-dark group-hover:text-wood-rich transition-colors">评鉴室</span>
+                  <p class="text-xs text-wood-light">从想法到课题</p>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- 阅读建议 -->
+          <div class="paper-sheet p-5" style="background: linear-gradient(180deg, rgba(254, 243, 199, 0.8) 0%, rgba(253, 230, 138, 0.6) 100%);">
+            <h3 class="text-xs font-bold font-display text-wood-medium uppercase tracking-wider mb-3">☕ 阅读时光</h3>
+            <p class="text-xs text-wood-light mb-3 italic">"今日宜静心研读"</p>
+            <div class="space-y-2">
+              <div class="p-3 rounded border border-wood-medium/20 hover:border-wood-medium/40 transition-colors cursor-pointer" style="background: rgba(255, 255, 255, 0.5);">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-bold font-display text-wood-dark">React19 新特性</span>
+                  <span class="text-xs text-wood-medium font-mono">25 分钟</span>
+                </div>
+              </div>
+              <div class="p-3 rounded border border-wood-medium/20 hover:border-wood-medium/40 transition-colors cursor-pointer" style="background: rgba(255, 255, 255, 0.5);">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-bold font-display text-wood-dark">整理待办事项</span>
+                  <span class="text-xs text-wood-medium font-mono">15 分钟</span>
+                </div>
+              </div>
+              <div class="p-3 rounded border border-wood-medium/20 hover:border-wood-medium/40 transition-colors cursor-pointer" style="background: rgba(255, 255, 255, 0.5);">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-bold font-display text-wood-dark">Rust 基础笔记</span>
+                  <span class="text-xs text-wood-medium font-mono">20 分钟</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 三列动态流 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6" style="max-width: 900px;">
+        <!-- 待办审批 -->
+        <div class="paper-sheet p-5">
+          <h3 class="text-xs font-bold font-display text-wood-medium uppercase tracking-wider mb-4">📋 待处理</h3>
+          <div class="space-y-2">
+            <div class="p-3 rounded border border-wood-medium/20 hover:border-wood-medium/40 transition-colors cursor-pointer" style="background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 241, 224, 0.6) 100%);">
+              <span class="text-sm font-bold font-display text-wood-dark">评估 AI 助手课题</span>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="text-xs px-2 py-1 rounded" style="background: rgba(254, 243, 199, 0.8); color: #B45309; border: 1px solid rgba(180, 83, 9, 0.2);">待评鉴</span>
+              </div>
+            </div>
+            <div class="p-3 rounded border border-wood-medium/20 hover:border-wood-medium/40 transition-colors cursor-pointer" style="background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 241, 224, 0.6) 100%);">
+              <span class="text-sm font-bold font-display text-wood-dark">整理读书笔记</span>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="text-xs px-2 py-1 rounded" style="background: rgba(219, 234, 254, 0.8); color: #1E3A5F; border: 1px solid rgba(30, 58, 95, 0.2);">待归档</span>
+              </div>
+            </div>
+            <div class="p-3 rounded border border-wood-medium/20 hover:border-wood-medium/40 transition-colors cursor-pointer" style="background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 241, 224, 0.6) 100%);">
+              <span class="text-sm font-bold font-display text-wood-dark">补充 Rust 基础</span>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="text-xs px-2 py-1 rounded" style="background: rgba(243, 232, 255, 0.8); color: #7C3AED; border: 1px solid rgba(124, 58, 237, 0.2);">待补充</span>
+              </div>
+            </div>
+          </div>
+          <a href="#" class="flex items-center justify-center gap-1 mt-4 text-sm font-display ink-blue hover:underline">
+            前往评鉴室 →
+          </a>
+        </div>
+
+        <!-- 重点项目 -->
+        <div class="paper-sheet p-5">
+          <h3 class="text-xs font-bold font-display text-wood-medium uppercase tracking-wider mb-4">📖 研究课题</h3>
+          <div class="space-y-4">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-bold font-display text-wood-dark">Web3 支付系统</span>
+                <span class="text-xs text-wood-medium font-mono">65%</span>
+              </div>
+              <div class="h-2 rounded-full" style="background: rgba(139, 111, 71, 0.2);">
+                <div class="bookmark-fill" style="width: 65%;"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-bold font-display text-wood-dark">个人博客重构</span>
+                <span class="text-xs" style="color: #7C3AED; font-family: 'JetBrains Mono', monospace;">30%</span>
+              </div>
+              <div class="h-2 rounded-full" style="background: rgba(139, 111, 71, 0.2);">
+                <div class="bookmark-fill" style="width: 30%; background: linear-gradient(90deg, #7C3AED 0%, #A855F7 100%);"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-bold font-display text-wood-dark">AI 代码审查</span>
+                <span class="text-xs" style="color: #B94B3A; font-family: 'JetBrains Mono', monospace;">10%</span>
+              </div>
+              <div class="h-2 rounded-full" style="background: rgba(139, 111, 71, 0.2);">
+                <div class="bookmark-fill" style="width: 10%; background: linear-gradient(90deg, #B94B3A 0%, #DC2626 100%);"></div>
+              </div>
+            </div>
+          </div>
+          <a href="#" class="flex items-center justify-center gap-1 mt-4 text-sm font-display ink-blue hover:underline">
+            查看详情 →
+          </a>
+        </div>
+
+        <!-- 认知警报 -->
+        <div class="paper-sheet p-5" style="background: linear-gradient(180deg, rgba(254, 243, 199, 0.6) 0%, rgba(253, 230, 138, 0.4) 100%);">
+          <h3 class="text-xs font-bold font-display text-wood-medium uppercase tracking-wider mb-4">🔖 待研读</h3>
+          <div class="space-y-2">
+            <div class="p-3 rounded border border-amber-300/50 hover:border-amber-400 transition-colors cursor-pointer" style="background: rgba(254, 243, 199, 0.5);">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-2 h-2 rounded-full" style="background: #EA580C;"></span>
+                <span class="text-sm font-bold font-display text-wood-dark">区块链共识机制</span>
+              </div>
+              <p class="text-xs text-wood-light">知识缺口检测</p>
+            </div>
+            <div class="p-3 rounded border border-amber-300/50 hover:border-amber-400 transition-colors cursor-pointer" style="background: rgba(254, 243, 199, 0.5);">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-2 h-2 rounded-full" style="background: #EA580C;"></span>
+                <span class="text-sm font-bold font-display text-wood-dark">React 性能优化</span>
+              </div>
+              <p class="text-xs text-wood-light">知识缺口检测</p>
+            </div>
+            <div class="p-3 rounded border border-red-300/50 hover:border-red-400 transition-colors cursor-pointer" style="background: rgba(254, 226, 226, 0.5);">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-2 h-2 rounded-full" style="background: #DC2626;"></span>
+                <span class="text-sm font-bold font-display text-wood-dark">分布式系统设计</span>
+              </div>
+              <p class="text-xs text-wood-light">需重点研读</p>
+            </div>
+          </div>
+          <a href="#" class="flex items-center justify-center gap-1 mt-4 text-sm font-display ink-blue hover:underline">
+            创建研读计划 →
+          </a>
+        </div>
+      </div>
+
+      <!-- 底部装饰 - 名言 -->
+      <div class="mt-8 text-center" style="max-width: 900px;">
+        <div class="inline-block p-6 ornate-border" style="background: linear-gradient(180deg, rgba(245, 241, 232, 0.9) 0%, rgba(232, 220, 196, 0.7) 100%);">
+          <p class="font-display italic text-wood-rich">"读书使人充实，思考使人深邃，整理使人清晰。"</p>
+          <p class="text-xs text-wood-medium mt-2">— 今日馆讯</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // 模拟书签进度条动画
+    document.addEventListener('DOMContentLoaded', () => {
+      const progressBars = document.querySelectorAll('.bookmark-fill');
+      progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+          bar.style.width = width;
+        }, 100);
+      });
+    });
+  </script>
+</body>
+</html>
