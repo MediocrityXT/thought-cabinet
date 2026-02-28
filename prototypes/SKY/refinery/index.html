@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信息精炼厂 - 思维阁</title>
+    <style>
+        :root {
+            --bg-deep: #070b14;
+            --bg-primary: #0c1424;
+            --bg-card: #131d2e;
+            --bg-elevated: #1a2740;
+            --bg-hover: #223050;
+            --text-primary: #e4e8f0;
+            --text-secondary: #8896b0;
+            --text-muted: #5a6a7e;
+            --sky-gold: #e8c88a;
+            --sky-gold-soft: #c9a96c;
+            --sky-dusk: #9b8abf;
+            --sky-dawn: #7eb8da;
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --shadow-glow: 0 0 60px rgba(232, 200, 138, 0.1);
+            --border-subtle: rgba(232, 200, 138, 0.1);
+            --glass: rgba(19, 29, 46, 0.8);
+            --radius-sm: 10px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+        }
+        [data-theme="light"] {
+            --bg-deep: #e8eef5;
+            --bg-primary: #f4f8fc;
+            --bg-card: #ffffff;
+            --bg-elevated: #ffffff;
+            --bg-hover: #eef3f9;
+            --text-primary: #2a3a4f;
+            --text-secondary: #6b7a90;
+            --text-muted: #9aa8b8;
+            --sky-gold: #c9a96c;
+            --sky-gold-soft: #b8956a;
+            --sky-dusk: #8b7aaa;
+            --sky-dawn: #5a9bc4;
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.06);
+            --shadow-glow: 0 0 60px rgba(232, 200, 138, 0.15);
+            --border-subtle: rgba(201, 169, 108, 0.15);
+            --glass: rgba(255, 255, 255, 0.85);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; background: var(--bg-deep); color: var(--text-primary); min-height: 100vh; transition: background 0.5s, color 0.5s; }
+        
+        .sky-bg { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: -1; background: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(74, 111, 165, 0.15) 0%, transparent 50%), radial-gradient(ellipse 100% 50% at 50% 100%, rgba(232, 200, 138, 0.12) 0%, transparent 50%); }
+        
+        .app-container { display: flex; min-height: 100vh; }
+        
+        /* Sidebar - same as dashboard */
+        .sidebar { width: 260px; background: var(--bg-primary); border-right: 1px solid var(--border-subtle); display: flex; flex-direction: column; position: relative; z-index: 10; }
+        .sidebar-header { padding: 24px 20px; border-bottom: 1px solid var(--border-subtle); }
+        .workspace { display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: var(--bg-card); border-radius: var(--radius-md); cursor: pointer; transition: all 0.3s; }
+        .workspace:hover { background: var(--bg-hover); }
+        .workspace-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--sky-gold), var(--sky-gold-soft)); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 1.3em; }
+        .workspace-name { font-weight: 600; font-size: 1.1em; }
+        .nav-section { padding: 20px 12px; }
+        .nav-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); padding: 8px 16px; margin-bottom: 8px; }
+        .nav-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-secondary); transition: all 0.3s; font-size: 0.95em; position: relative; }
+        .nav-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--sky-gold); transform: scaleY(0); transition: transform 0.3s; }
+        .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .nav-item.active { background: var(--bg-card); color: var(--sky-gold); }
+        .nav-item.active::before { transform: scaleY(1); }
+        .nav-icon { font-size: 1.15em; width: 24px; text-align: center; }
+        
+        /* Main */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .topbar { height: 64px; padding: 0 36px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); background: var(--glass); backdrop-filter: blur(16px); }
+        .breadcrumb { display: flex; align-items: center; gap: 10px; font-size: 0.9em; color: var(--text-secondary); }
+        .topbar-actions { display: flex; align-items: center; gap: 14px; }
+        .lang-toggle { display: flex; background: var(--bg-card); border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-subtle); }
+        .lang-btn { padding: 8px 14px; border: none; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 0.8em; }
+        .lang-btn.active { background: var(--sky-gold); color: var(--bg-deep); }
+        .icon-btn { width: 38px; height: 38px; border-radius: var(--radius-sm); border: none; background: transparent; cursor: pointer; font-size: 1.1em; color: var(--text-secondary); transition: all 0.3s; }
+        .icon-btn:hover { background: var(--bg-hover); color: var(--sky-gold); }
+        
+        .content { flex: 1; overflow-y: auto; padding: 32px 40px; }
+        
+        /* Refinery Layout - Split View */
+        .refinery-container { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; height: calc(100vh - 180px); }
+        @media (max-width: 1000px) { .refinery-container { grid-template-columns: 1fr; } }
+        
+        .panel { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; }
+        .panel-header { padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; }
+        .panel-title { font-weight: 600; font-size: 1.05em; display: flex; align-items: center; gap: 8px; }
+        .panel-body { flex: 1; overflow-y: auto; padding: 20px; }
+        
+        /* Source Panel */
+        .source-input { width: 100%; padding: 14px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95em; resize: none; min-height: 100px; margin-bottom: 16px; }
+        .source-input:focus { outline: none; border-color: var(--sky-gold); }
+        .url-input { width: 100%; padding: 12px 16px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.9em; margin-bottom: 12px; }
+        
+        .quick-report { background: var(--bg-elevated); border-radius: var(--radius-md); padding: 18px; margin-bottom: 16px; }
+        .quick-report h4 { font-size: 0.9em; color: var(--sky-gold); margin-bottom: 10px; }
+        .quick-report ul { padding-left: 18px; color: var(--text-secondary); font-size: 0.88em; line-height: 1.8; }
+        
+        /* Workshop Panel */
+        .chat-container { display: flex; flex-direction: column; height: 100%; }
+        .chat-messages { flex: 1; overflow-y: auto; }
+        .chat-message { display: flex; gap: 12px; margin-bottom: 16px; }
+        .chat-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1em; flex-shrink: 0; }
+        .chat-avatar.ai { background: linear-gradient(135deg, var(--sky-gold), var(--sky-dusk)); }
+        .chat-avatar.user { background: var(--sky-dawn); }
+        .chat-bubble { background: var(--bg-elevated); padding: 12px 16px; border-radius: var(--radius-md); font-size: 0.92em; line-height: 1.6; max-width: 80%; }
+        
+        .note-editor { border-top: 1px solid var(--border-subtle); padding: 16px; }
+        .note-textarea { width: 100%; padding: 12px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.9em; resize: none; min-height: 80px; margin-bottom: 12px; }
+        .note-actions { display: flex; gap: 10px; }
+        .btn { padding: 10px 18px; border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.85em; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, var(--sky-gold), var(--sky-gold-soft)); color: var(--bg-deep); }
+        .btn-secondary { background: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+        .btn:hover { transform: translateY(-2px); }
+        
+        /* Quick Add */
+        .quick-add { position: fixed; bottom: 36px; right: 36px; z-index: 100; }
+        .quick-add-btn { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--sky-gold), var(--sky-gold-soft)); color: var(--bg-deep); border: none; font-size: 1.6em; cursor: pointer; box-shadow: var(--shadow-soft), 0 0 40px rgba(232, 200, 138, 0.3); transition: all 0.4s; display: flex; align-items: center; justify-content: center; }
+        .quick-add-btn:hover { transform: scale(1.15); }
+    </style>
+</head>
+<body>
+    <div class="sky-bg"></div>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="workspace">
+                    <div class="workspace-icon">🏠</div>
+                    <div class="workspace-name">思维阁</div>
+                </div>
+            </div>
+            <nav class="nav-section">
+                <div class="nav-label">导航</div>
+                <div class="nav-item"><span class="nav-icon">📊</span><span>总览</span></div>
+                <div class="nav-item"><span class="nav-icon">📥</span><span>待处理</span><span style="margin-left:auto;background:var(--sky-gold);color:var(--bg-deep);padding:2px 8px;border-radius:10px;font-size:0.7em">3</span></div>
+                <div class="nav-item"><span class="nav-icon">🧠</span><span>知识图谱</span></div>
+            </nav>
+            <nav class="nav-section">
+                <div class="nav-label">模块</div>
+                <div class="nav-item active"><span class="nav-icon">🏭</span><span>信息精炼厂</span></div>
+                <div class="nav-item"><span class="nav-icon">🧹</span><span>熵减整理器</span></div>
+                <div class="nav-item"><span class="nav-icon">⚖️</span><span>价值评估局</span></div>
+                <div class="nav-item"><span class="nav-icon">🎯</span><span>战术指挥室</span></div>
+                <div class="nav-item"><span class="nav-icon">🗺️</span><span>认知蓝图</span></div>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <header class="topbar">
+                <div class="breadcrumb"><span>思维阁</span><span>/</span><span>信息精炼厂</span></div>
+                <div class="topbar-actions">
+                    <div class="lang-toggle">
+                        <button class="lang-btn active" onclick="setLang('zh')">中</button>
+                        <button class="lang-btn" onclick="setLang('en')">EN</button>
+                    </div>
+                    <button class="icon-btn">🔔</button>
+                </div>
+            </header>
+            <div class="content">
+                <div class="refinery-container">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">📄 <span>原始资料</span></div>
+                        </div>
+                        <div class="panel-body">
+                            <input type="text" class="url-input" placeholder="输入 URL 或粘贴内容...">
+                            <textarea class="source-input" placeholder="在这里粘贴或输入内容..."></textarea>
+                            <button class="btn btn-primary" style="width:100%;margin-bottom:20px">🔍 <span>分析内容</span></button>
+                            <div class="quick-report">
+                                <h4>📋 30秒速读报告</h4>
+                                <ul>
+                                    <li>核心论点：RAG 技术与上下文窗口的对比</li>
+                                    <li>关键数据：上下文窗口已达 100万 token</li>
+                                    <li>争议点：RAG 是否仍是未来趋势</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">💬 <span>智能工坊</span></div>
+                        </div>
+                        <div class="panel-body">
+                            <div class="chat-container">
+                                <div class="chat-messages">
+                                    <div class="chat-message">
+                                        <div class="chat-avatar ai">🤖</div>
+                                        <div class="chat-bubble">这篇文章提出了一个很有趣的观点。你认为 RAG 和扩展上下文窗口，哪个更适合你的工作场景？</div>
+                                    </div>
+                                    <div class="chat-message">
+                                        <div class="chat-avatar user">👤</div>
+                                        <div class="chat-bubble">我更关心实际落地效果，能展开讲讲吗？</div>
+                                    </div>
+                                    <div class="chat-message">
+                                        <div class="chat-avatar ai">🤖</div>
+                                        <div class="chat-bubble">好的，让我从几个维度来分析...</div>
+                                    </div>
+                                </div>
+                                <div class="note-editor">
+                                    <textarea class="note-textarea" placeholder="记录你的思考..."></textarea>
+                                    <div class="note-actions">
+                                        <button class="btn btn-primary">📝 <span>生成永久笔记</span></button>
+                                        <button class="btn btn-secondary">➕ <span>加入待办</span></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div class="quick-add"><button class="quick-add-btn" onclick="toggleTheme()">+</button></div>
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            html.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+        }
+        document.documentElement.setAttribute('data-theme', 'dark');
+        function setLang(lang) {
+            document.querySelectorAll('[data-lang]').forEach(el => el.style.display = el.dataset.lang === lang ? '' : 'none');
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.toggle('active', btn.textContent.toLowerCase().includes(lang)));
+        }
+    </script>
+</body>
+</html>
