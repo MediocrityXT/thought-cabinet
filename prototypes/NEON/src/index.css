@@ -1,0 +1,247 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ThoughtCabinet Dark Theme */
+    --background: 225 20% 4%;
+    --foreground: 220 20% 96%;
+    --card: 222 18% 8%;
+    --card-foreground: 220 20% 96%;
+    --popover: 222 18% 8%;
+    --popover-foreground: 220 20% 96%;
+    --primary: 190 100% 50%;
+    --primary-foreground: 220 20% 4%;
+    --secondary: 222 15% 12%;
+    --secondary-foreground: 220 20% 96%;
+    --muted: 222 15% 15%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 270 80% 60%;
+    --accent-foreground: 220 20% 96%;
+    --destructive: 345 80% 60%;
+    --destructive-foreground: 220 20% 96%;
+    --border: 220 10% 15%;
+    --input: 222 15% 12%;
+    --ring: 190 100% 50%;
+    --radius: 0.75rem;
+    
+    /* Sidebar */
+    --sidebar-background: 222 18% 8%;
+    --sidebar-foreground: 220 20% 96%;
+    --sidebar-primary: 190 100% 50%;
+    --sidebar-primary-foreground: 220 20% 4%;
+    --sidebar-accent: 222 15% 12%;
+    --sidebar-accent-foreground: 220 20% 96%;
+    --sidebar-border: 220 10% 15%;
+    --sidebar-ring: 190 100% 50%;
+
+    /* Custom Design Tokens */
+    --bg-deep: #0a0a0f;
+    --bg-primary: #0f1117;
+    --bg-secondary: #161922;
+    --bg-tertiary: #1e212b;
+    --bg-elevated: #252a36;
+    
+    --text-primary: #f0f2f5;
+    --text-secondary: #9ca3af;
+    --text-tertiary: #6b7280;
+    --text-muted: #4b5563;
+    
+    --accent-cyan: #00d4ff;
+    --accent-purple: #a855f7;
+    --accent-amber: #f59e0b;
+    --accent-rose: #f43f5e;
+    --accent-emerald: #10b981;
+    --accent-blue: #3b82f6;
+    
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-expo: cubic-bezier(0.7, 0, 0.84, 0);
+    --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-deep text-foreground font-sans antialiased;
+    background-color: var(--bg-deep);
+  }
+}
+
+@layer components {
+  /* Card Styles */
+  .tc-card {
+    @apply bg-panel border border-white/[0.06] rounded-lg p-5 transition-all duration-300;
+  }
+  
+  .tc-card:hover {
+    @apply bg-elevated border-white/10;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .tc-card-glow-cyan {
+    @apply border-cyan/50;
+    box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.5), 0 0 10px rgba(0, 212, 255, 0.2);
+  }
+  
+  .tc-card-glow-purple {
+    @apply border-purple/50;
+    box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.5), 0 0 10px rgba(168, 85, 247, 0.2);
+  }
+
+  /* Button Styles */
+  .tc-btn-primary {
+    @apply bg-gradient-cyan-purple text-white px-5 py-2.5 rounded-md font-medium;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+  
+  .tc-btn-primary:hover {
+    @apply brightness-110;
+    transform: translateY(-1px);
+  }
+  
+  .tc-btn-secondary {
+    @apply bg-elevated border border-white/10 text-white px-5 py-2.5 rounded-md font-medium transition-all;
+  }
+  
+  .tc-btn-secondary:hover {
+    @apply bg-surface border-white/20;
+    transform: translateY(-1px);
+  }
+
+  /* Badge Styles */
+  .tc-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .tc-badge-cyan {
+    @apply bg-cyan/15 text-cyan border border-cyan/30;
+  }
+  
+  .tc-badge-purple {
+    @apply bg-purple/15 text-purple border border-purple/30;
+  }
+  
+  .tc-badge-amber {
+    @apply bg-amber/15 text-amber border border-amber/30;
+  }
+  
+  .tc-badge-rose {
+    @apply bg-rose/15 text-rose border border-rose/30;
+  }
+  
+  .tc-badge-emerald {
+    @apply bg-emerald/15 text-emerald border border-emerald/30;
+  }
+
+  /* Input Styles */
+  .tc-input {
+    @apply bg-elevated border border-white/[0.08] rounded-md px-4 py-3 text-white text-base transition-all;
+  }
+  
+  .tc-input:focus {
+    @apply outline-none border-cyan;
+    box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.5), 0 0 10px rgba(0, 212, 255, 0.2);
+  }
+
+  /* Glow Effects */
+  .glow-cyan {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+  
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+  }
+  
+  .glow-amber {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+  }
+  
+  .glow-rose {
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.3);
+  }
+  
+  .glow-emerald {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+
+  /* Text Gradient */
+  .text-gradient-cyan-purple {
+    @apply bg-gradient-cyan-purple bg-clip-text text-transparent;
+  }
+  
+  .text-gradient-amber-rose {
+    @apply bg-gradient-amber-rose bg-clip-text text-transparent;
+  }
+
+  /* Status Indicators */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+  
+  .status-dot-active {
+    @apply bg-emerald;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  }
+  
+  .status-dot-pending {
+    @apply bg-amber;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  }
+  
+  .status-dot-alert {
+    @apply bg-rose;
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
+  }
+
+  /* Scrollbar Styling */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+}
+
+@layer utilities {
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+  .animation-delay-500 {
+    animation-delay: 500ms;
+  }
+}
