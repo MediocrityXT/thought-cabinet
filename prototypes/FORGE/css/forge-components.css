@@ -1,0 +1,345 @@
+/* FORGE Components - 工业锻造组件样式 */
+
+/* ---- 锻造卡片 ---- */
+.forge-card {
+  background: linear-gradient(145deg, #2a2a2a 0%, #1f1f1f 100%);
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  padding: 1.5rem;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.forge-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--forge-accent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.forge-card:hover {
+  border-color: #4a4a4a;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 107, 53, 0.1);
+}
+
+.forge-card:hover::before {
+  opacity: 1;
+}
+
+.forge-card.active {
+  border-color: var(--forge-accent);
+  box-shadow: 0 0 30px rgba(255, 107, 53, 0.2);
+}
+
+.forge-card.active::before {
+  opacity: 1;
+  background: linear-gradient(90deg, var(--forge-accent), var(--forge-warning));
+}
+
+/* ---- 铆钉装饰 ---- */
+.rivet {
+  width: 8px;
+  height: 8px;
+  background: radial-gradient(circle at 30% 30%, #666, #333);
+  border-radius: 50%;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.rivet-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+}
+
+.rivet-corner.top-left { top: 8px; left: 8px; }
+.rivet-corner.top-right { top: 8px; right: 8px; }
+.rivet-corner.bottom-left { bottom: 8px; left: 8px; }
+.rivet-corner.bottom-right { bottom: 8px; right: 8px; }
+
+/* ---- 警告条纹 ---- */
+.warning-stripe {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--forge-warning),
+    var(--forge-warning) 10px,
+    #1a1a1a 10px,
+    #1a1a1a 20px
+  );
+  height: 6px;
+  border-radius: 2px;
+}
+
+/* ---- 工业按钮 ---- */
+.forge-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%);
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.forge-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.forge-btn:hover {
+  background: linear-gradient(180deg, #454545 0%, #353535 100%);
+  border-color: #5a5a5a;
+}
+
+.forge-btn:active {
+  transform: translateY(1px);
+  background: linear-gradient(180deg, #2a2a2a 0%, #353535 100%);
+}
+
+.forge-btn.primary {
+  background: linear-gradient(180deg, var(--forge-accent) 0%, #d94e1f 100%);
+  border-color: #ff8c5a;
+  color: #000;
+}
+
+.forge-btn.primary:hover {
+  background: linear-gradient(180deg, #ff8550 0%, #e85a2a 100%);
+  box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+}
+
+.forge-btn.danger {
+  background: linear-gradient(180deg, var(--forge-danger) 0%, #991b1b 100%);
+  border-color: #ef4444;
+}
+
+/* ---- 仪表盘数值 ---- */
+.gauge-value {
+  font-family: var(--font-mono);
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--forge-accent);
+  text-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+}
+
+.gauge-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ---- 进度条 ---- */
+.forge-progress {
+  width: 100%;
+  height: 8px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.forge-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--forge-accent), var(--forge-warning));
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  position: relative;
+}
+
+.forge-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  animation: forge-pulse 2s infinite;
+}
+
+@keyframes forge-pulse {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}
+
+/* ---- 状态指示灯 ---- */
+.status-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.status-light::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+}
+
+.status-light.active {
+  background: var(--forge-success);
+  box-shadow: 0 0 10px var(--forge-success), inset 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+.status-light.warning {
+  background: var(--forge-warning);
+  box-shadow: 0 0 10px var(--forge-warning);
+  animation: blink 1s infinite;
+}
+
+.status-light.danger {
+  background: var(--forge-danger);
+  box-shadow: 0 0 10px var(--forge-danger);
+  animation: blink 0.5s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ---- 任务项 ---- */
+.mission-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid #333;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.mission-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #444;
+}
+
+.mission-item.priority-high {
+  border-left: 3px solid var(--forge-danger);
+}
+
+.mission-item.priority-medium {
+  border-left: 3px solid var(--forge-warning);
+}
+
+.mission-item.priority-low {
+  border-left: 3px solid var(--forge-success);
+}
+
+.mission-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #555;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mission-checkbox:hover {
+  border-color: var(--forge-accent);
+}
+
+.mission-checkbox.checked {
+  background: var(--forge-accent);
+  border-color: var(--forge-accent);
+}
+
+.mission-content {
+  flex: 1;
+}
+
+.mission-title {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.mission-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.mission-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ---- 控制面板 ---- */
+.control-panel {
+  background: linear-gradient(145deg, #252525 0%, #1a1a1a 100%);
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 1.5rem;
+}
+
+.control-group {
+  margin-bottom: 1.5rem;
+}
+
+.control-group:last-child {
+  margin-bottom: 0;
+}
+
+.control-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+/* ---- 数字显示 ---- */
+.digital-display {
+  font-family: var(--font-mono);
+  background: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  color: var(--forge-accent);
+  font-size: 1.125rem;
+  text-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+}
+
+/* ---- 分隔线 ---- */
+.forge-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #444, transparent);
+  margin: 1.5rem 0;
+}

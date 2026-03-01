@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FORGE - Focused Operations Room for Goal Execution</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/forge-variables.css">
+  <link rel="stylesheet" href="css/forge-layout.css">
+  <link rel="stylesheet" href="css/forge-components.css">
+  <style>
+    /* FORGE Five Modules Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: linear-gradient(180deg, var(--forge-charcoal) 0%, #0f1419 100%);
+      color: var(--text-ember);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .forge-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* Header */
+    .forge-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+      border-bottom: 2px solid var(--forge-steel);
+      margin-bottom: 32px;
+    }
+
+    .forge-brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .forge-logo {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--forge-steel), var(--forge-iron));
+      border: 3px solid var(--forge-brass);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 
+        inset 0 2px 4px rgba(255,255,255,0.1),
+        0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .forge-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, var(--heat-forged), var(--forge-brass));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .forge-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-ash);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+    }
+
+    .forge-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 24px;
+      background: var(--forge-iron);
+      border: 1px solid var(--forge-steel);
+      border-radius: 4px;
+    }
+
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      background: var(--heat-hot);
+      border-radius: 50%;
+      animation: forge-pulse 2s ease-in-out infinite;
+      box-shadow: 0 0 10px var(--heat-hot);
+    }
+
+    @keyframes forge-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.1); }
+    }
+
+    /* Module Grid */
+    .forge-modules {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .forge-module {
+      background: linear-gradient(145deg, var(--forge-iron), var(--forge-charcoal));
+      border: 2px solid var(--forge-steel);
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .forge-module::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--heat-cold), var(--heat-warming), var(--heat-hot), var(--heat-forged));
+    }
+
+    .module-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px;
+      background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid var(--forge-steel);
+    }
+
+    .module-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--forge-steel);
+      border: 2px solid var(--forge-brass);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .module-info h3 {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.125rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .module-info p {
+      font-size: 0.75rem;
+      color: var(--text-ash);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .module-content {
+      padding: 24px;
+    }
+
+    .forge-module.wide {
+      grid-column: span 2;
+    }
+
+    /* Module 1: Furnace (熔炉) - 原料加热区 */
+    .furnace-chamber {
+      height: 200px;
+      background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
+      border: 3px solid var(--forge-steel);
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .furnace-interior {
+      position: absolute;
+      inset: 8px;
+      background: linear-gradient(180deg, 
+        rgba(229,62,62,0.3) 0%,
+        rgba(221,107,32,0.5) 30%,
+        rgba(246,173,85,0.3) 60%,
+        transparent 100%
+      );
+      border-radius: 4px;
+      animation: furnace-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes furnace-glow {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; }
+    }
+
+    .raw-materials {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 16px;
+    }
+
+    .material-ingot {
+      width: 50px;
+      height: 30px;
+      background: linear-gradient(145deg, var(--forge-steel), var(--forge-iron));
+      border: 2px solid var(--forge-brass);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.625rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .material-ingot:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(229,62,62,0.4);
+    }
+
+    .temperature-gauge {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      text-align: right;
+    }
+
+    .temp-value {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--heat-hot);
+    }
+
+    .temp-label {
+      font-size: 0.625rem;
+      color: var(--text-ash);
+      text-transform: uppercase;
+    }
+
+    /* Module 2: Anvil (铁砧) - 锤炼加工区 */
+    .anvil-workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .anvil-display {
+      height: 120px;
+      background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+      border: 3px solid var(--forge-steel);
+      border-radius: 8px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .work-piece {
+      width: 80px;
+      height: 40px;
+      background: linear-gradient(145deg, var(--heat-warming), var(--heat-hot));
+      border-radius: 4px;
+      position: relative;
+      animation: heat-shimmer 2s ease-in-out infinite;
+    }
+
+    @keyframes heat-shimmer {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.2); }
+    }
+
+    .hammer-strikes {
+      display: flex;
+      gap: 8px;
+    }
+
+    .strike-btn {
+      flex: 1;
+      padding: 16px;
+      background: var(--forge-steel);
+      border: 2px solid var(--forge-brass);
+      border-radius: 4px;
+      color: var(--text-ember);
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .strike-btn:hover {
+      background: var(--forge-brass);
+      color: var(--forge-charcoal);
+      transform: translateY(-2px);
+    }
+
+    .strike-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Module 3: Quench Tank (淬火池) - 冷却定型区 */
+    .quench-tank {
+      height: 180px;
+      background: linear-gradient(180deg, 
+        rgba(56,178,172,0.1) 0%,
+        rgba(56,178,172,0.3) 50%,
+        rgba(56,178,172,0.5) 100%
+      );
+      border: 3px solid var(--heat-quenched);
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .water-surface {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 30%;
+      background: linear-gradient(180deg, 
+        rgba(56,178,172,0.4),
+        transparent
+      );
+      animation: water-ripple 4s ease-in-out infinite;
+    }
+
+    @keyframes water-ripple {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(5px); }
+    }
+
+    .quenched-items {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .quenched-tag {
+      padding: 6px 12px;
+      background: rgba(56,178,172,0.2);
+      border: 1px solid var(--heat-quenched);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: var(--heat-quenched);
+    }
+
+    /* Module 4: Assembly Line (装配线) - 任务流水线 */
+    .assembly-line {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    .assembly-stage {
+      flex-shrink: 0;
+      width: 140px;
+      padding: 16px;
+      background: var(--forge-iron);
+      border: 2px solid var(--forge-steel);
+      border-radius: 6px;
+      text-align: center;
+      position: relative;
+    }
+
+    .assembly-stage::after {
+      content: '→';
+      position: absolute;
+      right: -20px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--forge-brass);
+      font-size: 1.5rem;
+    }
+
+    .assembly-stage:last-child::after {
+      display: none;
+    }
+
+    .stage-number {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--forge-brass);
+    }
+
+    .stage-name {
+      font-size: 0.75rem;
+      color: var(--text-ash);
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .stage-progress {
+      height: 4px;
+      background: var(--forge-steel);
+      border-radius: 2px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .stage-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--heat-warming), var(--heat-forged));
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    /* Module 5: Blueprint Wall (蓝图墙) - 成品展示区 */
+    .blueprint-wall {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .blueprint-item {
+      aspect-ratio: 3/4;
+      background: linear-gradient(145deg, #1e3a5f, #0f1f33);
+      border: 2px solid var(--forge-brass);
+      border-radius: 6px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .blueprint-item::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(183,121,31,0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(183,121,31,0.1) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    .blueprint-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+
+    .blueprint-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      position: relative;
+      z-index: 1;
+    }
+
+    .blueprint-meta {
+      font-size: 0.625rem;
+      color: var(--text-ash);
+      margin-top: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .blueprint-status {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .blueprint-status.forged {
+      background: var(--heat-forged);
+      box-shadow: 0 0 8px var(--heat-forged);
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .forge-modules {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .forge-module.wide {
+        grid-column: span 2;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .forge-modules {
+        grid-template-columns: 1fr;
+      }
+      .forge-module.wide {
+        grid-column: span 1;
+      }
+      .blueprint-wall {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="forge-container">
+    <!-- Header -->
+    <header class="forge-header">
+      <div class="forge-brand">
+        <div class="forge-logo">🔥</div>
+        <div>
+          <h1 class="forge-title">FORGE</h1>
+          <p class="forge-subtitle">Focused Operations Room for Goal Execution</p>
+        </div>
+      </div>
+      <div class="forge-status">
+        <div class="status-indicator"></div>
+        <span>FURNACE ACTIVE</span>
+      </div>
+    </header>
+
+    <!-- Five FORGE Modules -->
+    <div class="forge-modules">
+      
+      <!-- Module 1: Furnace (熔炉) - 原料加热区 -->
+      <div class="forge-module">
+        <div class="module-header">
+          <div class="module-icon">🔥</div>
+          <div class="module-info">
+            <h3>Furnace</h3>
+            <p>Raw Material Heating Chamber</p>
+          </div>
+        </div>
+        <div class="module-content">
+          <div class="furnace-chamber">
+            <div class="furnace-interior"></div>
+            <div class="temperature-gauge">
+              <div class="temp-value">1,247°C</div>
+              <div class="temp-label">Chamber Temp</div>
+            </div>
+            <div class="raw-materials">
+              <div class="material-ingot">RAW</div>
+              <div class="material-ingot">IDEA</div>
+              <div class="material-ingot">TASK</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Module 2: Anvil (铁砧) - 锤炼加工区 -->
+      <div class="forge-module">
+        <div class="module-header">
+          <div class="module-icon">⚒️</div>
+          <div class="module-info">
+            <h3>Anvil</h3>
+            <p>Refinement & Shaping Station</p>
+          </div>
+        </div>
+        <div class="module-content">
+          <div class="anvil-workspace">
+            <div class="anvil-display">
+              <div class="work-piece"></div>
+            </div>
+            <div class="hammer-strikes">
+              <button class="strike-btn">Shape</button>
+              <button class="strike-btn">Harden</button>
+              <button class="strike-btn">Polish</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Module 3: Quench Tank (淬火池) - 冷却定型区 -->
+      <div class="forge-module">
+        <div class="module-header">
+          <div class="module-icon">💧</div>
+          <div class="module-info">
+            <h3>Quench Tank</h3>
+            <p>Rapid Cooling & Solidification</p>
+          </div>
+        </div>
+        <div class="module-content">
+          <div class="quench-tank">
+            <div class="water-surface"></div>
+            <div class="quenched-items">
+              <span class="quenched-tag">Completed Task #1</span>
+              <span class="quenched-tag">Finalized Design</span>
+              <span class="quenched-tag">Archived Note</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Module 4: Assembly Line (装配线) - 任务流水线 -->
+      <div class="forge-module wide">
+        <div class="module-header">
+          <div class="module-icon">⚙️</div>
+          <div class="module-info">
+            <h3>Assembly Line</h3>
+            <p>Production Pipeline Status</p>
+          </div>
+        </div>
+        <div class="module-content">
+          <div class="assembly-line">
+            <div class="assembly-stage">
+              <div class="stage-number">01</div>
+              <div class="stage-name">Inbox</div>
+              <div class="stage-progress">
+                <div class="stage-progress-bar" style="width: 75%"></div>
+              </div>
+            </div>
+            <div class="assembly-stage">
+              <div class="stage-number">02</div>
+              <div class="stage-name">Process</div>
+              <div class="stage-progress">
+                <div class="stage-progress-bar" style="width: 60%"></div>
+              </div>
+            </div>
+            <div class="assembly-stage">
+              <div class="stage-number">03</div>
+              <div class="stage-name">Forge</div>
+              <div class="stage-progress">
+                <div class="stage-progress-bar" style="width: 45%"></div>
+              </div>
+            </div>
+            <div class="assembly-stage">
+              <div class="stage-number">04</div>
+              <div class="stage-name">Quench</div>
+              <div class="stage-progress">
+                <div class="stage-progress-bar" style="width: 30%"></div>
+              </div>
+            </div>
+            <div class="assembly-stage">
+              <div class="stage-number">05</div>
+              <div class="stage-name">Deliver</div>
+              <div class="stage-progress">
+                <div class="stage-progress-bar" style="width: 90%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Module 5: Blueprint Wall (蓝图墙) - 成品展示区 -->
+      <div class="forge-module wide">
+        <div class="module-header">
+          <div class="module-icon">📋</div>
+          <div class="module-info">
+            <h3>Blueprint Wall</h3>
+            <p>Finished Works Gallery</p>
+          </div>
+        </div>
+        <div class="module-content">
+          <div class="blueprint-wall">
+            <div class="blueprint-item">
+              <div class="blueprint-status forged"></div>
+              <div class="blueprint-icon">🎯</div>
+              <div class="blueprint-title">Project Alpha</div>
+              <div class="blueprint-meta">Forged: 2 days ago</div>
+            </div>
+            <div class="blueprint-item">
+              <div class="blueprint-status forged"></div>
+              <div class="blueprint-icon">🚀</div>
+              <div class="blueprint-title">Launch Plan</div>
+              <div class="blueprint-meta">Forged: 5 days ago</div>
+            </div>
+            <div class="blueprint-item">
+              <div class="blueprint-status forged"></div>
+              <div class="blueprint-icon">💡</div>
+              <div class="blueprint-title">Idea Vault</div>
+              <div class="blueprint-meta">Forged: 1 week ago</div>
+            </div>
+            <div class="blueprint-item">
+              <div class="blueprint-status forged"></div>
+              <div class="blueprint-icon">📊</div>
+              <div class="blueprint-title">Analytics V2</div>
+              <div class="blueprint-meta">Forged: 2 weeks ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Hammer strike interaction
+    document.querySelectorAll('.strike-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const workPiece = document.querySelector('.work-piece');
+        workPiece.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          workPiece.style.transform = 'scale(1)';
+        }, 150);
+        
+        // Flash effect
+        this.style.background = 'var(--heat-forged)';
+        setTimeout(() => {
+          this.style.background = '';
+        }, 200);
+      });
+    });
+
+    // Material ingot hover
+    document.querySelectorAll('.material-ingot').forEach(ingot => {
+      ingot.addEventListener('mouseenter', function() {
+        this.style.background = 'linear-gradient(145deg, var(--heat-warming), var(--heat-hot))';
+      });
+      ingot.addEventListener('mouseleave', function() {
+        this.style.background = '';
+      });
+    });
+  </script>
+</body>
+</html>

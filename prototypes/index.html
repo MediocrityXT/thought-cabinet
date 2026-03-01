@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThoughtCabinet - Design Prototypes Gallery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+      min-height: 100vh;
+      color: #fff;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 60px;
+      padding: 40px 0;
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 1.25rem;
+      color: rgba(255,255,255,0.6);
+      font-weight: 300;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 32px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #667eea;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .section {
+      margin-bottom: 60px;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+      padding-left: 16px;
+      border-left: 4px solid #667eea;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.2);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+
+    .card-title-group h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .card-title-group p {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .card-desc {
+      font-size: 0.9375rem;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .card-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .card-meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.625rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-new {
+      background: linear-gradient(90deg, #11998e, #38ef7d);
+      color: #000;
+    }
+
+    .badge-classic {
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.7);
+    }
+
+    footer {
+      text-align: center;
+      padding: 40px 0;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.875rem;
+    }
+
+    /* Category colors */
+    .cat-science { --accent: #FF4D4D; }
+    .cat-zen { --accent: #8B7355; }
+    .cat-industrial { --accent: #DD6B20; }
+    .cat-cyber { --accent: #00ff80; }
+    .cat-history { --accent: #C9A227; }
+    .cat-sky { --accent: #4D96FF; }
+    .cat-neon { --accent: #FF00FF; }
+    .cat-mystery { --accent: #9C51E0; }
+    .cat-home { --accent: #6BCB77; }
+    .cat-library { --accent: #B7791F; }
+
+    .card-icon {
+      background: linear-gradient(135deg, var(--accent, #667eea), transparent);
+      border: 1px solid var(--accent, #667eea);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ThoughtCabinet</h1>
+      <p class="subtitle">Design Prototypes Gallery</p>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value">21</div>
+          <div class="stat-label">Total Designs</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">5</div>
+          <div class="stat-label">New Themes</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">105</div>
+          <div class="stat-label">Total Modules</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- New 5 Designs -->
+    <section class="section">
+      <h2 class="section-title">🎨 New Designs (2025)</h2>
+      <div class="grid">
+        <a href="/PRISM/index.html" class="card cat-science">
+          <div class="card-header">
+            <div class="card-icon">🔮</div>
+            <div class="card-title-group">
+              <h3>PRISM</h3>
+              <p>Spectrum Analysis</p>
+            </div>
+            <span class="badge badge-new">New</span>
+          </div>
+          <p class="card-desc">光谱分析型认知界面，六色光谱分类，数据可视化，实验室风格</p>
+          <div class="card-meta">
+            <span>⚡ 5 Modules</span>
+            <span>🎨 Science</span>
+          </div>
+        </a>
+
+        <a href="/ZEN/index.html" class="card cat-zen">
+          <div class="card-header">
+            <div class="card-icon">🍃</div>
+            <div class="card-title-group">
+              <h3>ZEN</h3>
+              <p>Oriental Zen</p>
+            </div>
+            <span class="badge badge-new">New</span>
+          </div>
+          <p class="card-desc">东方禅意水墨风格，留白美学，呼吸感，枯山水庭院</p>
+          <div class="card-meta">
+            <span>⚡ 5 Modules</span>
+            <span>🎨 Zen</span>
+          </div>
+        </a>
+
+        <a href="/FORGE/index.html" class="card cat-industrial">
+          <div class="card-header">
+            <div class="card-icon">🔥</div>
+            <div class="card-title-group">
+              <h3>FORGE</h3>
+              <p>Industrial Workshop</p>
+            </div>
+            <span class="badge badge-new">New</span>
+          </div>
+          <p class="card-desc">工业风执行工坊，锻造厂美学，硬核执行力，温度感</p>
+          <div class="card-meta">
+            <span>⚡ 5 Modules</span>
+            <span>🎨 Industrial</span>
+          </div>
+        </a>
+
+        <a href="/GLITCH/index.html" class="card cat-cyber">
+          <div class="card-header">
+            <div class="card-icon">⚡</div>
+            <div class="card-title-group">
+              <h3>GLITCH</h3>
+              <p>Cyberpunk Chaos</p>
+            </div>
+            <span class="badge badge-new">New</span>
+          </div>
+          <p class="card-desc">故障艺术赛博朋克，数字混沌美学，RGB分离，叛逆未来</p>
+          <div class="card-meta">
+            <span>⚡ 5 Modules</span>
+            <span>🎨 Cyberpunk</span>
+          </div>
+        </a>
+
+        <a href="/EPOCH/index.html" class="card cat-history">
+          <div class="card-header">
+            <div class="card-icon">📜</div>
+            <div class="card-title-group">
+              <h3>EPOCH</h3>
+              <p>Archaeological Timeline</p>
+            </div>
+            <span class="badge badge-new">New</span>
+          </div>
+          <p class="card-desc">考古时间轴历史感，羊皮纸质感，青铜器风格，地层视图</p>
+          <div class="card-meta">
+            <span>⚡ 5 Modules</span>
+            <span>🎨 History</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Classic Designs -->
+    <section class="section">
+      <h2 class="section-title">📚 Classic Designs</h2>
+      <div class="grid">
+        <a href="/SKY/index.html" class="card cat-sky">
+          <div class="card-header">
+            <div class="card-icon">☁️</div>
+            <div class="card-title-group">
+              <h3>SKY</h3>
+              <p>Cloud & Sky</p>
+            </div>
+            <span class="badge badge-classic">Classic</span>
+          </div>
+          <p class="card-desc">天空云朵主题，宁静开放氛围</p>
+          <div class="card-meta">
+            <span>🎨 Nature</span>
+          </div>
+        </a>
+
+        <a href="/NEON/index.html" class="card cat-neon">
+          <div class="card-header">
+            <div class="card-icon">🌃</div>
+            <div class="card-title-group">
+              <h3>NEON</h3>
+              <p>Cyberpunk Neon</p>
+            </div>
+            <span class="badge badge-classic">Classic</span>
+          </div>
+          <p class="card-desc">霓虹赛博朋克，科技未来感</p>
+          <div class="card-meta">
+            <span>🎨 Cyberpunk</span>
+          </div>
+        </a>
+
+        <a href="/VOID/index.html" class="card cat-mystery">
+          <div class="card-header">
+            <div class="card-icon">🌌</div>
+            <div class="card-title-group">
+              <h3>VOID</h3>
+              <p>Deep Space Void</p>
+            </div>
+            <span class="badge badge-classic">Classic</span>
+          </div>
+          <p class="card-desc">深海虚空主题，神秘沉浸感</p>
+          <div class="card-meta">
+            <span>🎨 Mystery</span>
+          </div>
+        </a>
+
+        <a href="/HOME/index.html" class="card cat-home">
+          <div class="card-header">
+            <div class="card-icon">🏠</div>
+            <div class="card-title-group">
+              <h3>HOME</h3>
+              <p>Warm Home</p>
+            </div>
+            <span class="badge badge-classic">Classic</span>
+          </div>
+          <p class="card-desc">温馨家园主题，舒适归属感</p>
+          <div class="card-meta">
+            <span>🎨 Life</span>
+          </div>
+        </a>
+
+        <a href="/LIBRARY/index.html" class="card cat-library">
+          <div class="card-header">
+            <div class="card-icon">📚</div>
+            <div class="card-title-group">
+              <h3>LIBRARY</h3>
+              <p>Knowledge Library</p>
+            </div>
+            <span class="badge badge-classic">Classic</span>
+          </div>
+          <p class="card-desc">知识图书馆，学术严谨感</p>
+          <div class="card-meta">
+            <span>🎨 Knowledge</span>
+          </div>
+        </a>
+
+        <a href="/ATELIER/index.html" class="card cat-industrial">
+          <div class="card-header">
+            <div class="card-icon">🎨</div>
+            <div class="card-title-group">
+              <h3>ATELIER</h3>
+              <p>Artist Studio</p>
+            </div>
+            <span class="badge badge-classic">Classic</span>
+          </div>
+          <p class="card-desc">艺术家工作室，创意手工感</p>
+          <div class="card-meta">
+            <span>🎨 Art</span>
+          </div>
+        </a>
+
+        <a href="/AURA/index.html" class="card cat-zen">
+          <div class="card-header">
+            <div class="card-icon">✨</div>
+            <div class="card-title-group">
+              <h3>AURA</h3>
+              <p>Mystical Aura</p>
+            </div>
+            <span class="badge badge-classic">Classic</span>
+          </div>
+          <p class="card-desc">神秘光环主题，灵性超自然</p>
+          <div class="card-meta">
+            <span>🎨 Spiritual</span>
+          </div>
+        </a>
+
+        <a href="/WARROOM/index.html" class="card cat-science">
+          <div class="card-header">
+            <div class="card-icon">🎯</div>
+            <div class="card-title-group">
+              <h3>WARROOM</h3>
+              <p>Command Center</p>
+            </div>
+            <span class="badge badge-classic">Classic</span>
+          </div>
+          <p class="card-desc">作战指挥室，战略决策感</p>
+          <div class="card-meta">
+            <span>🎨 Strategy</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Other Designs -->
+    <section class="section">
+      <h2 class="section-title">🔮 More Designs</h2>
+      <div class="grid">
+        <a href="/ethereal/index.html" class="card">
+          <div class="card-header">
+            <div class="card-icon" style="background: linear-gradient(135deg, #E0C3FC, #8EC5FC);">🌟</div>
+            <div class="card-title-group">
+              <h3>ETHEREAL</h3>
+              <p>Dreamy Ethereal</p>
+            </div>
+          </div>
+          <p class="card-desc">空灵梦幻主题，飘渺不真实感</p>
+        </a>
+
+        <a href="/nebula/index.html" class="card">
+          <div class="card-header">
+            <div class="card-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">🌠</div>
+            <div class="card-title-group">
+              <h3>NEBULA</h3>
+              <p>Cosmic Nebula</p>
+            </div>
+          </div>
+          <p class="card-desc">星云宇宙主题，浩瀚神秘感</p>
+        </a>
+
+        <a href="/scroll/index.html" class="card">
+          <div class="card-header">
+            <div class="card-icon" style="background: linear-gradient(135deg, #C9A227, #F4ECD8);">📜</div>
+            <div class="card-title-group">
+              <h3>SCROLL</h3>
+              <p>Ancient Scroll</p>
+            </div>
+          </div>
+          <p class="card-desc">古卷轴主题，历史沉淀感</p>
+        </a>
+
+        <a href="/tactical/index.html" class="card">
+          <div class="card-header">
+            <div class="card-icon" style="background: linear-gradient(135deg, #2D3748, #4A5568);">🗺️</div>
+            <div class="card-title-group">
+              <h3>TACTICAL</h3>
+              <p>Tactical Map</p>
+            </div>
+          </div>
+          <p class="card-desc">战术地图主题，军事策略感</p>
+        </a>
+      </div>
+    </section>
+
+    <footer>
+      <p>ThoughtCabinet Design System · All prototypes running on port 60005</p>
+      <p style="margin-top: 8px; opacity: 0.6;">Access individual designs via /{NAME}/index.html</p>
+    </footer>
+  </div>
+</body>
+</html>

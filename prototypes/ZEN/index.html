@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZEN - Zone of Essential Navigation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=Noto+Serif+JP:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/zen-variables.css">
+  <link rel="stylesheet" href="css/zen-layout.css">
+  <link rel="stylesheet" href="css/zen-components.css">
+  <style>
+    /* ZEN Five Modules Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--ink-deep);
+      color: var(--paper-raw);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .zen-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px;
+    }
+
+    /* Header */
+    .zen-header {
+      text-align: center;
+      padding: 60px 0;
+      position: relative;
+    }
+
+    .zen-title {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 3rem;
+      font-weight: 400;
+      letter-spacing: 0.5em;
+      margin-bottom: 16px;
+      opacity: 0.9;
+    }
+
+    .zen-subtitle {
+      font-size: 0.875rem;
+      color: var(--ink-mist);
+      letter-spacing: 0.3em;
+    }
+
+    .zen-header::after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--ink-mist), transparent);
+      margin: 40px auto 0;
+    }
+
+    /* Module Grid */
+    .zen-modules {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      padding: 40px 0;
+    }
+
+    .zen-module {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 32px;
+      position: relative;
+      transition: all 0.6s ease;
+    }
+
+    .zen-module:hover {
+      border-color: rgba(255,255,255,0.1);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+    }
+
+    .zen-module.wide {
+      grid-column: span 2;
+    }
+
+    .zen-module.full {
+      grid-column: span 3;
+    }
+
+    .module-kanji {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 2.5rem;
+      opacity: 0.6;
+      margin-bottom: 16px;
+    }
+
+    .module-name {
+      font-size: 1.125rem;
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      margin-bottom: 8px;
+    }
+
+    .module-desc {
+      font-size: 0.75rem;
+      color: var(--ink-mist);
+      letter-spacing: 0.1em;
+      margin-bottom: 24px;
+    }
+
+    /* Module 1: Ma (間) - 留白空间 */
+    .ma-space {
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .breath-circle {
+      width: 120px;
+      height: 120px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: breathe 8s ease-in-out infinite;
+    }
+
+    @keyframes breathe {
+      0%, 100% { transform: scale(1); opacity: 0.3; }
+      50% { transform: scale(1.2); opacity: 0.6; }
+    }
+
+    .breath-inner {
+      width: 80px;
+      height: 80px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50%;
+      animation: breathe 8s ease-in-out infinite reverse;
+    }
+
+    .breath-text {
+      position: absolute;
+      font-size: 0.75rem;
+      color: var(--ink-mist);
+      letter-spacing: 0.2em;
+      margin-top: 160px;
+    }
+
+    /* Module 2: Karesansui (枯山水) - 石组布局 */
+    .karesansui-garden {
+      aspect-ratio: 4/3;
+      background: var(--ink-void);
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sand-pattern {
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 20px,
+        rgba(255,255,255,0.02) 20px,
+        rgba(255,255,255,0.02) 21px
+      );
+    }
+
+    .stone {
+      position: absolute;
+      background: linear-gradient(135deg, #3a3a3a, #1a1a1a);
+      border-radius: 40% 60% 50% 40% / 50% 40% 60% 50%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      cursor: pointer;
+      transition: all 0.4s ease;
+    }
+
+    .stone:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    }
+
+    .stone:nth-child(2) { width: 60px; height: 50px; top: 30%; left: 20%; }
+    .stone:nth-child(3) { width: 45px; height: 40px; top: 50%; left: 35%; }
+    .stone:nth-child(4) { width: 70px; height: 55px; top: 25%; left: 55%; }
+    .stone:nth-child(5) { width: 40px; height: 35px; top: 60%; left: 70%; }
+    .stone:nth-child(6) { width: 55px; height: 45px; top: 40%; left: 80%; }
+
+    .ripple {
+      position: absolute;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 50%;
+      animation: ripple 4s ease-out infinite;
+    }
+
+    @keyframes ripple {
+      0% { width: 0; height: 0; opacity: 1; }
+      100% { width: 200px; height: 200px; opacity: 0; }
+    }
+
+    /* Module 3: Sumi-e (墨絵) - 水墨流 */
+    .sumie-canvas {
+      height: 180px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 4px;
+      background: linear-gradient(180deg, var(--ink-medium), var(--ink-deep));
+    }
+
+    .ink-wash {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(40px);
+      opacity: 0.4;
+      animation: ink-flow 12s ease-in-out infinite;
+    }
+
+    @keyframes ink-flow {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -20px) scale(1.1); }
+      66% { transform: translate(-20px, 30px) scale(0.9); }
+    }
+
+    .ink-wash:nth-child(1) { width: 150px; height: 150px; background: rgba(255,255,255,0.1); top: 10%; left: 10%; animation-delay: 0s; }
+    .ink-wash:nth-child(2) { width: 100px; height: 100px; background: rgba(255,255,255,0.08); top: 40%; left: 50%; animation-delay: -4s; }
+    .ink-wash:nth-child(3) { width: 120px; height: 120px; background: rgba(255,255,255,0.06); top: 20%; left: 70%; animation-delay: -8s; }
+
+    .brush-stroke {
+      position: absolute;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: stroke-fade 6s ease-in-out infinite;
+    }
+
+    @keyframes stroke-fade {
+      0%, 100% { opacity: 0; width: 0; }
+      50% { opacity: 1; width: 60%; }
+    }
+
+    /* Module 4: Ichi-go ichi-e (一期一会) - 当下专注 */
+    .ichi-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 0;
+    }
+
+    .now-indicator {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 4rem;
+      font-weight: 300;
+      opacity: 0.8;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .now-indicator::before {
+      content: '今';
+      position: absolute;
+      opacity: 0.2;
+      transform: translate(4px, 4px);
+    }
+
+    .focus-task {
+      text-align: center;
+      max-width: 400px;
+    }
+
+    .task-content {
+      font-size: 1.25rem;
+      line-height: 1.8;
+      margin-bottom: 32px;
+      opacity: 0.9;
+    }
+
+    .zen-btn {
+      padding: 12px 32px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--paper-raw);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.875rem;
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      transition: all 0.4s ease;
+    }
+
+    .zen-btn:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.3);
+    }
+
+    /* Module 5: Enso (円相) - 圆相轨迹 */
+    .enso-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 40px 0;
+    }
+
+    .enso-circle {
+      width: 200px;
+      height: 200px;
+      position: relative;
+    }
+
+    .enso-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .enso-path {
+      fill: none;
+      stroke: rgba(255,255,255,0.6);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 628;
+      stroke-dashoffset: 628;
+      animation: draw-enso 4s ease-out forwards;
+    }
+
+    @keyframes draw-enso {
+      to { stroke-dashoffset: 0; }
+    }
+
+    .enso-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .enso-number {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 2.5rem;
+      opacity: 0.8;
+    }
+
+    .enso-label {
+      font-size: 0.75rem;
+      color: var(--ink-mist);
+      letter-spacing: 0.2em;
+      margin-top: 8px;
+    }
+
+    .enso-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .enso-stat {
+      text-align: center;
+    }
+
+    .enso-stat-value {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 1.75rem;
+      opacity: 0.9;
+    }
+
+    .enso-stat-label {
+      font-size: 0.75rem;
+      color: var(--ink-mist);
+      letter-spacing: 0.1em;
+      margin-top: 4px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .zen-modules {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .zen-module.wide, .zen-module.full {
+        grid-column: span 2;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .zen-modules {
+        grid-template-columns: 1fr;
+      }
+      .zen-module.wide, .zen-module.full {
+        grid-column: span 1;
+      }
+      .zen-title {
+        font-size: 2rem;
+        letter-spacing: 0.3em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="zen-container">
+    <!-- Header -->
+    <header class="zen-header">
+      <h1 class="zen-title">禅</h1>
+      <p class="zen-subtitle">ZONE OF ENHANCED NAVIGATION</p>
+    </header>
+
+    <!-- Five ZEN Modules -->
+    <div class="zen-modules">
+      
+      <!-- Module 1: Ma (間) - 留白空间 -->
+      <div class="zen-module">
+        <div class="module-kanji">間</div>
+        <div class="module-name">Ma</div>
+        <div class="module-desc">留白 · 呼吸的空间</div>
+        <div class="ma-space">
+          <div class="breath-circle">
+            <div class="breath-inner"></div>
+          </div>
+          <span class="breath-text">吸 — 呼</span>
+        </div>
+      </div>
+
+      <!-- Module 2: Karesansui (枯山水) - 石组布局 -->
+      <div class="zen-module">
+        <div class="module-kanji">庭</div>
+        <div class="module-name">Karesansui</div>
+        <div class="module-desc">枯山水 · 思维的庭院</div>
+        <div class="karesansui-garden">
+          <div class="sand-pattern"></div>
+          <div class="stone" title="紧急任务"></div>
+          <div class="stone" title="创意灵感"></div>
+          <div class="stone" title="学习笔记"></div>
+          <div class="stone" title="项目进展"></div>
+          <div class="stone" title="深度思考"></div>
+          <div class="ripple" style="top: 30%; left: 20%;"></div>
+        </div>
+      </div>
+
+      <!-- Module 3: Sumi-e (墨絵) - 水墨流 -->
+      <div class="zen-module">
+        <div class="module-kanji">墨</div>
+        <div class="module-name">Sumi-e</div>
+        <div class="module-desc">墨绘 · 流动的思绪</div>
+        <div class="sumie-canvas">
+          <div class="ink-wash"></div>
+          <div class="ink-wash"></div>
+          <div class="ink-wash"></div>
+          <div class="brush-stroke" style="top: 30%; left: 20%;"></div>
+          <div class="brush-stroke" style="top: 60%; left: 40%; animation-delay: -2s;"></div>
+        </div>
+      </div>
+
+      <!-- Module 4: Ichi-go ichi-e (一期一会) - 当下专注 -->
+      <div class="zen-module wide">
+        <div class="module-kanji">今</div>
+        <div class="module-name">Ichi-go ichi-e</div>
+        <div class="module-desc">一期一会 · 此刻唯一</div>
+        <div class="ichi-container">
+          <div class="now-indicator">今</div>
+          <div class="focus-task">
+            <p class="task-content">
+              在此刻，专注于一件事。<br>
+              如同茶道中的每一杯茶，都是独一无二的相遇。
+            </p>
+            <button class="zen-btn">进入专注模式</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Module 5: Enso (円相) - 圆相轨迹 -->
+      <div class="zen-module full">
+        <div class="module-kanji">円</div>
+        <div class="module-name">Enso</div>
+        <div class="module-desc">圆相 · 完整的循环</div>
+        <div class="enso-container">
+          <div class="enso-circle">
+            <svg class="enso-svg" viewBox="0 0 200 200">
+              <circle class="enso-path" cx="100" cy="100" r="100"/>
+            </svg>
+            <div class="enso-center">
+              <div class="enso-number">108</div>
+              <div class="enso-label">今日记录</div>
+            </div>
+          </div>
+          <div class="enso-stats">
+            <div class="enso-stat">
+              <div class="enso-stat-value">7</div>
+              <div class="enso-stat-label">连续日</div>
+            </div>
+            <div class="enso-stat">
+              <div class="enso-stat-value">23</div>
+              <div class="enso-stat-label">本周</div>
+            </div>
+            <div class="enso-stat">
+              <div class="enso-stat-value">156</div>
+              <div class="enso-stat-label">本月</div>
+            </div>
+          </div>
+          <div class="enso-circle">
+            <svg class="enso-svg" viewBox="0 0 200 200">
+              <circle class="enso-path" cx="100" cy="100" r="100" style="animation-delay: 0.5s;"/>
+            </svg>
+            <div class="enso-center">
+              <div class="enso-number">87%</div>
+              <div class="enso-label">目标达成</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Stone interaction
+    document.querySelectorAll('.stone').forEach(stone => {
+      stone.addEventListener('click', function() {
+        this.style.transform = 'translateY(-8px)';
+        setTimeout(() => {
+          this.style.transform = '';
+        }, 300);
+      });
+    });
+
+    // Create ripples on garden click
+    document.querySelector('.karesansui-garden').addEventListener('click', function(e) {
+      const rect = this.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const ripple = document.createElement('div');
+      ripple.className = 'ripple';
+      ripple.style.left = x + 'px';
+      ripple.style.top = y + 'px';
+      ripple.style.transform = 'translate(-50%, -50%)';
+      this.appendChild(ripple);
+      
+      setTimeout(() => ripple.remove(), 4000);
+    });
+  </script>
+</body>
+</html>

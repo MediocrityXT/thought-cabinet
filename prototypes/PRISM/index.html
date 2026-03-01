@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRISM - Personal Reflection Intelligence Synthesis Matrix</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/prism-variables.css">
+  <link rel="stylesheet" href="css/prism-layout.css">
+  <link rel="stylesheet" href="css/prism-components.css">
+  <style>
+    /* PRISM Five Modules Styles */
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      padding: 24px;
+    }
+    
+    .module-card {
+      background: var(--bg-lab-panel);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .module-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255,255,255,0.15);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    
+    .module-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--gradient-full-spectrum);
+    }
+    
+    .module-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .module-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .module-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .module-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    
+    /* Module 1: Spectrometer - 光谱分析仪 */
+    .spectrometer-display {
+      height: 180px;
+      background: linear-gradient(180deg, #0a0f1a 0%, #050810 100%);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .spectrum-wave {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+    }
+    
+    .wave-bar {
+      flex: 1;
+      background: linear-gradient(to top, var(--color), transparent);
+      opacity: 0.8;
+      transition: height 0.5s ease;
+    }
+    
+    .wavelength-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    
+    /* Module 2: Crystal Lattice - 晶体晶格 */
+    .crystal-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    
+    .crystal-cell {
+      aspect-ratio: 1;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.06);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .crystal-cell:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px var(--glow-color);
+      border-color: var(--border-color);
+    }
+    
+    .crystal-cell .cell-count {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    
+    .crystal-cell .cell-label {
+      font-size: 0.625rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+    }
+    
+    /* Module 3: Refraction Prism - 折射棱镜 */
+    .prism-container {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.03), transparent);
+      border-radius: 16px;
+    }
+    
+    .light-source {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #ffffff, #e0e0e0);
+      box-shadow: 0 0 40px rgba(255,255,255,0.5);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 40px rgba(255,255,255,0.5); }
+      50% { box-shadow: 0 0 60px rgba(255,255,255,0.8); }
+    }
+    
+    .prism-shape {
+      width: 0;
+      height: 0;
+      border-left: 30px solid transparent;
+      border-right: 30px solid transparent;
+      border-bottom: 52px solid rgba(255,255,255,0.15);
+      position: relative;
+    }
+    
+    .prism-shape::after {
+      content: '';
+      position: absolute;
+      top: 52px;
+      left: -30px;
+      width: 0;
+      height: 0;
+      border-left: 30px solid transparent;
+      border-right: 30px solid transparent;
+      border-top: 26px solid rgba(255,255,255,0.1);
+    }
+    
+    .refracted-beams {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .beam {
+      height: 8px;
+      border-radius: 4px;
+      position: relative;
+      animation: beam-flow 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes beam-flow {
+      0%, 100% { opacity: 0.6; transform: translateX(0); }
+      50% { opacity: 1; transform: translateX(10px); }
+    }
+    
+    .beam-red { width: 120px; background: var(--spectrum-red); animation-delay: 0s; }
+    .beam-orange { width: 110px; background: var(--spectrum-orange); animation-delay: 0.1s; }
+    .beam-yellow { width: 100px; background: var(--spectrum-yellow); animation-delay: 0.2s; }
+    .beam-green { width: 90px; background: var(--spectrum-green); animation-delay: 0.3s; }
+    .beam-blue { width: 80px; background: var(--spectrum-blue); animation-delay: 0.4s; }
+    .beam-purple { width: 70px; background: var(--spectrum-purple); animation-delay: 0.5s; }
+    
+    /* Module 4: Diffraction Pattern - 衍射图样 */
+    .diffraction-view {
+      height: 200px;
+      background: radial-gradient(ellipse at center, rgba(77,150,255,0.2) 0%, transparent 70%);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .diffraction-rings {
+      position: relative;
+      width: 160px;
+      height: 160px;
+    }
+    
+    .diffraction-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid;
+      animation: diffraction-rotate 20s linear infinite;
+    }
+    
+    @keyframes diffraction-rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .diffraction-ring:nth-child(1) { width: 100%; height: 100%; top: 0; left: 0; border-color: var(--spectrum-red); opacity: 0.3; animation-duration: 15s; }
+    .diffraction-ring:nth-child(2) { width: 80%; height: 80%; top: 10%; left: 10%; border-color: var(--spectrum-orange); opacity: 0.4; animation-duration: 18s; animation-direction: reverse; }
+    .diffraction-ring:nth-child(3) { width: 60%; height: 60%; top: 20%; left: 20%; border-color: var(--spectrum-yellow); opacity: 0.5; animation-duration: 22s; }
+    .diffraction-ring:nth-child(4) { width: 40%; height: 40%; top: 30%; left: 30%; border-color: var(--spectrum-green); opacity: 0.6; animation-duration: 25s; animation-direction: reverse; }
+    .diffraction-ring:nth-child(5) { width: 20%; height: 20%; top: 40%; left: 40%; border-color: var(--spectrum-blue); opacity: 0.7; animation-duration: 28s; }
+    
+    .diffraction-center {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      background: white;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 40px rgba(255,255,255,0.8);
+    }
+    
+    /* Module 5: Interference Pattern - 干涉条纹 */
+    .interference-container {
+      padding: 20px;
+    }
+    
+    .interference-slits {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 20px;
+    }
+    
+    .slit {
+      width: 8px;
+      height: 40px;
+      background: linear-gradient(to bottom, var(--spectrum-blue), var(--spectrum-purple));
+      border-radius: 4px;
+      box-shadow: 0 0 20px rgba(77,150,255,0.5);
+    }
+    
+    .interference-screen {
+      height: 140px;
+      background: linear-gradient(90deg, 
+        transparent 0%,
+        rgba(255,77,77,0.3) 10%,
+        transparent 20%,
+        rgba(255,159,67,0.3) 30%,
+        transparent 40%,
+        rgba(255,217,61,0.3) 50%,
+        transparent 60%,
+        rgba(107,203,119,0.3) 70%,
+        transparent 80%,
+        rgba(77,150,255,0.3) 90%,
+        transparent 100%
+      );
+      border-radius: 8px;
+      position: relative;
+      animation: interference-shift 3s ease-in-out infinite;
+    }
+    
+    @keyframes interference-shift {
+      0%, 100% { background-position: 0% 0; }
+      50% { background-position: 50px 0; }
+    }
+    
+    .interference-labels {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 12px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    
+    /* Full width module */
+    .module-full {
+      grid-column: span 2;
+    }
+    
+    @media (max-width: 1024px) {
+      .module-grid {
+        grid-template-columns: 1fr;
+      }
+      .module-full {
+        grid-column: span 1;
+      }
+    }
+  </style>
+</head>
+<body data-primary-spectrum="blue">
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">🔮</span>
+          <span>PRISM</span>
+        </div>
+      </div>
+      
+      <nav class="spectrum-nav">
+        <div class="nav-section-title">光谱维度</div>
+        <div class="spectrum-filters">
+          <div class="spectrum-item active red" data-spectrum="red">
+            <span class="spectrum-dot" style="background: var(--spectrum-red)"></span>
+            <span>紧急行动</span>
+            <span class="count">12</span>
+          </div>
+          <div class="spectrum-item orange" data-spectrum="orange">
+            <span class="spectrum-dot" style="background: var(--spectrum-orange)"></span>
+            <span>创意探索</span>
+            <span class="count">8</span>
+          </div>
+          <div class="spectrum-item yellow" data-spectrum="yellow">
+            <span class="spectrum-dot" style="background: var(--spectrum-yellow)"></span>
+            <span>学习积累</span>
+            <span class="count">15</span>
+          </div>
+          <div class="spectrum-item green" data-spectrum="green">
+            <span class="spectrum-dot" style="background: var(--spectrum-green)"></span>
+            <span>项目执行</span>
+            <span class="count">23</span>
+          </div>
+          <div class="spectrum-item blue" data-spectrum="blue">
+            <span class="spectrum-dot" style="background: var(--spectrum-blue)"></span>
+            <span>深度思考</span>
+            <span class="count">18</span>
+          </div>
+          <div class="spectrum-item purple" data-spectrum="purple">
+            <span class="spectrum-dot" style="background: var(--spectrum-purple)"></span>
+            <span>灵感记录</span>
+            <span class="count">31</span>
+          </div>
+        </div>
+      </nav>
+
+      <div class="sidebar-stats">
+        <div class="stat-row">
+          <span>总想法数</span>
+          <span class="stat-number">107</span>
+        </div>
+        <div class="stat-row">
+          <span>本周新增</span>
+          <span class="stat-number">24</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="top-bar">
+        <div class="search-box">
+          <input type="text" placeholder="搜索想法、标签或日期..." class="input-field">
+        </div>
+        <div class="top-actions">
+          <button class="btn btn-secondary">
+            <span>📊</span> 分析视图
+          </button>
+          <button class="btn btn-primary">
+            <span>✨</span> 新想法
+          </button>
+        </div>
+      </header>
+
+      <!-- Five PRISM Modules -->
+      <div class="module-grid">
+        
+        <!-- Module 1: Spectrometer - 光谱分析仪 -->
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">📊</div>
+            <div>
+              <div class="module-title">Spectrometer</div>
+              <div class="module-subtitle">光谱分析仪 - 认知分布可视化</div>
+            </div>
+          </div>
+          <div class="spectrometer-display">
+            <div class="spectrum-wave" id="spectrumWave"></div>
+          </div>
+          <div class="wavelength-labels">
+            <span>380nm 紧急</span>
+            <span>450nm 创意</span>
+            <span>520nm 学习</span>
+            <span>580nm 执行</span>
+            <span>650nm 思考</span>
+            <span>750nm 灵感</span>
+          </div>
+        </div>
+
+        <!-- Module 2: Crystal Lattice - 晶体晶格 -->
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">💎</div>
+            <div>
+              <div class="module-title">Crystal Lattice</div>
+              <div class="module-subtitle">晶体晶格 - 知识结构矩阵</div>
+            </div>
+          </div>
+          <div class="crystal-grid">
+            <div class="crystal-cell" style="--glow-color: rgba(255,77,77,0.4); --border-color: var(--spectrum-red); color: var(--spectrum-red);">
+              <span class="cell-count">12</span>
+              <span class="cell-label">Impact</span>
+            </div>
+            <div class="crystal-cell" style="--glow-color: rgba(255,159,67,0.4); --border-color: var(--spectrum-orange); color: var(--spectrum-orange);">
+              <span class="cell-count">8</span>
+              <span class="cell-label">Create</span>
+            </div>
+            <div class="crystal-cell" style="--glow-color: rgba(255,217,61,0.4); --border-color: var(--spectrum-yellow); color: var(--spectrum-yellow);">
+              <span class="cell-count">15</span>
+              <span class="cell-label">Learn</span>
+            </div>
+            <div class="crystal-cell" style="--glow-color: rgba(107,203,119,0.4); --border-color: var(--spectrum-green); color: var(--spectrum-green);">
+              <span class="cell-count">23</span>
+              <span class="cell-label">Execute</span>
+            </div>
+            <div class="crystal-cell" style="--glow-color: rgba(77,150,255,0.4); --border-color: var(--spectrum-blue); color: var(--spectrum-blue);">
+              <span class="cell-count">18</span>
+              <span class="cell-label">Analyze</span>
+            </div>
+            <div class="crystal-cell" style="--glow-color: rgba(156,81,224,0.4); --border-color: var(--spectrum-purple); color: var(--spectrum-purple);">
+              <span class="cell-count">31</span>
+              <span class="cell-label">Connect</span>
+            </div>
+            <div class="crystal-cell" style="--glow-color: rgba(255,255,255,0.2); --border-color: rgba(255,255,255,0.3); color: var(--text-secondary);">
+              <span class="cell-count">87%</span>
+              <span class="cell-label">Sync</span>
+            </div>
+            <div class="crystal-cell" style="--glow-color: rgba(255,255,255,0.2); --border-color: rgba(255,255,255,0.3); color: var(--text-secondary);">
+              <span class="cell-count">24d</span>
+              <span class="cell-label">Streak</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Module 3: Refraction Prism - 折射棱镜 -->
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">🔺</div>
+            <div>
+              <div class="module-title">Refraction Prism</div>
+              <div class="module-subtitle">折射棱镜 - 思维分解器</div>
+            </div>
+          </div>
+          <div class="prism-container">
+            <div class="light-source"></div>
+            <div class="prism-shape"></div>
+            <div class="refracted-beams">
+              <div class="beam beam-red"></div>
+              <div class="beam beam-orange"></div>
+              <div class="beam beam-yellow"></div>
+              <div class="beam beam-green"></div>
+              <div class="beam beam-blue"></div>
+              <div class="beam beam-purple"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Module 4: Diffraction Pattern - 衍射图样 -->
+        <div class="module-card">
+          <div class="module-header">
+            <div class="module-icon">🎯</div>
+            <div>
+              <div class="module-title">Diffraction Pattern</div>
+              <div class="module-subtitle">衍射图样 - 认知波纹</div>
+            </div>
+          </div>
+          <div class="diffraction-view">
+            <div class="diffraction-rings">
+              <div class="diffraction-ring"></div>
+              <div class="diffraction-ring"></div>
+              <div class="diffraction-ring"></div>
+              <div class="diffraction-ring"></div>
+              <div class="diffraction-ring"></div>
+              <div class="diffraction-center"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Module 5: Interference Pattern - 干涉条纹 (Full Width) -->
+        <div class="module-card module-full">
+          <div class="module-header">
+            <div class="module-icon">〰️</div>
+            <div>
+              <div class="module-title">Interference Pattern</div>
+              <div class="module-subtitle">干涉条纹 - 思维叠加态</div>
+            </div>
+          </div>
+          <div class="interference-container">
+            <div class="interference-slits">
+              <div class="slit"></div>
+              <div class="slit"></div>
+            </div>
+            <div class="interference-screen"></div>
+            <div class="interference-labels">
+              <span>Constructive</span>
+              <span>Destructive</span>
+              <span>Constructive</span>
+              <span>Destructive</span>
+              <span>Constructive</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Spectrum filter interaction
+    document.querySelectorAll('.spectrum-item').forEach(item => {
+      item.addEventListener('click', function() {
+        document.querySelectorAll('.spectrum-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+        const spectrum = this.dataset.spectrum;
+        document.body.setAttribute('data-primary-spectrum', spectrum);
+      });
+    });
+
+    // Generate spectrum wave bars
+    const waveContainer = document.getElementById('spectrumWave');
+    const colors = ['#FF4D4D', '#FF9F43', '#FFD93D', '#6BCB77', '#4D96FF', '#9C51E0'];
+    for (let i = 0; i < 48; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'wave-bar';
+      bar.style.setProperty('--color', colors[i % colors.length]);
+      bar.style.height = Math.random() * 60 + 20 + '%';
+      waveContainer.appendChild(bar);
+    }
+
+    // Animate wave bars
+    setInterval(() => {
+      document.querySelectorAll('.wave-bar').forEach(bar => {
+        bar.style.height = Math.random() * 60 + 20 + '%';
+      });
+    }, 2000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+/* EPOCH Components - Archaeological Elements */
+
+/* Document Cards */
+.document-card {
+  background: var(--parchment-light);
+  border: 1px solid var(--parchment-aged);
+  border-radius: 4px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  box-shadow: 
+    0 2px 4px rgba(0,0,0,0.05),
+    inset 0 0 30px rgba(139, 90, 43, 0.03);
+}
+
+.document-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--bronze-mid);
+  border-radius: 4px 4px 0 0;
+}
+
+.document-card.ancient::before { background: var(--bronze-dark); }
+.document-card.recent::before { background: var(--bronze-light); }
+
+.document-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.document-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--ink-black);
+  font-weight: 600;
+}
+
+.document-date {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-faded);
+  white-space: nowrap;
+}
+
+.document-content {
+  color: var(--ink-mid);
+  line-height: 1.8;
+  margin-bottom: 1rem;
+}
+
+.document-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Wax Seal Tags */
+.seal-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  background: var(--parchment-mid);
+  border: 1px solid var(--parchment-aged);
+  border-radius: 3px;
+  font-size: 0.75rem;
+  color: var(--ink-light);
+  font-family: var(--font-mono);
+}
+
+.seal-tag::before {
+  content: '✦';
+  color: var(--bronze-mid);
+}
+
+/* Artifact Stats */
+.artifact-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: var(--parchment-mid);
+  border: 1px solid var(--parchment-aged);
+  border-radius: 4px;
+}
+
+.stat-artifact {
+  text-align: center;
+}
+
+.stat-number {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--bronze-dark);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--ink-faded);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Manuscript Input */
+.manuscript-input {
+  width: 100%;
+  padding: 1rem;
+  background: var(--parchment-light);
+  border: 1px solid var(--parchment-aged);
+  border-radius: 4px;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  color: var(--ink-black);
+  resize: vertical;
+  min-height: 120px;
+}
+
+.manuscript-input:focus {
+  outline: none;
+  border-color: var(--bronze-mid);
+  box-shadow: 0 0 0 3px rgba(184, 115, 51, 0.1);
+}
+
+/* Archive Buttons */
+.btn-archive {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--bronze-mid);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-family: var(--font-serif);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-archive:hover {
+  background: var(--bronze-dark);
+}
+
+.btn-archive.secondary {
+  background: transparent;
+  color: var(--ink-mid);
+  border: 1px solid var(--parchment-aged);
+}
+
+.btn-archive.secondary:hover {
+  background: var(--parchment-mid);
+}
+
+/* Timeline Entry */
+.timeline-entry {
+  position: relative;
+  padding: 1.5rem 0 1.5rem 2rem;
+  border-left: 2px solid var(--parchment-aged);
+}
+
+.timeline-entry::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 1.75rem;
+  width: 10px;
+  height: 10px;
+  background: var(--bronze-mid);
+  border-radius: 50%;
+  border: 2px solid var(--parchment-light);
+}
+
+.entry-date {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--bronze-dark);
+  margin-bottom: 0.5rem;
+}
+
+.entry-title {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  color: var(--ink-black);
+  margin-bottom: 0.5rem;
+}
+
+.entry-preview {
+  font-size: 0.9375rem;
+  color: var(--ink-mid);
+  line-height: 1.6;
+}
+
+/* Decorative Elements */
+.divider-ornate {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--bronze-mid) 20%,
+    var(--bronze-dark) 50%,
+    var(--bronze-mid) 80%,
+    transparent 100%
+  );
+  margin: 2rem 0;
+  position: relative;
+}
+
+.divider-ornate::after {
+  content: '❧';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--parchment-light);
+  padding: 0 1rem;
+  color: var(--bronze-mid);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--parchment-mid);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--parchment-aged);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bronze-light);
+}

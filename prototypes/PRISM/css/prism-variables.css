@@ -1,0 +1,121 @@
+/* PRISM - Spectrum Color System */
+:root {
+  /* 光谱六色 - 认知维度 */
+  --spectrum-red: #FF4D4D;
+  --spectrum-orange: #FF9F43;
+  --spectrum-yellow: #FFD93D;
+  --spectrum-green: #6BCB77;
+  --spectrum-blue: #4D96FF;
+  --spectrum-purple: #9C51E0;
+
+  /* 光谱 RGB 值 (用于 rgba) */
+  --spectrum-red-rgb: 255, 77, 77;
+  --spectrum-orange-rgb: 255, 159, 67;
+  --spectrum-yellow-rgb: 255, 217, 61;
+  --spectrum-green-rgb: 107, 203, 119;
+  --spectrum-blue-rgb: 77, 150, 255;
+  --spectrum-purple-rgb: 156, 81, 224;
+
+  /* 全光谱渐变 */
+  --gradient-full-spectrum: linear-gradient(
+    90deg,
+    var(--spectrum-red) 0%,
+    var(--spectrum-orange) 20%,
+    var(--spectrum-yellow) 40%,
+    var(--spectrum-green) 60%,
+    var(--spectrum-blue) 80%,
+    var(--spectrum-purple) 100%
+  );
+
+  /* 实验室背景系统 */
+  --bg-lab-deep: #0D1117;
+  --bg-lab-panel: #161B22;
+  --bg-lab-card: #21262D;
+  --bg-lab-input: #30363D;
+  --bg-lab-hover: #2D333B;
+
+  /* 文字层级 */
+  --text-primary: #F0F6FC;
+  --text-secondary: #8B949E;
+  --text-muted: #484F58;
+  --text-disabled: #30363D;
+
+  /* 边框 */
+  --border-subtle: rgba(240, 246, 252, 0.1);
+  --border-active: rgba(240, 246, 252, 0.2);
+
+  /* 字体 */
+  --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* 间距 */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow-red: 0 0 20px rgba(var(--spectrum-red-rgb), 0.4);
+  --shadow-glow-orange: 0 0 20px rgba(var(--spectrum-orange-rgb), 0.4);
+  --shadow-glow-yellow: 0 0 20px rgba(var(--spectrum-yellow-rgb), 0.4);
+  --shadow-glow-green: 0 0 20px rgba(var(--spectrum-green-rgb), 0.4);
+  --shadow-glow-blue: 0 0 20px rgba(var(--spectrum-blue-rgb), 0.4);
+  --shadow-glow-purple: 0 0 20px rgba(var(--spectrum-purple-rgb), 0.4);
+}
+
+/* 动态主色变量 - JS可切换 */
+[data-primary-spectrum="red"] {
+  --primary-spectrum: var(--spectrum-red);
+  --primary-spectrum-rgb: var(--spectrum-red-rgb);
+  --shadow-glow-primary: var(--shadow-glow-red);
+}
+
+[data-primary-spectrum="orange"] {
+  --primary-spectrum: var(--spectrum-orange);
+  --primary-spectrum-rgb: var(--spectrum-orange-rgb);
+  --shadow-glow-primary: var(--shadow-glow-orange);
+}
+
+[data-primary-spectrum="yellow"] {
+  --primary-spectrum: var(--spectrum-yellow);
+  --primary-spectrum-rgb: var(--spectrum-yellow-rgb);
+  --shadow-glow-primary: var(--shadow-glow-yellow);
+}
+
+[data-primary-spectrum="green"] {
+  --primary-spectrum: var(--spectrum-green);
+  --primary-spectrum-rgb: var(--spectrum-green-rgb);
+  --shadow-glow-primary: var(--shadow-glow-green);
+}
+
+[data-primary-spectrum="blue"] {
+  --primary-spectrum: var(--spectrum-blue);
+  --primary-spectrum-rgb: var(--spectrum-blue-rgb);
+  --shadow-glow-primary: var(--shadow-glow-blue);
+}
+
+[data-primary-spectrum="purple"] {
+  --primary-spectrum: var(--spectrum-purple);
+  --primary-spectrum-rgb: var(--spectrum-purple-rgb);
+  --shadow-glow-primary: var(--shadow-glow-purple);
+}
+
+/* 默认蓝色主题 */
+[data-primary-spectrum],
+:root {
+  --primary-spectrum: var(--spectrum-blue);
+  --primary-spectrum-rgb: var(--spectrum-blue-rgb);
+  --shadow-glow-primary: var(--shadow-glow-blue);
+}

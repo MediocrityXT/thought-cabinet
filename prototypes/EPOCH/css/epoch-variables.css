@@ -1,0 +1,41 @@
+/* EPOCH - Archaeological Time Archive */
+:root {
+  /* Parchment & Ink Palette */
+  --parchment-light: #F5F0E6;
+  --parchment-mid: #E8E0D0;
+  --parchment-dark: #D4C9B8;
+  --parchment-aged: #C4B8A3;
+  
+  /* Bronze & Metal Accents */
+  --bronze-light: #CD7F32;
+  --bronze-mid: #B87333;
+  --bronze-dark: #8B5A2B;
+  --bronze-oxidized: #5C4033;
+  
+  /* Ink Colors */
+  --ink-black: #1A1612;
+  --ink-dark: #2D2620;
+  --ink-mid: #4A3F35;
+  --ink-light: #6B5D4F;
+  --ink-faded: #8B7D6B;
+  
+  /* Age Stains */
+  --stain-coffee: #6B5344;
+  --stain-wine: #722F37;
+  --stain-mold: #4A5D23;
+  
+  /* Typography */
+  --font-serif: 'Crimson Text', 'Source Serif Pro', Georgia, serif;
+  --font-display: 'Playfair Display', 'Crimson Text', serif;
+  --font-mono: 'Courier Prime', 'Courier New', monospace;
+  
+  /* Spacing */
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1.25rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  
+  /* Paper Texture Overlay */
+  --paper-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}

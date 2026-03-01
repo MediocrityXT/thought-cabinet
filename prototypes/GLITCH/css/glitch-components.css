@@ -1,0 +1,171 @@
+/* GLITCH Components - Cyberpunk UI */
+
+/* Data Cards */
+.data-card {
+  background: var(--void-panel);
+  border: 1px solid var(--void-card);
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.data-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 2px;
+  background: linear-gradient(90deg, 
+    var(--neon-cyan), 
+    var(--neon-pink), 
+    var(--neon-yellow)
+  );
+}
+
+.data-card.corrupted::after {
+  content: '';
+  position: absolute;
+  top: 20%; left: 0;
+  width: 100%; height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 2px,
+    var(--glitch-red) 2px,
+    var(--glitch-red) 4px
+  );
+  animation: data-corruption 0.5s infinite;
+}
+
+@keyframes data-corruption {
+  0% { transform: translateX(-10px); opacity: 0.5; }
+  50% { transform: translateX(10px); opacity: 1; }
+  100% { transform: translateX(-10px); opacity: 0.5; }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.card-id {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Terminal Text */
+.terminal-line {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.terminal-line::before {
+  content: '> ';
+  color: var(--neon-cyan);
+}
+
+/* Progress Bars */
+.cyber-progress {
+  width: 100%;
+  height: 8px;
+  background: var(--void-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.cyber-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+  position: relative;
+}
+
+.cyber-progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0;
+  width: 20px; height: 100%;
+  background: white;
+  filter: blur(8px);
+  animation: data-stream 1s linear infinite;
+}
+
+@keyframes data-stream {
+  0% { opacity: 0; transform: translateX(0); }
+  50% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-100%); }
+}
+
+/* Buttons */
+.cyber-btn {
+  background: transparent;
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.cyber-btn:hover {
+  background: rgba(0, 245, 255, 0.1);
+  box-shadow: 0 0 30px rgba(0, 245, 255, 0.3);
+  text-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.cyber-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.cyber-btn:hover::before {
+  left: 100%;
+}
+
+/* Alert Box */
+.alert-box {
+  border: 1px solid var(--neon-yellow);
+  background: rgba(255, 255, 0, 0.05);
+  padding: 1rem;
+  margin: 1rem 0;
+  font-family: var(--font-mono);
+}
+
+.alert-box.danger {
+  border-color: var(--glitch-red);
+  background: rgba(255, 0, 64, 0.05);
+}
+
+/* Tags */
+.cyber-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  margin-right: 0.5rem;
+}
+
+.cyber-tag.cyan { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+.cyber-tag.pink { border-color: var(--neon-pink); color: var(--neon-pink); }
+.cyber-tag.yellow { border-color: var(--neon-yellow); color: var(--neon-yellow); }

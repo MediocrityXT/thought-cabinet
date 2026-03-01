@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLITCH - Generative Learning Intelligence Through Chaos & Harmony</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/glitch-variables.css">
+  <link rel="stylesheet" href="css/glitch-layout.css">
+  <link rel="stylesheet" href="css/glitch-components.css">
+  <style>
+    /* GLITCH Five Modules Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Share Tech Mono', monospace;
+      background: var(--glitch-black);
+      color: var(--glitch-white);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Noise overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .glitch-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* Header with glitch effect */
+    .glitch-header {
+      text-align: center;
+      padding: 40px 0;
+      position: relative;
+    }
+
+    .glitch-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 4rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      position: relative;
+      display: inline-block;
+      animation: glitch-skew 3s infinite linear alternate-reverse;
+    }
+
+    .glitch-title::before,
+    .glitch-title::after {
+      content: 'GLITCH';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .glitch-title::before {
+      color: var(--channel-red);
+      animation: glitch-anim-1 2s infinite linear alternate-reverse;
+      clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+    }
+
+    .glitch-title::after {
+      color: var(--channel-cyan);
+      animation: glitch-anim-2 3s infinite linear alternate-reverse;
+      clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+    }
+
+    @keyframes glitch-anim-1 {
+      0%, 100% { transform: translate(0); }
+      20% { transform: translate(-3px, 3px); }
+      40% { transform: translate(-3px, -3px); }
+      60% { transform: translate(3px, 3px); }
+      80% { transform: translate(3px, -3px); }
+    }
+
+    @keyframes glitch-anim-2 {
+      0%, 100% { transform: translate(0); }
+      20% { transform: translate(3px, -3px); }
+      40% { transform: translate(3px, 3px); }
+      60% { transform: translate(-3px, -3px); }
+      80% { transform: translate(-3px, 3px); }
+    }
+
+    @keyframes glitch-skew {
+      0%, 100% { transform: skew(0deg); }
+      10% { transform: skew(-2deg); }
+      20% { transform: skew(2deg); }
+      30% { transform: skew(0deg); }
+    }
+
+    .glitch-subtitle {
+      font-size: 0.875rem;
+      color: var(--glitch-dim);
+      letter-spacing: 0.5em;
+      margin-top: 16px;
+      text-transform: uppercase;
+    }
+
+    /* Module Grid */
+    .glitch-modules {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 40px;
+    }
+
+    .glitch-module {
+      background: var(--glitch-dark);
+      border: 1px solid var(--glitch-gray);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glitch-module::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, 
+        var(--channel-red), 
+        var(--channel-green), 
+        var(--channel-blue),
+        var(--channel-magenta),
+        var(--channel-cyan),
+        var(--channel-yellow)
+      );
+      animation: rgb-shift 2s linear infinite;
+    }
+
+    @keyframes rgb-shift {
+      0% { filter: hue-rotate(0deg); }
+      100% { filter: hue-rotate(360deg); }
+    }
+
+    .module-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--glitch-gray);
+    }
+
+    .module-icon {
+      font-size: 1.5rem;
+      animation: icon-flicker 4s infinite;
+    }
+
+    @keyframes icon-flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+      52% { opacity: 0.2; }
+      54% { opacity: 1; }
+    }
+
+    .module-info h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .module-info p {
+      font-size: 0.625rem;
+      color: var(--glitch-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .module-content {
+      padding: 24px;
+    }
+
+    .glitch-module.wide {
+      grid-column: span 2;
+    }
+
+    /* Module 1: Data Corruption (数据损坏) - 破碎信息流 */
+    .corruption-stream {
+      height: 200px;
+      background: var(--glitch-black);
+      border: 1px solid var(--glitch-gray);
+      padding: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .corruption-stream::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255,0,64,0.03) 2px,
+        rgba(255,0,64,0.03) 4px
+      );
+      pointer-events: none;
+    }
+
+    .data-fragment {
+      font-size: 0.75rem;
+      line-height: 1.6;
+      color: var(--glitch-dim);
+      margin-bottom: 8px;
+      animation: data-glitch 5s infinite;
+    }
+
+    .data-fragment:nth-child(odd) {
+      color: var(--channel-cyan);
+    }
+
+    .data-fragment:nth-child(even) {
+      color: var(--channel-magenta);
+    }
+
+    @keyframes data-glitch {
+      0%, 90%, 100% { transform: translateX(0); opacity: 1; }
+      92% { transform: translateX(5px); opacity: 0.5; }
+      94% { transform: translateX(-3px); opacity: 0.8; }
+      96% { transform: translateX(2px); opacity: 0.3; }
+    }
+
+    /* Module 2: Pixel Sort (像素排序) - 重组矩阵 */
+    .pixel-matrix {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 4px;
+    }
+
+    .pixel-cell {
+      aspect-ratio: 1;
+      background: var(--glitch-gray);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .pixel-cell:hover {
+      transform: scale(1.2);
+      z-index: 10;
+    }
+
+    .pixel-cell.active {
+      animation: pixel-flicker 0.5s infinite;
+    }
+
+    @keyframes pixel-flicker {
+      0%, 100% { background: var(--channel-red); }
+      33% { background: var(--channel-green); }
+      66% { background: var(--channel-blue); }
+    }
+
+    /* Module 3: Scan Lines (扫描线) - 记忆回溯 */
+    .scan-display {
+      height: 180px;
+      background: var(--glitch-black);
+      border: 1px solid var(--glitch-gray);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scan-lines {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 4px,
+        rgba(0,255,128,0.05) 4px,
+        rgba(0,255,128,0.05) 5px
+      );
+      animation: scan-move 8s linear infinite;
+    }
+
+    @keyframes scan-move {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(20px); }
+    }
+
+    .scan-content {
+      position: absolute;
+      inset: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .scan-item {
+      padding: 12px;
+      background: rgba(0,255,128,0.1);
+      border-left: 3px solid var(--channel-green);
+      font-size: 0.875rem;
+      animation: scan-flicker 3s infinite;
+    }
+
+    @keyframes scan-flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+      51% { opacity: 0.2; }
+      52% { opacity: 1; }
+    }
+
+    /* Module 4: Buffer Overflow (缓冲区溢出) - 创意爆发 */
+    .overflow-container {
+      height: 200px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .overflow-particles {
+      position: absolute;
+      inset: 0;
+    }
+
+    .particle {
+      position: absolute;
+      font-size: 1.5rem;
+      animation: particle-float 6s ease-in-out infinite;
+      opacity: 0.6;
+    }
+
+    @keyframes particle-float {
+      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+      50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+    }
+
+    .overflow-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: var(--glitch-gray);
+      border-top: 2px solid var(--channel-red);
+    }
+
+    .overflow-fill {
+      height: 100%;
+      background: linear-gradient(90deg, 
+        var(--channel-red),
+        var(--channel-magenta),
+        var(--channel-yellow)
+      );
+      width: 85%;
+      animation: overflow-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes overflow-pulse {
+      0%, 100% { width: 85%; }
+      50% { width: 95%; }
+    }
+
+    .overflow-text {
+      position: absolute;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.25rem;
+      color: var(--channel-red);
+      animation: warning-blink 1s infinite;
+    }
+
+    @keyframes warning-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Module 5: System Error (系统错误) - 意外之美 */
+    .error-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .error-card {
+      aspect-ratio: 16/10;
+      background: var(--glitch-dark);
+      border: 1px solid var(--glitch-gray);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .error-card:hover {
+      border-color: var(--channel-red);
+      transform: translateY(-4px);
+    }
+
+    .error-code {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      color: var(--channel-red);
+      margin-bottom: 8px;
+    }
+
+    .error-message {
+      font-size: 0.75rem;
+      color: var(--glitch-dim);
+      line-height: 1.4;
+    }
+
+    .error-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .error-card:hover::before {
+      left: 100%;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .glitch-modules {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .glitch-module.wide {
+        grid-column: span 2;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .glitch-title {
+        font-size: 2.5rem;
+      }
+      .glitch-modules {
+        grid-template-columns: 1fr;
+      }
+      .glitch-module.wide {
+        grid-column: span 1;
+      }
+      .error-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="glitch-container">
+    <!-- Header -->
+    <header class="glitch-header">
+      <h1 class="glitch-title">GLITCH</h1>
+      <p class="glitch-subtitle">Generative Learning Intelligence Through Chaos & Harmony</p>
+    </header>
+
+    <!-- Five GLITCH Modules -->
+    <div class="glitch-modules">
+      
+      <!-- Module 1: Data Corruption (数据损坏) - 破碎信息流 -->
+      <div class="glitch-module">
+        <div class="module-header">
+          <div class="module-icon">💾</div>
+          <div class="module-info">
+            <h3>Data_Corruption</h3>
+            <p>Fragmented Information Stream</p>
+          </div>
+        </div>
+        <div class="module-content">
+          <div class="corruption-stream">
+            <div class="data-fragment">[ERROR] Memory block 0x7F3A corrupted</div>
+            <div class="data-fragment">[RECOVERED] Thought fragment #2847</div>
+            <div class="data-fragment">[WARNING] Unexpected connection detected</div>
+            <div class="data-fragment">[DATA] Raw idea stream incoming...</div>
+            <div class="data-fragment">[GLITCH] Pattern recognition failed</div>
+            <div class="data-fragment">[SUCCESS] New insight extracted</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Module 2: Pixel Sort (像素排序) - 重组矩阵 -->
+      <div class="glitch-module">
+        <div class="module-header">
+          <div class="module-icon">🎨</div>
+          <div class="module-info">
+            <h3>Pixel_Sort</h3>
+            <p>Reorganization Matrix</p>
+          </div>
+        </div>
+        <div class="module-content">
+          <div class="pixel-matrix" id="pixelMatrix"></div>
+        </div>
+      </div>
+
+      <!-- Module 3: Scan Lines (扫描线) - 记忆回溯 -->
+      <div class="glitch-module">
+        <div class="module-header">
+          <div class="module-icon">📺</div>
+          <div class="module-info">
+            <h3>Scan_Lines</h3>
+            <p>Memory Traceback Protocol</p>
+          </div>
+        </div>
+        <div class="module-content">
+          <div class="scan-display">
+            <div class="scan-lines"></div>
+            <div class="scan-content">
+              <div class="scan-item">>> Loading memory sector 7...</div>
+              <div class="scan-item">>> Reconstructing thought pattern...</div>
+              <div class="scan-item">>> Access granted: Deep recall mode</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Module 4: Buffer Overflow (缓冲区溢出) - 创意爆发 -->
+      <div class="glitch-module wide">
+        <div class="module-header">
+          <div class="module-icon">⚡</div>
+          <div class="module-info">
+            <h3>Buffer_Overflow</h3>
+            <p>Creative Burst Detection</p>
+          </div>
+        </div>
+        <div class="module-content">
+          <div class="overflow-container">
+            <div class="overflow-particles" id="particles"></div>
+            <div class="overflow-text">⚠ CREATIVE OVERFLOW DETECTED</div>
+            <div class="overflow-bar">
+              <div class="overflow-fill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Module 5: System Error (系统错误) - 意外之美 -->
+      <div class="glitch-module wide">
+        <div class="module-header">
+          <div class="module-icon">⚠️</div>
+          <div class="module-info">
+            <h3>System_Error</h3>
+            <p>Unexpected Beauty Collection</p>
+          </div>
+        </div>
+        <div class="module-content">
+          <div class="error-grid">
+            <div class="error-card">
+              <div class="error-code">0x404</div>
+              <div class="error-message">Routine not found. Alternative path discovered.</div>
+            </div>
+            <div class="error-card">
+              <div class="error-code">0xC0FFEE</div>
+              <div class="error-message">Break required. Inspiration brewing.</div>
+            </div>
+            <div class="error-card">
+              <div class="error-code">0xDEAD</div>
+              <error-message>Old pattern terminated. New paradigm loading...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Generate pixel matrix
+    const pixelMatrix = document.getElementById('pixelMatrix');
+    const colors = ['#ff0040', '#00ff80', '#0080ff', '#ff00ff', '#00ffff', '#ffff00'];
+    
+    for (let i = 0; i < 48; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'pixel-cell';
+      cell.style.background = colors[Math.floor(Math.random() * colors.length)];
+      cell.style.opacity = Math.random() * 0.5 + 0.3;
+      
+      cell.addEventListener('mouseenter', function() {
+        this.style.background = colors[Math.floor(Math.random() * colors.length)];
+        this.style.opacity = 1;
+      });
+      
+      cell.addEventListener('click', function() {
+        this.classList.toggle('active');
+      });
+      
+      pixelMatrix.appendChild(cell);
+    }
+
+    // Generate floating particles
+    const particlesContainer = document.getElementById('particles');
+    const particleEmojis = ['💡', '✨', '🎯', '🚀', '💭', '🔮', '⚡', '🌟'];
+    
+    for (let i = 0; i < 15; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.textContent = particleEmojis[Math.floor(Math.random() * particleEmojis.length)];
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.top = Math.random() * 70 + '%';
+      particle.style.animationDelay = Math.random() * 6 + 's';
+      particle.style.animationDuration = (4 + Math.random() * 4) + 's';
+      particlesContainer.appendChild(particle);
+    }
+
+    // Random glitch effect on title
+    setInterval(() => {
+      const title = document.querySelector('.glitch-title');
+      if (Math.random() > 0.95) {
+        title.style.transform = `skew(${Math.random() * 4 - 2}deg)`;
+        setTimeout(() => {
+          title.style.transform = '';
+        }, 100);
+      }
+    }, 100);
+  </script>
+</body>
+</html>

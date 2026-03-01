@@ -1,0 +1,46 @@
+/* FORGE - Industrial Workshop Theme */
+:root {
+  /* 工业钢色调 */
+  --steel-dark: #1A1D21;
+  --steel-mid: #2C3036;
+  --steel-light: #3D4249;
+  --steel-bright: #5A6169;
+  
+  /* 火焰与热量 */
+  --forge-ember: #FF5722;
+  --forge-fire: #FF9800;
+  --forge-heat: #FFC107;
+  --forge-glow: rgba(255, 87, 34, 0.3);
+  
+  /* 功能色 */
+  --alert-red: #F44336;
+  --warning-amber: #FF9800;
+  --success-green: #4CAF50;
+  --info-blue: #2196F3;
+  
+  /* 文字层级 */
+  --text-primary: #E8EAED;
+  --text-secondary: #9AA0A6;
+  --text-muted: #5F6368;
+  --text-disabled: #3C4043;
+  
+  /* 字体 */
+  --font-display: 'Chakra Petch', sans-serif;
+  --font-body: 'Rajdhani', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+  
+  /* 间距 */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  
+  /* 圆角 - 工业硬朗风格 */
+  --radius-sharp: 2px;
+  --radius-panel: 4px;
+  
+  /* 阴影 */
+  --shadow-depth: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 12px rgba(0,0,0,0.5);
+  --shadow-glow: 0 0 20px var(--forge-glow);
+}

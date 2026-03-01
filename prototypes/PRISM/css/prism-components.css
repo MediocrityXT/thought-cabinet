@@ -1,0 +1,401 @@
+/* ============================================
+   PRISM Components - 光谱组件样式
+   ============================================ */
+
+/* ---- 光谱卡片 ---- */
+.spectrum-card {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.spectrum-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--spectrum-blue);
+  transition: all 0.3s ease;
+}
+
+.spectrum-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.spectrum-card:hover::before {
+  width: 6px;
+}
+
+/* 光谱色变体 */
+.spectrum-card.red::before { background: var(--spectrum-red); }
+.spectrum-card.orange::before { background: var(--spectrum-orange); }
+.spectrum-card.yellow::before { background: var(--spectrum-yellow); }
+.spectrum-card.green::before { background: var(--spectrum-green); }
+.spectrum-card.blue::before { background: var(--spectrum-blue); }
+.spectrum-card.purple::before { background: var(--spectrum-purple); }
+
+/* ---- 光谱标记 ---- */
+.spectrum-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.spectrum-badge.red {
+  background: rgba(255, 77, 77, 0.2);
+  color: var(--spectrum-red);
+  border: 1px solid rgba(255, 77, 77, 0.3);
+}
+
+.spectrum-badge.orange {
+  background: rgba(255, 159, 67, 0.2);
+  color: var(--spectrum-orange);
+  border: 1px solid rgba(255, 159, 67, 0.3);
+}
+
+.spectrum-badge.yellow {
+  background: rgba(255, 217, 61, 0.2);
+  color: var(--spectrum-yellow);
+  border: 1px solid rgba(255, 217, 61, 0.3);
+}
+
+.spectrum-badge.green {
+  background: rgba(107, 203, 119, 0.2);
+  color: var(--spectrum-green);
+  border: 1px solid rgba(107, 203, 119, 0.3);
+}
+
+.spectrum-badge.blue {
+  background: rgba(77, 150, 255, 0.2);
+  color: var(--spectrum-blue);
+  border: 1px solid rgba(77, 150, 255, 0.3);
+}
+
+.spectrum-badge.purple {
+  background: rgba(156, 81, 224, 0.2);
+  color: var(--spectrum-purple);
+  border: 1px solid rgba(156, 81, 224, 0.3);
+}
+
+/* ---- 进度条 ---- */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: progress-shine 2s infinite;
+}
+
+@keyframes progress-shine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ---- 按钮 ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-size: 0.875rem;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--spectrum-blue), var(--spectrum-purple));
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(77, 150, 255, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-spectrum {
+  background: var(--gradient-full-spectrum);
+  color: white;
+  font-weight: 600;
+}
+
+.btn-spectrum:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(156, 81, 224, 0.4);
+}
+
+/* ---- 输入框 ---- */
+.input-field {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: var(--bg-lab-input);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--spectrum-blue);
+  box-shadow: 0 0 0 3px rgba(77, 150, 255, 0.2);
+}
+
+.input-field::placeholder {
+  color: var(--text-muted);
+}
+
+/* ---- 统计卡片 ---- */
+.stat-card {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: var(--gradient-full-spectrum);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+/* ---- 活动项 ---- */
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.activity-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.activity-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.activity-icon.red { background: rgba(255, 77, 77, 0.2); }
+.activity-icon.orange { background: rgba(255, 159, 67, 0.2); }
+.activity-icon.yellow { background: rgba(255, 217, 61, 0.2); }
+.activity-icon.green { background: rgba(107, 203, 119, 0.2); }
+.activity-icon.blue { background: rgba(77, 150, 255, 0.2); }
+.activity-icon.purple { background: rgba(156, 81, 224, 0.2); }
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-title {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.activity-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ---- 图表容器 ---- */
+.chart-container {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.chart-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+/* ---- 光谱分布条 ---- */
+.spectrum-distribution {
+  display: flex;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.spectrum-segment {
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.spectrum-segment:hover {
+  flex-grow: 1.2;
+}
+
+.spectrum-segment.red { background: var(--spectrum-red); }
+.spectrum-segment.orange { background: var(--spectrum-orange); }
+.spectrum-segment.yellow { background: var(--spectrum-yellow); }
+.spectrum-segment.green { background: var(--spectrum-green); }
+.spectrum-segment.blue { background: var(--spectrum-blue); }
+.spectrum-segment.purple { background: var(--spectrum-purple); }
+
+/* ---- 警告提示 ---- */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.alert-warning {
+  background: rgba(255, 159, 67, 0.1);
+  border: 1px solid rgba(255, 159, 67, 0.3);
+  color: var(--spectrum-orange);
+}
+
+.alert-info {
+  background: rgba(77, 150, 255, 0.1);
+  border: 1px solid rgba(77, 150, 255, 0.3);
+  color: var(--spectrum-blue);
+}
+
+/* ---- 标签 ---- */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tag-small {
+  padding: 0.125rem 0.375rem;
+  font-size: 0.625rem;
+}
+
+/* ---- 分隔线 ---- */
+.divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  margin: 1.5rem 0;
+}
+
+/* ---- 滚动条 ---- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-lab-deep);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

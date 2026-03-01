@@ -1,0 +1,201 @@
+/* EPOCH Layout - Archaeological Archive */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-serif);
+  background: var(--parchment-light);
+  color: var(--ink-black);
+  min-height: 100vh;
+  line-height: 1.7;
+}
+
+/* Ancient Library Container */
+.archive-container {
+  display: flex;
+  min-height: 100vh;
+  background: 
+    linear-gradient(135deg, rgba(139, 90, 43, 0.03) 0%, transparent 50%),
+    var(--parchment-light);
+}
+
+/* Timeline Sidebar */
+.timeline-sidebar {
+  width: 280px;
+  background: var(--parchment-mid);
+  border-right: 3px double var(--bronze-dark);
+  position: fixed;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 2rem 1.5rem;
+}
+
+.archive-header {
+  text-align: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--bronze-mid);
+  margin-bottom: 1.5rem;
+}
+
+.archive-title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--bronze-dark);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.archive-subtitle {
+  font-size: 0.75rem;
+  color: var(--ink-faded);
+  letter-spacing: 0.3em;
+  margin-top: 0.5rem;
+}
+
+/* Era Navigation */
+.era-nav {
+  margin-top: 2rem;
+}
+
+.era-title {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  color: var(--bronze-dark);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.era-list {
+  list-style: none;
+}
+
+.era-item {
+  position: relative;
+  padding: 0.75rem 0 0.75rem 1.5rem;
+  border-left: 2px solid var(--parchment-aged);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.era-item::before {
+  content: '◆';
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--parchment-aged);
+  font-size: 0.625rem;
+  transition: all 0.3s ease;
+}
+
+.era-item:hover,
+.era-item.active {
+  border-left-color: var(--bronze-mid);
+}
+
+.era-item:hover::before,
+.era-item.active::before {
+  color: var(--bronze-mid);
+}
+
+.era-name {
+  font-weight: 600;
+  color: var(--ink-dark);
+}
+
+.era-period {
+  font-size: 0.75rem;
+  color: var(--ink-faded);
+  font-family: var(--font-mono);
+}
+
+.era-count {
+  float: right;
+  background: var(--bronze-light);
+  color: white;
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.625rem;
+}
+
+/* Main Archive Area */
+.main-archive {
+  flex: 1;
+  margin-left: 280px;
+  padding: 2rem 3rem;
+  max-width: 900px;
+}
+
+/* Archive Toolbar */
+.archive-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--parchment-dark);
+  margin-bottom: 2rem;
+}
+
+.catalog-info {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--ink-faded);
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Content Sections */
+.archive-section {
+  margin-bottom: 3rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--parchment-aged);
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--ink-black);
+}
+
+.section-period {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--ink-faded);
+}
+
+/* Timeline View */
+.timeline-view {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline-view::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    var(--bronze-light) 0%,
+    var(--bronze-mid) 50%,
+    var(--bronze-dark) 100%
+  );
+}

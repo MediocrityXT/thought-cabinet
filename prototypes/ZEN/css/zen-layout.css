@@ -1,0 +1,332 @@
+/* ZEN Layout System - 禅意布局 */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--paper-white);
+  color: var(--ink-deep);
+  min-height: 100vh;
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* App Container */
+.zen-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar - 极简侧边栏 */
+.zen-sidebar {
+  width: 72px;
+  background: var(--paper-warm);
+  border-right: 1px solid var(--ink-mist);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-xl) 0;
+  position: fixed;
+  height: 100vh;
+  z-index: 100;
+}
+
+.zen-logo {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--font-brush);
+  font-size: 1.5rem;
+  letter-spacing: 0.5em;
+  color: var(--ink-deep);
+  margin-bottom: var(--space-2xl);
+  cursor: pointer;
+  transition: color var(--transition-flow);
+}
+
+.zen-logo:hover {
+  color: var(--vermillion);
+}
+
+.zen-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  flex: 1;
+}
+
+.zen-nav-item {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--ink-light);
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all var(--transition-flow);
+  position: relative;
+}
+
+.zen-nav-item:hover,
+.zen-nav-item.active {
+  background: var(--ink-whisper);
+  color: var(--ink-deep);
+}
+
+.zen-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background: var(--vermillion);
+  border-radius: 2px;
+}
+
+.zen-nav-tooltip {
+  position: absolute;
+  left: 56px;
+  background: var(--ink-deep);
+  color: var(--paper-white);
+  padding: 6px 12px;
+  border-radius: var(--radius-soft);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-flow);
+}
+
+.zen-nav-item:hover .zen-nav-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Main Content */
+.zen-main {
+  flex: 1;
+  margin-left: 72px;
+  padding: var(--space-2xl) var(--space-3xl);
+  max-width: 900px;
+}
+
+/* Header */
+.zen-header {
+  margin-bottom: var(--space-3xl);
+  padding-bottom: var(--space-xl);
+  border-bottom: 1px solid var(--ink-mist);
+}
+
+.zen-greeting {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  color: var(--ink-pale);
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-sm);
+}
+
+.zen-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--ink-absolute);
+  letter-spacing: 0.05em;
+}
+
+/* Section */
+.zen-section {
+  margin-bottom: var(--space-3xl);
+}
+
+.zen-section-title {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-pale);
+  margin-bottom: var(--space-xl);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.zen-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--ink-mist), transparent);
+}
+
+/* Entry Card - 卡片设计 */
+.zen-entry {
+  background: white;
+  border: 1px solid var(--ink-mist);
+  border-radius: var(--radius-standard);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-lg);
+  transition: all var(--transition-flow);
+  position: relative;
+  overflow: hidden;
+}
+
+.zen-entry::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: transparent;
+  transition: background var(--transition-flow);
+}
+
+.zen-entry:hover {
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-2px);
+}
+
+.zen-entry.thought::before { background: var(--indigo); }
+.zen-entry.idea::before { background: var(--vermillion); }
+.zen-entry.task::before { background: var(--bamboo); }
+
+.zen-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-md);
+}
+
+.zen-entry-type {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 4px 10px;
+  border-radius: var(--radius-subtle);
+  font-weight: 500;
+}
+
+.zen-entry-type.thought {
+  background: var(--indigo-soft);
+  color: var(--indigo);
+}
+
+.zen-entry-type.idea {
+  background: var(--vermillion-soft);
+  color: var(--vermillion);
+}
+
+.zen-entry-type.task {
+  background: var(--bamboo-soft);
+  color: var(--bamboo);
+}
+
+.zen-entry-date {
+  font-size: 0.75rem;
+  color: var(--ink-pale);
+  font-family: var(--font-mono);
+}
+
+.zen-entry-content {
+  font-size: 1rem;
+  line-height: var(--leading-relaxed);
+  color: var(--ink-rich);
+  margin-bottom: var(--space-md);
+}
+
+.zen-entry-footer {
+  display: flex;
+  gap: var(--space-lg);
+  font-size: 0.8125rem;
+  color: var(--ink-light);
+}
+
+.zen-entry-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Input Area */
+.zen-input-area {
+  background: white;
+  border: 2px solid var(--ink-mist);
+  border-radius: var(--radius-standard);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-2xl);
+  transition: border-color var(--transition-flow);
+}
+
+.zen-input-area:focus-within {
+  border-color: var(--ink-light);
+}
+
+.zen-input-placeholder {
+  color: var(--ink-pale);
+  font-style: italic;
+}
+
+.zen-input-hint {
+  margin-top: var(--space-md);
+  font-size: 0.75rem;
+  color: var(--ink-pale);
+  display: flex;
+  gap: var(--space-lg);
+}
+
+.zen-input-hint span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Stats Row */
+.zen-stats {
+  display: flex;
+  gap: var(--space-3xl);
+  padding: var(--space-xl) 0;
+  border-top: 1px solid var(--ink-mist);
+  margin-top: var(--space-3xl);
+}
+
+.zen-stat {
+  text-align: center;
+}
+
+.zen-stat-value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--ink-deep);
+  font-weight: 300;
+}
+
+.zen-stat-label {
+  font-size: 0.75rem;
+  color: var(--ink-pale);
+  letter-spacing: 0.1em;
+  margin-top: var(--space-xs);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ink-mist);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-faint);
+}
