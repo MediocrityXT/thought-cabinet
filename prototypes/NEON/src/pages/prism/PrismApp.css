@@ -1,0 +1,272 @@
+.prism-theme {
+  --spectrum-red: #FF4D4D;
+  --spectrum-orange: #FF9F43;
+  --spectrum-yellow: #FFD93D;
+  --spectrum-green: #6BCB77;
+  --spectrum-blue: #4D96FF;
+  --spectrum-purple: #9C51E0;
+
+  --bg-lab-deep: #0D1117;
+  --bg-lab-panel: #161B22;
+  --bg-lab-card: #21262D;
+  --bg-lab-input: #30363D;
+
+  --text-primary: #F0F6FC;
+  --text-secondary: #8B949E;
+  --text-muted: #484F58;
+
+  --gradient-full-spectrum: linear-gradient(
+    90deg,
+    #FF4D4D 0%,
+    #FF9F43 20%,
+    #FFD93D 40%,
+    #6BCB77 60%,
+    #4D96FF 80%,
+    #9C51E0 100%
+  );
+
+  background-color: var(--bg-lab-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Global Background grid */
+.prism-theme::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Sidebar Layout */
+.prism-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 260px;
+  background: rgba(22, 27, 34, 0.8);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255,255,255,0.1);
+  transform: translateX(-240px);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 50;
+  display: flex;
+}
+
+.prism-sidebar.open {
+  transform: translateX(0);
+}
+
+.prism-sidebar-trigger {
+  width: 20px;
+  height: 100%;
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  background: linear-gradient(180deg, var(--spectrum-red), var(--spectrum-purple));
+  opacity: 0.8;
+  transition: opacity 0.3s;
+}
+
+.prism-sidebar-trigger:hover {
+  opacity: 1;
+}
+
+.prism-sidebar-content {
+  flex: 1;
+  padding: 40px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.prism-sidebar-header {
+  padding: 0 32px;
+  margin-bottom: 40px;
+}
+
+.prism-sidebar-header h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  background: var(--gradient-full-spectrum);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 4px;
+}
+
+.prism-sidebar-header p {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.2em;
+}
+
+.prism-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px;
+  flex: 1;
+}
+
+.prism-nav-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  letter-spacing: 0.1em;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background: transparent;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+}
+
+.prism-nav-item:hover, .prism-nav-item.active {
+  color: var(--text-primary);
+  background: var(--bg-lab-card);
+  border-color: rgba(255,255,255,0.1);
+}
+
+.prism-main-content {
+  padding-left: 20px;
+  min-height: 100vh;
+  transition: padding-left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  z-index: 10;
+}
+
+.prism-sidebar.open + .prism-main-content {
+  padding-left: 260px;
+}
+
+.prism-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 40px;
+  animation: prism-fade-in 0.6s ease-out forwards;
+}
+
+@keyframes prism-fade-in {
+  0% { opacity: 0; transform: translateY(20px); filter: saturate(0) brightness(0.5); }
+  100% { opacity: 1; transform: translateY(0); filter: saturate(1) brightness(1); }
+}
+
+.prism-page-header {
+  margin-bottom: 60px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  position: relative;
+}
+
+.prism-page-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100px;
+  height: 2px;
+  background: var(--gradient-full-spectrum);
+}
+
+.prism-page-header h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.prism-page-header p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+}
+
+/* Crystal Glass Card */
+.prism-card {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.prism-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Animated refraction effect */
+.prism-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: 0.5s;
+}
+
+.prism-card:hover::before {
+  left: 200%;
+}
+
+.prism-btn {
+  background: var(--bg-lab-input);
+  color: var(--text-primary);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.prism-btn:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.3);
+}
+
+.spectrum-text-red { color: var(--spectrum-red); }
+.spectrum-text-orange { color: var(--spectrum-orange); }
+.spectrum-text-yellow { color: var(--spectrum-yellow); }
+.spectrum-text-green { color: var(--spectrum-green); }
+.spectrum-text-blue { color: var(--spectrum-blue); }
+.spectrum-text-purple { color: var(--spectrum-purple); }
+
+.spectrum-bg-red { background-color: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); }
+.spectrum-bg-orange { background-color: rgba(255, 159, 67, 0.1); border: 1px solid rgba(255, 159, 67, 0.3); }
+.spectrum-bg-yellow { background-color: rgba(255, 217, 61, 0.1); border: 1px solid rgba(255, 217, 61, 0.3); }
+.spectrum-bg-green { background-color: rgba(107, 203, 119, 0.1); border: 1px solid rgba(107, 203, 119, 0.3); }
+.spectrum-bg-blue { background-color: rgba(77, 150, 255, 0.1); border: 1px solid rgba(77, 150, 255, 0.3); }
+.spectrum-bg-purple { background-color: rgba(156, 81, 224, 0.1); border: 1px solid rgba(156, 81, 224, 0.3); }
