@@ -1,42 +1,63 @@
 import React from 'react';
+import { MOCK_INBOX } from '../../data/mock';
 
 export default function Refinery() {
   return (
     <div className="aura-page">
       <div className="aura-page-header">
-        <h1>✨ 冥想 · 精炼厂</h1>
-        <p>Meditation / Refinery</p>
+        <h1>Refinery</h1>
+        <p>Distill raw thoughts into clarity.</p>
       </div>
 
-      <div className="aura-card" style={{ marginBottom: '40px', textAlign: 'center', position: 'relative' }}>
-        <div className="glowing-orb" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '300px', height: '100px', background: 'radial-gradient(ellipse, rgba(0, 240, 255, 0.1) 0%, transparent 70%)', zIndex: 0 }}></div>
-        <input 
-          type="text" 
-          placeholder="在此注入需要冥想的信息..." 
-          style={{
-            width: '80%', padding: '16px 24px', fontSize: '1.25rem',
-            border: '1px solid rgba(138,43,226,0.5)', borderRadius: '30px',
-            background: 'rgba(10,5,16,0.6)', color: 'var(--aura-text)',
-            outline: 'none', position: 'relative', zIndex: 1,
-            boxShadow: '0 0 20px rgba(138,43,226,0.2)'
-          }}
-        />
-        <div style={{ marginTop: '32px', position: 'relative', zIndex: 1 }}>
-          <button className="aura-btn">开启灵视 (Channel)</button>
-        </div>
-      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px' }}>
+        
+        {/* Input Area */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <div className="aura-card" style={{ padding: '0', overflow: 'hidden' }}>
+            <textarea 
+              placeholder="Paste text, URLs, or type your thoughts here..."
+              style={{
+                width: '100%', height: '200px', border: 'none', background: 'transparent',
+                padding: '32px', fontSize: '1.1rem', color: 'var(--aura-text)',
+                resize: 'none', outline: 'none', fontFamily: 'inherit'
+              }}
+            />
+            <div style={{ padding: '16px 32px', background: 'rgba(0,0,0,0.02)', borderTop: '1px solid var(--aura-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'var(--aura-text-muted)', fontSize: '0.85rem' }}>Ready for processing</span>
+              <button className="aura-btn">Synthesize</button>
+            </div>
+          </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-        <div className="aura-card" style={{ position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '2px', background: 'var(--aura-purple)' }}></div>
-          <h3 style={{ color: 'var(--aura-text-dim)', marginBottom: '16px', letterSpacing: '0.1em' }}>[ 凡人视界 / Raw Data ]</h3>
-          <p style={{ opacity: 0.6, lineHeight: 1.8 }}>表面复杂的文字、链接和碎片化的记录。充满噪音与无序的杂念。</p>
+          <div className="aura-card" style={{ background: 'white' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 500, marginBottom: '24px', color: 'var(--aura-purple)' }}>Synthesized Output</h3>
+            <div style={{ lineHeight: 1.8, color: 'var(--aura-text)' }}>
+              <p>The core concept revolves around utilizing <strong>liquid gradients</strong> and <strong>glassmorphism</strong> to create a sense of breathing space.</p>
+              <ul style={{ paddingLeft: '20px', marginTop: '16px', color: 'var(--aura-text-muted)' }}>
+                <li>Reduce cognitive load via whitespace.</li>
+                <li>Use subtle animations for state changes.</li>
+              </ul>
+            </div>
+          </div>
         </div>
-        <div className="aura-card" style={{ position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '2px', background: 'var(--aura-cyan)', boxShadow: '0 0 10px var(--aura-cyan)' }}></div>
-          <h3 style={{ color: 'var(--aura-cyan)', marginBottom: '16px', letterSpacing: '0.1em' }}>[ 灵光启示 / Insight ]</h3>
-          <p style={{ opacity: 0.9, lineHeight: 1.8 }}>透过表象看到的本质规律。直指核心的灵感与行动指南。</p>
+
+        {/* AI Assistant Panel */}
+        <div className="aura-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 500, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ color: 'var(--aura-blue)' }}>✦</span> AI Assistant
+          </h3>
+          
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '0.9rem' }}>
+            <div style={{ background: 'rgba(14, 165, 233, 0.05)', padding: '16px', borderRadius: '12px', borderBottomLeftRadius: '0' }}>
+              I've extracted the main points. Would you like me to format this as a Zettelkasten note?
+            </div>
+          </div>
+
+          <div style={{ marginTop: '24px', position: 'relative' }}>
+             <input type="text" placeholder="Ask follow-up..." style={{ width: '100%', padding: '12px 16px', borderRadius: '99px', border: '1px solid var(--aura-border)', background: 'white', outline: 'none', fontSize: '0.9rem' }} />
+             <button style={{ position: 'absolute', right: '4px', top: '4px', bottom: '4px', background: 'var(--aura-blue)', color: 'white', border: 'none', borderRadius: '99px', padding: '0 16px', cursor: 'pointer' }}>Ask</button>
+          </div>
         </div>
+
       </div>
     </div>
   );

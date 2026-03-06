@@ -7,12 +7,12 @@ export default function AuraLayout() {
   const navigate = useNavigate();
 
   const navItems = [
-    { name: '👁️ 灵核 Dashboard', path: '/aura' },
-    { name: '✨ 冥想 Refinery', path: '/aura/refinery' },
-    { name: '🔮 调频 Organizer', path: '/aura/organizer' },
-    { name: '⚖️ 共振 Evaluator', path: '/aura/evaluator' },
-    { name: '⏳ 潮汐 Planner', path: '/aura/planner' },
-    { name: '🌌 脉络 Blueprint', path: '/aura/blueprint' },
+    { name: 'Dashboard', path: '/aura', icon: '◒' },
+    { name: 'Refinery', path: '/aura/refinery', icon: '○' },
+    { name: 'Organizer', path: '/aura/organizer', icon: '◑' },
+    { name: 'Evaluator', path: '/aura/evaluator', icon: '●' },
+    { name: 'Planner', path: '/aura/planner', icon: '◔' },
+    { name: 'Blueprint', path: '/aura/blueprint', icon: '◎' },
   ];
 
   return (
@@ -24,20 +24,20 @@ export default function AuraLayout() {
         onMouseLeave={() => setIsSidebarOpen(false)}
       >
         <div className="aura-sidebar-trigger">
-          <div className="spark"></div><div className="spark"></div><div className="spark"></div>
+          <div className="dot"></div><div className="dot"></div><div className="dot"></div>
         </div>
         
         <div className="aura-sidebar-content">
           <div style={{ padding: '0 32px', marginBottom: '40px' }}>
             <h2 style={{ 
-              fontSize: '2rem', fontWeight: 300, 
-              background: 'linear-gradient(90deg, var(--aura-cyan), var(--aura-magenta))',
+              fontSize: '1.5rem', fontWeight: 600, letterSpacing: '-0.02em',
+              background: 'linear-gradient(135deg, var(--aura-purple) 0%, var(--aura-pink) 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
-            }}>灵光</h2>
-            <p style={{ fontSize: '0.75rem', color: 'var(--aura-text-dim)', letterSpacing: '0.1em' }}>Aura Space</p>
+            }}>AURA</h2>
+            <p style={{ fontSize: '0.8rem', color: 'var(--aura-text-muted)', marginTop: '4px' }}>ThoughtCabinet</p>
           </div>
           
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+          <nav style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
             {navItems.map(item => (
               <NavLink 
                 key={item.path} 
@@ -45,14 +45,15 @@ export default function AuraLayout() {
                 className={({isActive}) => `aura-nav-item ${isActive ? 'active' : ''}`}
                 end={item.path === '/aura'}
               >
+                <span style={{ fontSize: '1.2rem', opacity: 0.7 }}>{item.icon}</span>
                 {item.name}
               </NavLink>
             ))}
           </nav>
           
           <div style={{ padding: '0 16px' }}>
-            <button onClick={() => navigate('/')} className="aura-nav-item" style={{ width: 'calc(100% - 16px)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
-              ← 脱离灵境 (Exit)
+            <button onClick={() => navigate('/')} className="aura-nav-item" style={{ width: 'calc(100% - 24px)', background: 'transparent', border: 'none', cursor: 'pointer', justifyContent: 'center' }}>
+              ← Gallery
             </button>
           </div>
         </div>
@@ -61,6 +62,9 @@ export default function AuraLayout() {
       <main className="aura-main-content">
         <Outlet />
       </main>
+      
+      {/* Background decoration elements that move based on scroll/mouse might go here */}
+      <div className="aura-blob-3"></div>
     </div>
   );
 }

@@ -5,46 +5,45 @@ export default function Evaluator() {
   return (
     <div className="aura-page">
       <div className="aura-page-header">
-        <h1>⚖️ 共振 · 评估局</h1>
-        <p>Resonance / Evaluator</p>
+        <h1>Evaluator</h1>
+        <p>Assess value and clarity.</p>
       </div>
 
-      <div className="aura-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginBottom: '40px' }}>
         
-        <p style={{ color: 'var(--aura-text-dim)', marginBottom: '40px', letterSpacing: '0.1em' }}>感知事务的能量层级。摒弃消耗你的，留存滋养你的。</p>
-
-        <div style={{ width: '100%', display: 'flex', gap: '40px' }}>
-          
-          <div style={{ flex: 1 }}>
-            <h3 style={{ color: 'var(--aura-cyan)', marginBottom: '24px', textAlign: 'center', borderBottom: '1px solid rgba(0,240,255,0.3)', paddingBottom: '12px' }}>高频共振 (Do / Plan)</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {MOCK_EVALUATIONS.filter(e => e.status === 'Do Now' || e.status === 'Plan').map(e => (
-                 <div key={e.id} style={{ padding: '16px', background: 'rgba(0,240,255,0.05)', borderLeft: '2px solid var(--aura-cyan)', borderRadius: '0 8px 8px 0' }}>
-                   {e.title}
+        <div className="aura-card" style={{ background: 'white' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 500, marginBottom: '24px', color: 'var(--aura-purple)' }}>High Impact (Do / Plan)</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {MOCK_EVALUATIONS.filter(e => e.status === 'Do Now' || e.status === 'Plan').map(e => (
+               <div key={e.id} style={{ padding: '20px', borderRadius: '16px', background: 'var(--aura-bg-base)', border: '1px solid rgba(0,0,0,0.05)' }}>
+                 <div style={{ fontWeight: 500, marginBottom: '8px' }}>{e.title}</div>
+                 <div style={{ display: 'flex', gap: '8px' }}>
+                   <span style={{ fontSize: '0.75rem', padding: '4px 8px', background: 'rgba(139, 92, 246, 0.1)', color: 'var(--aura-purple)', borderRadius: '4px' }}>Value: {e.value}</span>
+                   <span style={{ fontSize: '0.75rem', padding: '4px 8px', background: 'rgba(14, 165, 233, 0.1)', color: 'var(--aura-blue)', borderRadius: '4px' }}>Diff: {e.difficulty}</span>
                  </div>
-              ))}
-            </div>
+               </div>
+            ))}
           </div>
-
-          <div style={{ flex: 1 }}>
-            <h3 style={{ color: 'var(--aura-text-dim)', marginBottom: '24px', textAlign: 'center', borderBottom: '1px solid rgba(154,134,181,0.3)', paddingBottom: '12px' }}>能量消耗 (Drop)</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {MOCK_EVALUATIONS.filter(e => e.status === 'Drop').map(e => (
-                 <div key={e.id} style={{ padding: '16px', background: 'rgba(154,134,181,0.05)', borderLeft: '2px solid var(--aura-text-dim)', borderRadius: '0 8px 8px 0', opacity: 0.5 }}>
-                   <del>{e.title}</del>
-                 </div>
-              ))}
-            </div>
-            
-            <div style={{ marginTop: '40px', padding: '24px', border: '1px dashed var(--aura-magenta)', borderRadius: '16px', textAlign: 'center' }}>
-              <div style={{ color: 'var(--aura-magenta)', marginBottom: '16px' }}>灵体警告 (Harsh Truth)</div>
-              <p style={{ fontSize: '0.875rem', lineHeight: 1.6, color: 'var(--aura-text-dim)' }}>
-                "这个执念正在严重消耗你的能量场。放下它，或者被它吞噬。"
-              </p>
-            </div>
-          </div>
-
         </div>
+
+        <div className="aura-card" style={{ background: 'var(--aura-bg-base)', border: 'none' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 500, marginBottom: '24px', color: 'var(--aura-text-muted)' }}>Low Impact (Drop)</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {MOCK_EVALUATIONS.filter(e => e.status === 'Drop').map(e => (
+               <div key={e.id} style={{ padding: '20px', borderRadius: '16px', background: 'rgba(0,0,0,0.02)', opacity: 0.6 }}>
+                 <div style={{ textDecoration: 'line-through', marginBottom: '8px' }}>{e.title}</div>
+               </div>
+            ))}
+          </div>
+          
+          <div style={{ marginTop: '40px', padding: '24px', background: 'rgba(244, 63, 94, 0.05)', borderRadius: '16px', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
+            <h3 style={{ fontSize: '1rem', color: '#F43F5E', marginBottom: '12px' }}>Harsh Truth AI</h3>
+            <p style={{ fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--aura-text)' }}>
+              "You are overcomplicating the theme switching mechanism. Drop the idea of custom parsing engines and stick to standard CSS variables. It's a low-value sinkhole."
+            </p>
+          </div>
+        </div>
+
       </div>
     </div>
   );
