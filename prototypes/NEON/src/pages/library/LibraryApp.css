@@ -1,0 +1,90 @@
+.library-theme {
+  --library-bg: #f4f1ea;
+  --library-wood: #5c4033;
+  --library-wood-light: #8b5a2b;
+  --library-text: #2b2b2b;
+  --library-text-muted: #6b6b6b;
+  --library-paper: #ffffff;
+  --library-accent: #8b0000;
+  
+  background-color: var(--library-bg);
+  color: var(--library-text);
+  min-height: 100vh;
+  font-family: 'Georgia', serif;
+  position: relative;
+  overflow-x: hidden;
+  background-image: 
+    linear-gradient(90deg, rgba(92, 64, 51, 0.03) 1px, transparent 1px),
+    linear-gradient(rgba(92, 64, 51, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.library-sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0; width: 260px;
+  background: var(--library-wood);
+  color: var(--library-bg);
+  border-right: 4px solid var(--library-wood-light);
+  transform: translateX(-240px);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 50; display: flex;
+  box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+}
+
+.library-sidebar.open {
+  transform: translateX(0);
+}
+
+.library-sidebar-trigger {
+  width: 20px; height: 100%; position: absolute; right: 0; top: 0;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  cursor: pointer; background: var(--library-wood-light);
+  border-left: 1px solid rgba(255,255,255,0.2);
+}
+
+.library-sidebar-content {
+  flex: 1; padding: 40px 0; display: flex; flex-direction: column;
+}
+
+.library-nav-item {
+  display: block; padding: 12px 24px; color: rgba(244, 241, 234, 0.7); text-decoration: none;
+  font-family: 'Times New Roman', serif; font-size: 1.1rem;
+  transition: all 0.3s; margin: 0 16px 8px; border-bottom: 1px dashed rgba(255,255,255,0.1);
+}
+
+.library-nav-item:hover, .library-nav-item.active {
+  color: var(--library-bg); background: rgba(255,255,255,0.1); border-radius: 4px;
+  border-bottom: 1px solid transparent;
+}
+
+.library-main-content {
+  padding-left: 20px; transition: padding-left 0.4s; min-height: 100vh; position: relative; z-index: 10;
+}
+
+.library-sidebar.open + .library-main-content { padding-left: 260px; }
+
+.library-page {
+  max-width: 1000px; margin: 0 auto; padding: 60px 40px;
+}
+
+.library-page-header { margin-bottom: 60px; border-bottom: 2px solid var(--library-wood); padding-bottom: 24px; text-align: center; }
+.library-page-header h1 { font-size: 2.5rem; font-weight: normal; color: var(--library-wood); margin-bottom: 8px; }
+.library-page-header p { color: var(--library-text-muted); font-style: italic; font-size: 1.1rem; }
+
+.library-card {
+  background: var(--library-paper); border: 1px solid #d3d3d3;
+  padding: 32px; border-radius: 2px;
+  box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
+  position: relative;
+}
+
+.library-card::before {
+  content: ''; position: absolute; left: 16px; top: 0; bottom: 0; width: 1px; background: rgba(139, 0, 0, 0.2);
+}
+
+.library-btn {
+  background: var(--library-wood); color: var(--library-bg); border: none;
+  padding: 10px 24px; font-family: inherit; font-size: 1rem;
+  cursor: pointer; transition: background 0.3s; border-radius: 2px;
+}
+
+.library-btn:hover { background: var(--library-wood-light); }
