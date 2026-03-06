@@ -1,56 +1,43 @@
-import { useState } from 'react';
-import { Sidebar } from '@/components/layout/Sidebar';
-import { StatusBar } from '@/components/layout/StatusBar';
-import { Dashboard } from '@/pages/Dashboard';
-import { Refinery } from '@/pages/Refinery';
-import { Organizer } from '@/pages/Organizer';
-import { Evaluator } from '@/pages/Evaluator';
-import { Blueprint } from '@/pages/Blueprint';
-import { Planner } from '@/pages/Planner';
-import { cn } from '@/lib/utils';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import NeonApp from './NeonApp';
+import Home from './pages/Home';
+import ZenApp from './pages/zen/ZenApp';
+import EpochApp from './pages/epoch/EpochApp';
+import GlitchApp from './pages/glitch/GlitchApp';
+
+// Placeholder component for unmigrated themes
+const Placeholder = ({ name }: { name: string }) => (
+  <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-8">
+    <h1 className="text-4xl font-bold mb-4">{name} Theme</h1>
+    <p className="text-slate-400 mb-8">This theme is currently being migrated to React + Tailwind CSS.</p>
+    <Link to="/" className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
+      Return to Gallery
+    </Link>
+  </div>
+);
 
 function App() {
-  const [activeModule, setActiveModule] = useState('dashboard');
-
-  const renderModule = () => {
-    switch (activeModule) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'refinery':
-        return <Refinery />;
-      case 'organizer':
-        return <Organizer />;
-      case 'evaluator':
-        return <Evaluator />;
-      case 'blueprint':
-        return <Blueprint />;
-      case 'planner':
-        return <Planner />;
-      default:
-        return <Dashboard />;
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-deep text-white">
-      {/* Sidebar */}
-      <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
-
-      {/* Status Bar */}
-      <StatusBar />
-
-      {/* Main Content */}
-      <main 
-        className={cn(
-          "fixed top-12 left-18 right-0 bottom-0 overflow-hidden",
-          "transition-all duration-300"
-        )}
-      >
-        <div className="h-full overflow-auto custom-scrollbar">
-          {renderModule()}
-        </div>
-      </main>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/neon/*" element={<NeonApp />} />
+        <Route path="/epoch/*" element={<EpochApp />} />
+        <Route path="/zen/*" element={<ZenApp />} />
+        <Route path="/glitch/*" element={<GlitchApp />} />
+        
+        {/* Placeholders for other themes for now */}
+        <Route path="/prism/*" element={<Placeholder name="PRISM" />} />
+        <Route path="/forge/*" element={<Placeholder name="FORGE" />} />
+        <Route path="/sky/*" element={<Placeholder name="SKY" />} />
+        <Route path="/void/*" element={<Placeholder name="VOID" />} />
+        <Route path="/home/*" element={<Placeholder name="HOME" />} />
+        <Route path="/library/*" element={<Placeholder name="LIBRARY" />} />
+        <Route path="/atelier/*" element={<Placeholder name="ATELIER" />} />
+        <Route path="/aura/*" element={<Placeholder name="AURA" />} />
+        <Route path="/warroom/*" element={<Placeholder name="WARROOM" />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
