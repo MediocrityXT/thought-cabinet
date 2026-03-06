@@ -5,6 +5,8 @@ import ZenApp from './pages/zen/ZenApp';
 import EpochApp from './pages/epoch/EpochApp';
 import GlitchApp from './pages/glitch/GlitchApp';
 import SkyApp from './pages/sky/SkyApp';
+import AuraApp from './pages/aura/AuraApp';
+import AuguryApp from './pages/augury/AuguryApp';
 
 // Placeholder component for unmigrated themes
 const Placeholder = ({ name }: { name: string }) => (
@@ -27,6 +29,8 @@ function App() {
         <Route path="/zen/*" element={<ZenApp />} />
         <Route path="/glitch/*" element={<GlitchApp />} />
         <Route path="/sky/*" element={<SkyApp />} />
+        <Route path="/aura/*" element={<AuraApp />} />
+        <Route path="/augury/*" element={<AuguryApp />} />
         
         {/* Placeholders for other themes for now */}
         <Route path="/prism/*" element={<Placeholder name="PRISM" />} />
@@ -35,7 +39,6 @@ function App() {
         <Route path="/home/*" element={<Placeholder name="HOME" />} />
         <Route path="/library/*" element={<Placeholder name="LIBRARY" />} />
         <Route path="/atelier/*" element={<Placeholder name="ATELIER" />} />
-        <Route path="/aura/*" element={<Placeholder name="AURA" />} />
         <Route path="/warroom/*" element={<Placeholder name="WARROOM" />} />
       </Routes>
     </BrowserRouter>

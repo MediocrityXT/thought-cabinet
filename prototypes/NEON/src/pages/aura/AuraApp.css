@@ -1,0 +1,150 @@
+.aura-theme {
+  --aura-bg-base: #11091a;
+  --aura-bg-dark: #0a0510;
+  --aura-purple: #8a2be2;
+  --aura-magenta: #e024c3;
+  --aura-cyan: #00f0ff;
+  --aura-gold: #ffd700;
+  --aura-text: #eadeff;
+  --aura-text-dim: #9a86b5;
+  
+  background-color: var(--aura-bg-base);
+  color: var(--aura-text);
+  min-height: 100vh;
+  font-family: 'Georgia', serif;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.aura-theme::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 800px; height: 800px;
+  background: radial-gradient(circle, rgba(138,43,226,0.15) 0%, rgba(224,36,195,0.05) 40%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+  animation: pulse-aura 10s infinite alternate ease-in-out;
+}
+
+@keyframes pulse-aura {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+}
+
+.aura-sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0; width: 260px;
+  background: rgba(10, 5, 16, 0.8);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(138, 43, 226, 0.3);
+  box-shadow: inset -5px 0 20px rgba(138, 43, 226, 0.05);
+  transform: translateX(-240px);
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 50; display: flex;
+}
+
+.aura-sidebar.open {
+  transform: translateX(0);
+  box-shadow: 10px 0 40px rgba(138, 43, 226, 0.15);
+}
+
+.aura-sidebar-trigger {
+  width: 20px; height: 100%; position: absolute; right: 0; top: 0;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 8px; cursor: pointer;
+}
+
+.aura-sidebar-trigger .spark {
+  width: 2px; height: 12px; background: var(--aura-magenta);
+  border-radius: 2px; box-shadow: 0 0 10px var(--aura-magenta);
+}
+
+.aura-sidebar-content {
+  flex: 1; padding: 40px 0; display: flex; flex-direction: column;
+}
+
+.aura-nav-item {
+  display: block; padding: 16px 24px; color: var(--aura-text-dim); text-decoration: none;
+  transition: all 0.4s; margin: 0 8px 8px;
+  border-radius: 8px; position: relative;
+  overflow: hidden;
+}
+
+.aura-nav-item::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+  background: var(--aura-cyan); transform: scaleY(0); transition: transform 0.3s;
+}
+
+.aura-nav-item:hover, .aura-nav-item.active {
+  color: var(--aura-text); background: rgba(138, 43, 226, 0.1);
+}
+
+.aura-nav-item.active::before {
+  transform: scaleY(1); box-shadow: 0 0 10px var(--aura-cyan);
+}
+
+.aura-main-content {
+  padding-left: 20px; transition: padding-left 0.5s; min-height: 100vh; position: relative; z-index: 10;
+}
+
+.aura-sidebar.open + .aura-main-content { padding-left: 260px; }
+
+.aura-page {
+  max-width: 1200px; margin: 0 auto; padding: 60px 40px;
+  animation: aura-fade-in 1s ease-out forwards;
+}
+
+@keyframes aura-fade-in {
+  0% { opacity: 0; filter: blur(10px); transform: scale(0.98); }
+  100% { opacity: 1; filter: blur(0); transform: scale(1); }
+}
+
+.aura-page-header { margin-bottom: 60px; text-align: center; }
+.aura-page-header h1 { 
+  font-size: 2.5rem; font-weight: 400; letter-spacing: 0.1em;
+  background: linear-gradient(90deg, var(--aura-cyan), var(--aura-magenta), var(--aura-purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 12px;
+}
+.aura-page-header p { color: var(--aura-text-dim); letter-spacing: 0.3em; font-size: 0.75rem; text-transform: uppercase; }
+
+.aura-card {
+  background: rgba(20, 10, 30, 0.6);
+  backdrop-filter: blur(16px);
+  border-radius: 16px; padding: 32px;
+  border: 1px solid rgba(138, 43, 226, 0.2);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(138, 43, 226, 0.05);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.aura-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: rgba(224, 36, 195, 0.4);
+  box-shadow: 0 15px 50px rgba(224, 36, 195, 0.15), inset 0 0 30px rgba(138, 43, 226, 0.1);
+}
+
+.aura-btn {
+  background: transparent; color: var(--aura-text); border: 1px solid var(--aura-purple);
+  padding: 12px 32px; border-radius: 30px; letter-spacing: 0.1em;
+  box-shadow: 0 0 15px rgba(138, 43, 226, 0.2);
+  cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;
+}
+
+.aura-btn:hover {
+  background: var(--aura-purple);
+  box-shadow: 0 0 30px rgba(138, 43, 226, 0.6);
+  color: white;
+}
+
+.glowing-orb {
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--aura-cyan) 0%, transparent 70%);
+  animation: orb-float 8s infinite alternate ease-in-out;
+}
+
+@keyframes orb-float {
+  0% { transform: translateY(0) scale(1); filter: brightness(1); }
+  100% { transform: translateY(-20px) scale(1.1); filter: brightness(1.3); }
+}

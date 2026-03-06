@@ -7,6 +7,7 @@ const prototypes = [
   { name: 'PRISM', path: '/prism', category: 'Science', icon: '🔮', isNew: true },
   { name: 'FORGE', path: '/forge', category: 'Industrial', icon: '🔥', isNew: true },
   { name: 'GLITCH', path: '/glitch', category: 'Cyberpunk', icon: '⚡', isNew: true },
+  { name: 'AUGURY', path: '/augury', category: 'Magic', icon: '✨', isNew: true },
   { name: 'SKY', path: '/sky', category: 'Nature', icon: '☁️', isNew: false },
   { name: 'VOID', path: '/void', category: 'Mystery', icon: '🌌', isNew: false },
   { name: 'HOME', path: '/home', category: 'Life', icon: '🏠', isNew: false },
