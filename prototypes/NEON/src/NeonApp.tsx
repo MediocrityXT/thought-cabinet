@@ -47,7 +47,7 @@ function App() {
         )}
       >
         <div className="h-full overflow-auto custom-scrollbar">
-          <div className="max-w-[1600px] mx-auto min-h-full">
+          <div className="max-w-7xl mx-auto min-h-full pt-6">
             {renderModule()}
           </div>
         </div>
