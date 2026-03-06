@@ -8,6 +8,7 @@ import SkyApp from './pages/sky/SkyApp';
 import AuraApp from './pages/aura/AuraApp';
 import AuguryApp from './pages/augury/AuguryApp';
 import LibraryApp from './pages/library/LibraryApp';
+import AtelierApp from './pages/atelier/AtelierApp';
 
 // Placeholder component for unmigrated themes
 const Placeholder = ({ name }: { name: string }) => (
@@ -33,13 +34,13 @@ function App() {
         <Route path="/aura/*" element={<AuraApp />} />
         <Route path="/augury/*" element={<AuguryApp />} />
         <Route path="/library/*" element={<LibraryApp />} />
+        <Route path="/atelier/*" element={<AtelierApp />} />
         
         {/* Placeholders for other themes for now */}
         <Route path="/prism/*" element={<Placeholder name="PRISM" />} />
         <Route path="/forge/*" element={<Placeholder name="FORGE" />} />
         <Route path="/void/*" element={<Placeholder name="VOID" />} />
         <Route path="/home/*" element={<Placeholder name="HOME" />} />
-        <Route path="/atelier/*" element={<Placeholder name="ATELIER" />} />
         <Route path="/warroom/*" element={<Placeholder name="WARROOM" />} />
       </Routes>
     </BrowserRouter>
