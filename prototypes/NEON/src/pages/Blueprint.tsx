@@ -68,100 +68,118 @@ export function Blueprint() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
+    const resizeCanvas = () => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      
+      const dpr = window.devicePixelRatio || 1;
+      const rect = parent.getBoundingClientRect();
+      
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      
+      ctx.scale(dpr, dpr);
 
-    // Clear
-    ctx.clearRect(0, 0, rect.width, rect.height);
+      // Clear
+      ctx.clearRect(0, 0, rect.width, rect.height);
 
-    // Draw fog background
-    const fogGradient = ctx.createRadialGradient(
-      rect.width / 2, rect.height / 2, 0,
-      rect.width / 2, rect.height / 2, rect.width / 2
-    );
-    fogGradient.addColorStop(0, 'rgba(10, 10, 15, 0.3)');
-    fogGradient.addColorStop(1, 'rgba(10, 10, 15, 0.9)');
-    ctx.fillStyle = fogGradient;
-    ctx.fillRect(0, 0, rect.width, rect.height);
+      // Draw fog background
+      const fogGradient = ctx.createRadialGradient(
+        rect.width / 2, rect.height / 2, 0,
+        rect.width / 2, rect.height / 2, rect.width / 2
+      );
+      fogGradient.addColorStop(0, 'rgba(10, 10, 15, 0.3)');
+      fogGradient.addColorStop(1, 'rgba(10, 10, 15, 0.9)');
+      ctx.fillStyle = fogGradient;
+      ctx.fillRect(0, 0, rect.width, rect.height);
 
-    // Draw connections
-    sampleConnections.forEach((conn) => {
-      const fromNode = sampleNodes.find(n => n.id === conn.from);
-      const toNode = sampleNodes.find(n => n.id === conn.to);
-      if (!fromNode || !toNode) return;
+      // We need to shift nodes slightly to center them better based on container size
+      // For this mock, we'll just draw them at their absolute coordinates
+      // In a real app, we'd use a camera transform
 
-      ctx.strokeStyle = 'rgba(0, 212, 255, 0.3)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(fromNode.x, fromNode.y);
-      ctx.lineTo(toNode.x, toNode.y);
-      ctx.stroke();
+      // Draw connections
+      sampleConnections.forEach((conn) => {
+        const fromNode = sampleNodes.find(n => n.id === conn.from);
+        const toNode = sampleNodes.find(n => n.id === conn.to);
+        if (!fromNode || !toNode) return;
 
-      // Connection label
-      if (conn.label) {
-        const midX = (fromNode.x + toNode.x) / 2;
-        const midY = (fromNode.y + toNode.y) / 2;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.font = '10px Inter';
-        ctx.textAlign = 'center';
-        ctx.fillText(conn.label, midX, midY - 5);
-      }
-    });
-
-    // Draw nodes
-    sampleNodes.forEach((node) => {
-      const isHovered = hoveredNode === node.id;
-      const isSelected = selectedNodes.includes(node.id);
-
-      // Glow for known nodes
-      if (node.type === 'known' || isHovered) {
-        const glowSize = isHovered ? 30 : 20;
-        const gradient = ctx.createRadialGradient(
-          node.x, node.y, 0,
-          node.x, node.y, glowSize
-        );
-        const color = node.type === 'known' ? '0, 212, 255' : 
-                     node.type === 'gap' ? '244, 63, 94' : '107, 114, 128';
-        gradient.addColorStop(0, `rgba(${color}, 0.4)`);
-        gradient.addColorStop(1, 'transparent');
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, glowSize, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Node circle
-      ctx.beginPath();
-      ctx.arc(node.x, node.y, isHovered ? 10 : 8, 0, Math.PI * 2);
-      ctx.fillStyle = node.type === 'known' ? '#00d4ff' : 
-                     node.type === 'gap' ? '#f43f5e' : '#6b7280';
-      ctx.fill();
-
-      // Selection ring
-      if (isSelected) {
-        ctx.strokeStyle = '#a855f7';
+        ctx.strokeStyle = 'rgba(0, 212, 255, 0.3)';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(node.x, node.y, 14, 0, Math.PI * 2);
+        ctx.moveTo(fromNode.x, fromNode.y);
+        ctx.lineTo(toNode.x, toNode.y);
         ctx.stroke();
-      }
 
-      // Label
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.font = isHovered ? '14px Inter' : '12px Inter';
-      ctx.textAlign = 'center';
-      ctx.fillText(node.label, node.x, node.y + 25);
+        // Connection label
+        if (conn.label) {
+          const midX = (fromNode.x + toNode.x) / 2;
+          const midY = (fromNode.y + toNode.y) / 2;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+          ctx.font = '10px Inter';
+          ctx.textAlign = 'center';
+          ctx.fillText(conn.label, midX, midY - 5);
+        }
+      });
 
-      // Type indicator
-      if (node.type === 'gap') {
-        ctx.fillStyle = '#f43f5e';
-        ctx.font = '10px Inter';
-        ctx.fillText('(认知缺口)', node.x, node.y + 40);
-      }
-    });
+      // Draw nodes
+      sampleNodes.forEach((node) => {
+        const isHovered = hoveredNode === node.id;
+        const isSelected = selectedNodes.includes(node.id);
+
+        // Glow for known nodes
+        if (node.type === 'known' || isHovered) {
+          const glowSize = isHovered ? 30 : 20;
+          const gradient = ctx.createRadialGradient(
+            node.x, node.y, 0,
+            node.x, node.y, glowSize
+          );
+          const color = node.type === 'known' ? '0, 212, 255' : 
+                       node.type === 'gap' ? '244, 63, 94' : '107, 114, 128';
+          gradient.addColorStop(0, `rgba(${color}, 0.4)`);
+          gradient.addColorStop(1, 'transparent');
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, glowSize, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Node circle
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, isHovered ? 10 : 8, 0, Math.PI * 2);
+        ctx.fillStyle = node.type === 'known' ? '#00d4ff' : 
+                       node.type === 'gap' ? '#f43f5e' : '#6b7280';
+        ctx.fill();
+
+        // Selection ring
+        if (isSelected) {
+          ctx.strokeStyle = '#a855f7';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, 14, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Label
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.font = isHovered ? '14px Inter' : '12px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText(node.label, node.x, node.y + 25);
+
+        // Type indicator
+        if (node.type === 'gap') {
+          ctx.fillStyle = '#f43f5e';
+          ctx.font = '10px Inter';
+          ctx.fillText('(认知缺口)', node.x, node.y + 40);
+        }
+      });
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    return () => window.removeEventListener('resize', resizeCanvas);
   }, [activeView, hoveredNode, selectedNodes]);
 
   const handleNodeClick = (nodeId: string) => {
