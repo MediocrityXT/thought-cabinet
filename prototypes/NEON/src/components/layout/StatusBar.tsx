@@ -27,7 +27,7 @@ export function StatusBar() {
   };
 
   return (
-    <header className="fixed top-0 left-18 right-0 h-12 bg-deep border-b border-white/5 flex items-center justify-between px-6 z-40">
+    <header className="fixed top-0 left-20 right-0 h-12 bg-deep border-b border-white/5 flex items-center justify-between px-6 z-40">
       {/* Left: Vault Status */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2 text-sm">

@@ -26,7 +26,7 @@ const modules = [
 
 export function Sidebar({ activeModule, onModuleChange }: SidebarProps) {
   return (
-    <aside className="fixed left-0 top-0 h-full w-18 bg-panel border-r border-white/5 flex flex-col items-center py-6 z-50">
+    <aside className="fixed left-0 top-0 h-full w-20 bg-panel border-r border-white/5 flex flex-col items-center py-6 z-50">
       {/* Logo */}
       <div className="mb-8">
         <div className="w-10 h-10 rounded-xl bg-gradient-cyan-purple flex items-center justify-center glow-cyan">

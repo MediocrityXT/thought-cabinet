@@ -10,6 +10,7 @@ import AuguryApp from './pages/augury/AuguryApp';
 import LibraryApp from './pages/library/LibraryApp';
 import AtelierApp from './pages/atelier/AtelierApp';
 import PrismApp from './pages/prism/PrismApp';
+import ForgeApp from './pages/forge/ForgeApp';
 
 // Placeholder component for unmigrated themes
 const Placeholder = ({ name }: { name: string }) => (
@@ -37,9 +38,9 @@ function App() {
         <Route path="/library/*" element={<LibraryApp />} />
         <Route path="/atelier/*" element={<AtelierApp />} />
         <Route path="/prism/*" element={<PrismApp />} />
+        <Route path="/forge/*" element={<ForgeApp />} />
         
         {/* Placeholders for other themes for now */}
-        <Route path="/forge/*" element={<Placeholder name="FORGE" />} />
         <Route path="/void/*" element={<Placeholder name="VOID" />} />
         <Route path="/home/*" element={<Placeholder name="HOME" />} />
         <Route path="/warroom/*" element={<Placeholder name="WARROOM" />} />

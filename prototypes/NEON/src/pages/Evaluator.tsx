@@ -168,7 +168,7 @@ export function Evaluator() {
           />
           
           {/* Axis Labels */}
-          <div className="absolute left-2 top-1/2 -translate-y-1/2 -rotate-90 text-xs text-star-dust">
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-star-dust">
             影响力 ↑
           </div>
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-star-dust">

@@ -42,7 +42,7 @@ function App() {
       {/* Main Content */}
       <main 
         className={cn(
-          "fixed top-12 left-18 right-0 bottom-0 overflow-hidden",
+          "fixed top-12 left-20 right-0 bottom-0 overflow-hidden",
           "transition-all duration-300"
         )}
       >

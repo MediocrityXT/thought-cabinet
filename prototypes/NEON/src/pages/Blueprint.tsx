@@ -200,7 +200,6 @@ export function Blueprint() {
       <div className="flex items-center gap-2 px-6 py-4 border-b border-white/5">
         {[
           { id: 'fog', label: '战争迷雾', icon: Map },
-          { id: 'network', label: '知识图谱', icon: Network },
           { id: 'wall', label: '理论连线', icon: Search },
         ].map(({ id, label, icon: Icon }) => (
           <button

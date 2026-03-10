@@ -12,7 +12,7 @@ const prototypes = [
   { name: 'ATELIER', path: '/atelier', category: 'Art', icon: '🎨', isCompleted: true },
   
   { name: 'PRISM', path: '/prism', category: 'Science', icon: '🌈', isCompleted: true },
-  { name: 'FORGE', path: '/forge', category: 'Industrial', icon: '🔥', isCompleted: false },
+  { name: 'FORGE', path: '/forge', category: 'Industrial', icon: '🔥', isCompleted: true },
   { name: 'VOID', path: '/void', category: 'Mystery', icon: '🌌', isCompleted: false },
   { name: 'HOME', path: '/home', category: 'Life', icon: '🏠', isCompleted: false },
   { name: 'WARROOM', path: '/warroom', category: 'Strategy', icon: '🎯', isCompleted: false },
