@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent, useState } from 'react';
+import type { DependencyList } from 'react';
 
 type AsyncState<T> = {
   data: T | null;
@@ -7,7 +8,7 @@ type AsyncState<T> = {
   reload: () => Promise<void>;
 };
 
-export function useAsyncData<T>(loader: () => Promise<T>, deps: React.DependencyList = []): AsyncState<T> {
+export function useAsyncData<T>(loader: () => Promise<T>, deps: DependencyList = []): AsyncState<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
