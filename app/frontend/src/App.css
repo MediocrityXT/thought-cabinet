@@ -1,0 +1,11 @@
+.tc-glow-cyan {
+  box-shadow:
+    0 0 0 1px rgba(79, 229, 255, 0.28),
+    0 0 40px rgba(79, 229, 255, 0.15);
+}
+
+.tc-glow-purple {
+  box-shadow:
+    0 0 0 1px rgba(179, 107, 255, 0.28),
+    0 0 40px rgba(179, 107, 255, 0.14);
+}
