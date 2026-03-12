@@ -8,6 +8,42 @@ servers:
     description: Local development server
 
 paths:
+  /health:
+    get:
+      summary: Health status for the running cognitive core
+      operationId: getHealth
+      responses:
+        '200':
+          description: Current runtime health
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  /dashboard/overview:
+    get:
+      summary: Get dashboard overview data for the NEON command center
+      operationId: getDashboardOverview
+      responses:
+        '200':
+          description: Dashboard aggregates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardOverview'
+
+  /blueprint/graph:
+    get:
+      summary: Get knowledge blueprint graph
+      operationId: getBlueprintGraph
+      responses:
+        '200':
+          description: Graph nodes and edges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlueprintGraph'
+
   /config/theme:
     get:
       summary: Get active theme
@@ -116,6 +152,46 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Task'
+    post:
+      summary: Create a new task
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+  /tasks/{id}:
+    put:
+      summary: Update an existing task
+      operationId: updateTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
 
   /evaluations:
     get:
@@ -175,6 +251,28 @@ paths:
       responses:
         '201':
           description: Material added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Material'
+
+  /refinery/materials/{id}:
+    get:
+      summary: Get reading material by ID
+      operationId: getMaterial
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Material content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Material'
 
   /refinery/conversations:
     get:
@@ -207,6 +305,24 @@ paths:
       responses:
         '201':
           description: Conversation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+
+  /refinery/conversations/{id}:
+    get:
+      summary: Get a single AI conversation
+      operationId: getConversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Full conversation
           content:
             application/json:
               schema:
@@ -335,6 +451,66 @@ components:
         category:
           type: string
           enum: [review, focus, alert, quick_win]
+        impactScore:
+          type: integer
+        progress:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TaskCreate:
+      type: object
+      required:
+        - title
+        - domain
+        - timeEstimate
+      properties:
+        title:
+          type: string
+        domain:
+          type: string
+        timeEstimate:
+          type: integer
+        priority:
+          type: string
+          enum: [low, medium, high]
+        status:
+          type: string
+          enum: [todo, in_progress, done]
+        category:
+          type: string
+          enum: [review, focus, alert, quick_win]
+        impactScore:
+          type: integer
+        progress:
+          type: integer
+
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        domain:
+          type: string
+        timeEstimate:
+          type: integer
+        priority:
+          type: string
+          enum: [low, medium, high]
+        status:
+          type: string
+          enum: [todo, in_progress, done]
+        category:
+          type: string
+          enum: [review, focus, alert, quick_win]
+        impactScore:
+          type: integer
+        progress:
+          type: integer
 
     Evaluation:
       type: object
@@ -429,6 +605,8 @@ components:
         - $ref: '#/components/schemas/ConversationMetadata'
         - type: object
           properties:
+            contextId:
+              type: string
             messages:
               type: array
               items:
@@ -442,3 +620,115 @@ components:
                   timestamp:
                     type: string
                     format: date-time
+            content:
+              type: string
+
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+        health:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+
+    DashboardStats:
+      type: object
+      properties:
+        totalNotes:
+          type: integer
+        pendingReview:
+          type: integer
+        highValue:
+          type: integer
+        cognitiveGaps:
+          type: integer
+
+    ProgressEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [cognitive, task, system]
+        title:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        score:
+          type: integer
+
+    DashboardOverview:
+      type: object
+      properties:
+        vaultPath:
+          type: string
+        health:
+          type: integer
+        stats:
+          $ref: '#/components/schemas/DashboardStats'
+        recentProgress:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgressEvent'
+        reviewQueue:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        focusProjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        cognitiveAlerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        quickWins:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+
+    GraphNode:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        type:
+          type: string
+          enum: [known, unknown, gap]
+        domain:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    GraphEdge:
+      type: object
+      properties:
+        source:
+          type: string
+        target:
+          type: string
+        label:
+          type: string
+
+    BlueprintGraph:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphNode'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphEdge'
