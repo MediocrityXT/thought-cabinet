@@ -43,3 +43,6 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Runtime vaults
+app/vaults/

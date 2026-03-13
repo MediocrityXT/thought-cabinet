@@ -1,1 +1,21 @@
-{"activeTheme": "ZEN"}
+{
+  "activeTheme": "ZEN",
+  "vault": {
+    "activePath": "/Users/summer/Documents/thought-cabinet/app/vaults/sample-obsidian-vault",
+    "appFolder": ".thoughtcabinet",
+    "inboxFolder": "inbox"
+  },
+  "llm": {
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKey": "",
+    "defaultModel": "gpt-4.1-mini",
+    "moduleModels": {
+      "dashboard": "",
+      "refinery": "",
+      "organizer": "",
+      "evaluator": "",
+      "blueprint": "",
+      "planner": ""
+    }
+  }
+}

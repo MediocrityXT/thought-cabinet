@@ -67,6 +67,88 @@ paths:
       responses:
         '200':
           description: Theme updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeConfig'
+
+  /settings:
+    get:
+      summary: Get active theme, vault and LLM settings
+      operationId: getSettings
+      responses:
+        '200':
+          description: Runtime settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsPayload'
+    put:
+      summary: Update application settings
+      operationId: updateSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsUpdate'
+      responses:
+        '200':
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsPayload'
+
+  /vaults:
+    get:
+      summary: List available vaults
+      operationId: listVaults
+      responses:
+        '200':
+          description: Vault list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VaultSummary'
+
+  /vaults/create:
+    post:
+      summary: Create a new empty vault
+      operationId: createVault
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaultCreateRequest'
+      responses:
+        '201':
+          description: Created vault
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaultSummary'
+
+  /vaults/select:
+    post:
+      summary: Switch active vault
+      operationId: selectVault
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaultSelectRequest'
+      responses:
+        '200':
+          description: Active vault summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaultSummary'
 
   /notes:
     get:
@@ -363,6 +445,92 @@ components:
           type: string
           enum: [NEON, ZEN, EPOCH, GLITCH, SKY, AURA, AUGURY, LIBRARY, ATELIER, PRISM, FORGE, VOID, HOME, WARROOM]
           example: NEON
+
+    ModuleModels:
+      type: object
+      properties:
+        dashboard:
+          type: string
+        refinery:
+          type: string
+        organizer:
+          type: string
+        evaluator:
+          type: string
+        blueprint:
+          type: string
+        planner:
+          type: string
+
+    LLMSettings:
+      type: object
+      properties:
+        baseUrl:
+          type: string
+        apiKey:
+          type: string
+        defaultModel:
+          type: string
+        moduleModels:
+          $ref: '#/components/schemas/ModuleModels'
+
+    VaultSummary:
+      type: object
+      properties:
+        name:
+          type: string
+        path:
+          type: string
+        isObsidian:
+          type: boolean
+        gitInitialized:
+          type: boolean
+        noteCount:
+          type: integer
+        appDataPath:
+          type: string
+
+    SettingsPayload:
+      type: object
+      properties:
+        activeTheme:
+          type: string
+          enum: [NEON, ZEN, EPOCH, GLITCH, SKY, AURA, AUGURY, LIBRARY, ATELIER, PRISM, FORGE, VOID, HOME, WARROOM]
+        vault:
+          $ref: '#/components/schemas/VaultSummary'
+        availableVaults:
+          type: array
+          items:
+            $ref: '#/components/schemas/VaultSummary'
+        llm:
+          $ref: '#/components/schemas/LLMSettings'
+
+    SettingsUpdate:
+      type: object
+      properties:
+        activeTheme:
+          type: string
+          enum: [NEON, ZEN, EPOCH, GLITCH, SKY, AURA, AUGURY, LIBRARY, ATELIER, PRISM, FORGE, VOID, HOME, WARROOM]
+        activeVaultPath:
+          type: string
+        llm:
+          $ref: '#/components/schemas/LLMSettings'
+
+    VaultCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+
+    VaultSelectRequest:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          type: string
 
     NoteMetadata:
       type: object

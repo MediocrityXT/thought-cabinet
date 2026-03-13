@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 from urllib.parse import urlparse
@@ -11,6 +12,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from config_store import MODULE_KEYS, default_blank_vault_path, default_sample_vault_path, load_config, save_config
 from db import MarkdownDB
 
 ThemeName = Literal[
@@ -29,6 +31,7 @@ ThemeName = Literal[
     "HOME",
     "WARROOM",
 ]
+ModuleName = Literal["dashboard", "refinery", "organizer", "evaluator", "blueprint", "planner"]
 NoteType = Literal["known", "unknown", "gap"]
 TaskPriority = Literal["low", "medium", "high"]
 TaskStatus = Literal["todo", "in_progress", "done"]
@@ -38,8 +41,58 @@ MaterialStatus = Literal["unread", "reading", "refined"]
 MessageRole = Literal["user", "assistant", "system"]
 
 
+def now_iso() -> str:
+    return datetime.now().isoformat(timespec="seconds")
+
+
 class ThemeConfig(BaseModel):
     activeTheme: ThemeName
+
+
+class ModuleModels(BaseModel):
+    dashboard: str = ""
+    refinery: str = ""
+    organizer: str = ""
+    evaluator: str = ""
+    blueprint: str = ""
+    planner: str = ""
+
+
+class LLMSettings(BaseModel):
+    baseUrl: str
+    apiKey: str
+    defaultModel: str
+    moduleModels: ModuleModels
+
+
+class VaultSummary(BaseModel):
+    name: str
+    path: str
+    isObsidian: bool
+    gitInitialized: bool
+    noteCount: int
+    appDataPath: str
+
+
+class SettingsPayload(BaseModel):
+    activeTheme: ThemeName
+    vault: VaultSummary
+    availableVaults: List[VaultSummary]
+    llm: LLMSettings
+
+
+class SettingsUpdate(BaseModel):
+    activeTheme: Optional[ThemeName] = None
+    llm: Optional[LLMSettings] = None
+    activeVaultPath: Optional[str] = None
+
+
+class VaultCreateRequest(BaseModel):
+    name: str
+
+
+class VaultSelectRequest(BaseModel):
+    path: str
 
 
 class NoteMetadata(BaseModel):
@@ -231,7 +284,7 @@ class BlueprintGraph(BaseModel):
     edges: List[GraphEdge]
 
 
-app = FastAPI(title="ThoughtCabinet Core API", version="1.0.0")
+app = FastAPI(title="ThoughtCabinet Core API", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -241,41 +294,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-CONFIG_FILE = os.path.join(BASE_DIR, "data", "config.json")
-
-
-def now_iso() -> str:
-    return datetime.now().isoformat(timespec="seconds")
-
-
-def load_config() -> Dict[str, Any]:
-    if not os.path.exists(CONFIG_FILE):
-        os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-        with open(CONFIG_FILE, "w", encoding="utf-8") as file:
-            json.dump({"activeTheme": "NEON"}, file, ensure_ascii=False, indent=2)
-    with open(CONFIG_FILE, "r", encoding="utf-8") as file:
-        return json.load(file)
-
-
-def save_config(config: Dict[str, Any]) -> Dict[str, Any]:
-    os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-    with open(CONFIG_FILE, "w", encoding="utf-8") as file:
-        json.dump(config, file, ensure_ascii=False, indent=2)
-    return config
-
 
 def normalize_tags(tags: Optional[List[str]]) -> List[str]:
     if not tags:
         return []
-    seen = set()
-    normalized: List[str] = []
-    for tag in tags:
-        item = tag.strip().lower()
-        if item and item not in seen:
-            seen.add(item)
-            normalized.append(item)
-    return normalized
+    return list(dict.fromkeys(tag.strip().lower() for tag in tags if tag.strip()))
 
 
 def infer_domain(text: str) -> str:
@@ -286,6 +309,8 @@ def infer_domain(text: str) -> str:
         return "产品"
     if any(word in lowered for word in ["design", "ui", "品牌", "视觉"]):
         return "设计"
+    if any(word in lowered for word in ["finance", "商业", "business"]):
+        return "商业"
     return "General"
 
 
@@ -293,22 +318,19 @@ def synthesize_material(payload: MaterialCreate) -> Dict[str, str]:
     parsed = urlparse(payload.sourceUrl)
     host = parsed.netloc or "source"
     title = payload.title or parsed.path.strip("/").replace("-", " ").title() or host
-    summary = (
-        f"{title} 主要讨论了信息提炼、证据链和落地行动三部分，"
-        f"适合继续进入 Socratic 精炼流程。"
-    )
+    summary = f"{title} 主要讨论了问题背景、证据链和可执行动作三部分，适合进入 Socratic 精炼流程。"
     content = (
         f"# {title}\n\n"
         f"- Source: {payload.sourceUrl}\n"
         f"- Captured: {now_iso()}\n\n"
         "## 30 秒速读报告\n\n"
-        "1. 核心论点：原文试图给出一个可执行的方法，而不是停留在概念层。\n"
-        "2. 关键数据：需要进一步验证文中的样本、时间和适用边界。\n"
-        "3. 争议点：结论看起来成立，但仍依赖上下文和团队能力。\n\n"
-        "## 建议追问\n\n"
-        "- 这篇材料和你现有的知识体系有什么冲突？\n"
-        "- 哪一句话值得提炼成永久笔记？\n"
-        "- 下一步要验证的数据是什么？\n"
+        "1. 核心论点：作者试图给出可执行的工作流，而不是抽象口号。\n"
+        "2. 关键数据：需要验证样本范围、时间窗口和适用前提。\n"
+        "3. 争议点：结论是否可迁移到你的语境，还需要对照现有知识库。\n\n"
+        "## 建议提问\n\n"
+        "- 这篇材料和你已有哪条判断冲突？\n"
+        "- 哪一句话值得萃取成永久笔记？\n"
+        "- 下一步要补的证据是什么？\n"
     )
     return {"title": title, "summary": summary, "content": content, "status": "unread"}
 
@@ -323,35 +345,14 @@ def generate_assessment(idea: str) -> Dict[str, Any]:
     feasibility_score = min(95, 35 + feasibility * 10 + team * 6)
     domain = infer_domain(idea)
 
-    strengths = [
-        "切入点明确，容易在 30 秒内解释清楚。",
-        "可以先用轻量 MVP 验证，而不必一开始追求全栈完备。",
-        "如果执行节奏稳定，复利效应会明显。",
-    ]
-    weaknesses = [
-        "差异化还不够尖锐，用户为什么现在就要用它仍需证明。",
-        "如果依赖太多 AI 自动化，输出质量可能不稳定。",
-        "范围继续扩大就会拖慢交付速度。",
-    ]
-    opportunities = [
-        "个人知识管理和 AI 工作流仍在快速增长。",
-        "可从现有笔记或任务场景切入，降低迁移成本。",
-        "如果能形成固定仪式，用户留存会更强。",
-    ]
-    threats = [
-        "通用工具已经很多，功能堆叠很容易被替代。",
-        "过早复杂化会消耗团队耐心。",
-        "若核心价值无法量化，决策会不断摇摆。",
-    ]
-
     if impact >= 80 and feasibility_score >= 75:
-        roast = "这次不像玩具，至少有成为项目的资格。问题不在创意，而在你能不能把范围收紧后连续交付。"
+        roast = "这次不像玩具，至少有成为项目的资格。问题不在创意，而在你能不能收紧范围并持续交付。"
         status: EvaluationStatus = "active"
     elif impact >= 75:
-        roast = "方向有野心，但现在还是一张漂亮草图。先拆成能在一周内验收的版本，否则又会变成自我感动。"
+        roast = "方向有野心，但现在还是一张漂亮草图。先拆到一周可验证的粒度，再谈产品化。"
         status = "evaluating"
     else:
-        roast = "目前更像一个功能点，不是产品。除非你能指出明确用户、明确频率、明确替代方案，否则不值得重投入。"
+        roast = "目前更像功能点，不像产品。若不能说明用户、频率和替代方案，就不值得重投入。"
         status = "idea"
 
     return {
@@ -361,10 +362,26 @@ def generate_assessment(idea: str) -> Dict[str, Any]:
         "domain": domain,
         "status": status,
         "assessment": {
-            "strengths": strengths,
-            "weaknesses": weaknesses,
-            "opportunities": opportunities,
-            "threats": threats,
+            "strengths": [
+                "切入点足够具体，容易解释给团队或自己未来的版本听。",
+                "可以先用低成本 MVP 验证，而不是一次性上完整系统。",
+                "如果执行稳定，长期会形成知识和任务的复利。",
+            ],
+            "weaknesses": [
+                "差异化仍需要更尖锐的用户价值陈述。",
+                "一旦范围扩大，交付速度会明显下降。",
+                "如果过度依赖 AI 自动化，输出质量会波动。",
+            ],
+            "opportunities": [
+                "个人知识管理和 AI 工作流仍在持续增长。",
+                "可以从现有笔记与待办流程切入，迁移成本较低。",
+                "一旦形成稳定使用习惯，留存比单次工具更强。",
+            ],
+            "threats": [
+                "通用工具很多，功能堆叠很容易被替代。",
+                "过早复杂化会消耗执行耐心。",
+                "价值如果无法量化，决策会持续摇摆。",
+            ],
             "roastComment": roast,
             "scores": {
                 "innovation": innovation,
@@ -378,24 +395,30 @@ def generate_assessment(idea: str) -> Dict[str, Any]:
 
 def generate_refinery_reply(message: str, context_title: Optional[str]) -> str:
     summary = (
-        f"基于 {context_title or '当前上下文'}，我会先把你的问题拆成三个层次："
+        f"基于 {context_title or '当前上下文'}，我会先把问题拆成三个层次："
         "\n\n1. 原文到底在声称什么？"
-        "\n2. 这个结论成立的条件是什么？"
-        "\n3. 哪一部分值得变成你的永久笔记？"
+        "\n2. 这个结论成立的前提是什么？"
+        "\n3. 哪一部分值得提炼成你的永久笔记？"
     )
     if re.search(r"总结|summary|tl;dr", message, flags=re.IGNORECASE):
-        return (
-            f"{summary}\n\n"
-            "简版结论：这条材料值得保留，但需要你补一条“为什么这对我重要”的个人判断。"
-        )
+        return f"{summary}\n\n简版结论：这条材料值得保留，但需要补一句“为什么这对我重要”。"
     if re.search(r"区别|difference|比较", message, flags=re.IGNORECASE):
-        return (
-            f"{summary}\n\n"
-            "比较建议：先写共同目标，再写约束差异，最后写适用场景。这样最容易沉淀成长期可复用的笔记。"
-        )
-    return (
-        f"{summary}\n\n"
-        f"你刚才提到“{message[:36]}”，下一步建议是把它改写成一句可验证的判断，再决定是否提取到笔记。"
+        return f"{summary}\n\n比较建议：先写共同目标，再写约束差异，最后写适用边界。"
+    return f"{summary}\n\n你刚才提到“{message[:36]}”，下一步建议把它改写成一句可验证判断。"
+
+
+def current_settings() -> SettingsPayload:
+    config = load_config()
+    return SettingsPayload(
+        activeTheme=config["activeTheme"],
+        vault=VaultSummary(**MarkdownDB.get_vault_summary()),
+        availableVaults=[VaultSummary(**item) for item in MarkdownDB.list_available_vaults()],
+        llm=LLMSettings(
+            baseUrl=config["llm"]["baseUrl"],
+            apiKey=config["llm"]["apiKey"],
+            defaultModel=config["llm"]["defaultModel"],
+            moduleModels=ModuleModels(**config["llm"]["moduleModels"]),
+        ),
     )
 
 
@@ -403,15 +426,12 @@ def build_dashboard() -> DashboardOverview:
     notes = MarkdownDB.list("notes")
     tasks = MarkdownDB.list("tasks")
     evaluations = MarkdownDB.list("evaluations")
+    summary = MarkdownDB.get_vault_summary()
 
     review_queue = [Task(**task) for task in tasks if task.get("category") == "review" and task.get("status") != "done"][:5]
     focus_projects = [Task(**task) for task in tasks if task.get("category") == "focus"][:5]
     cognitive_alerts = [Task(**task) for task in tasks if task.get("category") == "alert"][:5]
-    quick_wins = [
-        Task(**task)
-        for task in tasks
-        if task.get("category") == "quick_win" and int(task.get("timeEstimate", 0)) <= 30
-    ][:6]
+    quick_wins = [Task(**task) for task in tasks if task.get("category") == "quick_win" and int(task.get("timeEstimate", 0)) <= 30][:6]
 
     progress_events: List[ProgressEvent] = []
     for note in notes[:3]:
@@ -442,7 +462,7 @@ def build_dashboard() -> DashboardOverview:
             ProgressEvent(
                 id="system-sync",
                 type="system",
-                title="知识体系完成一次增量同步",
+                title="Vault 已完成一次索引同步",
                 description="系统已刷新仪表板、待办队列和认知缺口视图。",
                 timestamp=now_iso(),
             )
@@ -450,10 +470,10 @@ def build_dashboard() -> DashboardOverview:
 
     high_value = sum(1 for item in evaluations if item.get("impact", 0) >= 75 and item.get("status") != "archived")
     gaps = sum(1 for item in notes if item.get("type") == "gap")
-    health = max(88, 100 - max(0, len(cognitive_alerts) * 2) - max(0, gaps - 3))
+    health = max(82, 100 - max(0, len(cognitive_alerts) * 2) - max(0, gaps - 2))
 
     return DashboardOverview(
-        vaultPath=os.path.abspath(os.path.join(BASE_DIR, "..")),
+        vaultPath=summary["path"],
         health=health,
         stats=DashboardStats(
             totalNotes=len(notes),
@@ -481,317 +501,127 @@ def build_blueprint_graph() -> BlueprintGraph:
         )
         for note in notes
     ]
-
     edges: List[GraphEdge] = []
     for index, left in enumerate(notes):
         for right in notes[index + 1 :]:
-            left_tags = set(left.get("tags", []))
-            right_tags = set(right.get("tags", []))
-            overlap = sorted(left_tags & right_tags)
+            overlap = sorted(set(left.get("tags", [])) & set(right.get("tags", [])))
             if overlap:
-                edges.append(
-                    GraphEdge(
-                        source=left["id"],
-                        target=right["id"],
-                        label=f"共享: {', '.join(overlap[:2])}",
-                    )
-                )
+                edges.append(GraphEdge(source=left["id"], target=right["id"], label=f"共享: {', '.join(overlap[:2])}"))
             elif left.get("domain") == right.get("domain") and len(edges) < len(notes) * 2:
-                edges.append(
-                    GraphEdge(
-                        source=left["id"],
-                        target=right["id"],
-                        label="同领域",
-                    )
-                )
+                edges.append(GraphEdge(source=left["id"], target=right["id"], label="同领域"))
     return BlueprintGraph(nodes=nodes, edges=edges[:24])
 
 
-def seed_demo_data() -> None:
-    seeds: Dict[str, List[Dict[str, Any]]] = {
-        "notes": [
-            {
-                "id": "react-philosophy",
-                "metadata": {
-                    "title": "React 设计哲学",
-                    "domain": "技术",
-                    "type": "known",
-                    "tags": ["react", "frontend", "architecture"],
-                },
-                "content": "# React 设计哲学\n\n组件化、声明式和数据流约束共同决定了系统可维护性。",
-            },
-            {
-                "id": "hooks-revolution",
-                "metadata": {
-                    "title": "Hooks 的革新",
-                    "domain": "技术",
-                    "type": "known",
-                    "tags": ["react", "hooks", "frontend"],
-                },
-                "content": "# Hooks 的革新\n\n状态逻辑复用从 mixin/HOC/render props 收敛到了函数组合。",
-            },
-            {
-                "id": "frontend-performance-gap",
-                "metadata": {
-                    "title": "性能优化缺口",
-                    "domain": "技术",
-                    "type": "gap",
-                    "tags": ["react", "performance", "profiling"],
-                },
-                "content": "# 性能优化缺口\n\n目前仍缺少对渲染瓶颈、缓存边界和监控策略的系统笔记。",
-            },
-            {
-                "id": "server-components",
-                "metadata": {
-                    "title": "Server Components 调研",
-                    "domain": "技术",
-                    "type": "unknown",
-                    "tags": ["react", "rsc", "nextjs"],
-                },
-                "content": "# Server Components 调研\n\n需要区分编译时边界、序列化限制和数据获取模型。",
-            },
-            {
-                "id": "rag-systems",
-                "metadata": {
-                    "title": "RAG 系统设计要点",
-                    "domain": "技术",
-                    "type": "known",
-                    "tags": ["ai", "rag", "retrieval"],
-                },
-                "content": "# RAG 系统设计要点\n\n检索质量、上下文压缩和评测闭环是三大核心变量。",
-            },
-            {
-                "id": "web3-payments",
-                "metadata": {
-                    "title": "Web3 支付碎片",
-                    "domain": "产品",
-                    "type": "gap",
-                    "tags": ["web3", "payments", "product"],
-                },
-                "content": "# Web3 支付碎片\n\n过去一周的零散记录显示出合并为专题笔记的价值。",
-            },
-            {
-                "id": "design-psychology",
-                "metadata": {
-                    "title": "产品设计心理学原理",
-                    "domain": "设计",
-                    "type": "known",
-                    "tags": ["design", "psychology", "ux"],
-                },
-                "content": "# 产品设计心理学原理\n\n认知负荷、峰终定律和反馈设计直接影响转化率。",
-            },
-        ],
+def commit_all_in_vault(vault_path: str, message: str) -> None:
+    MarkdownDB._ensure_git_repo(vault_path)  # type: ignore[attr-defined]
+    subprocess.run(["git", "-C", vault_path, "add", "."], check=False, capture_output=True, text=True)
+    status = subprocess.run(["git", "-C", vault_path, "status", "--porcelain"], check=False, capture_output=True, text=True)
+    if status.stdout.strip():
+        subprocess.run(["git", "-C", vault_path, "commit", "-m", message], check=False, capture_output=True, text=True)
+
+
+def bootstrap_sample_vaults() -> None:
+    sample_path = default_sample_vault_path()
+    blank_path = default_blank_vault_path()
+    MarkdownDB.ensure_vault(sample_path, create_obsidian=True)
+    MarkdownDB.ensure_vault(blank_path, create_obsidian=True)
+
+    sample_notes = [
+        ("tech/react-rendering", {"title": "React 渲染边界", "domain": "技术", "type": "known", "tags": ["react", "performance"]}, "# React 渲染边界\n\nReact 在组件边界内追踪状态变化，真正影响性能的通常不是框架本身，而是状态范围、渲染粒度和依赖管理。记录这些边界，有助于后续诊断慢渲染、重复请求与错误缓存。"),
+        ("tech/rag-evaluation", {"title": "RAG 评测笔记", "domain": "技术", "type": "known", "tags": ["ai", "rag", "evaluation"]}, "# RAG 评测笔记\n\n做检索增强时，答案质量常被模型表现掩盖。真正应该追踪的是召回率、上下文命中、引用稳定性和失败样本。没有评测闭环，再漂亮的演示也无法指导系统改进。"),
+        ("design/interface-motion", {"title": "界面动效节奏", "domain": "设计", "type": "known", "tags": ["design", "motion"]}, "# 界面动效节奏\n\n动效不是装饰，而是状态传递。加载、切换和确认这三种动作，如果节奏统一，用户会更容易理解界面的层级变化。反过来，随意加动画只会放大噪音，干扰任务完成。"),
+        ("business/pricing-notes", {"title": "定价实验碎片", "domain": "商业", "type": "unknown", "tags": ["pricing", "business"]}, "# 定价实验碎片\n\n同一功能在不同定价层级下，会暴露出完全不同的购买理由。用户愿意付费，不代表他们认同全部价值。记录成交原因、放弃原因和替代方案，才可能形成可靠的商业判断。"),
+        ("science/sleep-and-focus", {"title": "睡眠与专注关系", "domain": "科学", "type": "known", "tags": ["science", "health"]}, "# 睡眠与专注关系\n\n专注并不只由意志决定。睡眠不足时，切换成本和拖延概率会一起上升。把任务难度、睡眠质量和完成率并排记录，可以比主观自责更快找到真正影响执行的变量。"),
+        ("philosophy/decision-fatigue", {"title": "决策疲劳笔记", "domain": "哲学", "type": "gap", "tags": ["philosophy", "decision"]}, "# 决策疲劳笔记\n\n很多所谓拖延，并不是不想做，而是每次开始前都要重新判断价值、路径和顺序。把高频决策流程外化为模板，能减少心理摩擦，也能让执行不再依赖当天的情绪状态。"),
+        ("product/task-loops", {"title": "任务闭环设计", "domain": "产品", "type": "known", "tags": ["product", "workflow"]}, "# 任务闭环设计\n\n一个系统要帮助用户推进任务，至少需要发现、判断、执行、复盘四个阶段。如果界面只展示列表，而不解释下一步为何重要，用户就会停留在整理而不是行动。"),
+        ("writing/knowledge-distillation", {"title": "知识蒸馏写作", "domain": "写作", "type": "known", "tags": ["writing", "knowledge"]}, "# 知识蒸馏写作\n\n写作最有价值的部分，不是重复原文，而是把复杂材料压缩成未来仍可调用的判断。每一篇永久笔记都应该回答三个问题：这是什么、为什么重要、以后何时会再次用到。"),
+        ("career/feedback-journal", {"title": "反馈日志模板", "domain": "职业", "type": "unknown", "tags": ["career", "feedback"]}, "# 反馈日志模板\n\n收到反馈时，人容易只记住情绪最强的那一句。建立反馈日志后，可以把事件、建议、证据和后续行动拆开记录。长期看，这比一次次临时反思更能形成稳定的成长素材。"),
+        ("finance/cashflow-review", {"title": "现金流复盘清单", "domain": "理财", "type": "gap", "tags": ["finance", "review"]}, "# 现金流复盘清单\n\n理财执行常常输在复盘不稳定。收入结构、固定支出、试验性开销和意外事件，如果不按月回顾，很难判断问题是预算失效，还是目标本身就不切实际。"),
+    ]
+
+    for item_id, metadata, content in sample_notes:
+        MarkdownDB.ensure("notes", item_id, metadata, content, vault_path=sample_path, track=False)
+
+    seeds = {
         "tasks": [
-            {
-                "id": "review-db-performance",
-                "metadata": {
-                    "title": "评估数据库查询优化方案",
-                    "domain": "技术/后端",
-                    "timeEstimate": 45,
-                    "priority": "high",
-                    "status": "todo",
-                    "category": "review",
-                    "impactScore": 84,
-                    "progress": 20,
-                },
-                "content": "- 比较索引策略\n- 确认慢查询来源",
-            },
-            {
-                "id": "review-rust-note",
-                "metadata": {
-                    "title": "Review Rust 所有权机制笔记",
-                    "domain": "技术/语言",
-                    "timeEstimate": 30,
-                    "priority": "medium",
-                    "status": "todo",
-                    "category": "review",
-                    "impactScore": 72,
-                    "progress": 0,
-                },
-                "content": "- 补齐生命周期例子\n- 增加和 Go 并发模型对照",
-            },
-            {
-                "id": "focus-thoughtcabinet",
-                "metadata": {
-                    "title": "ThoughtCabinet 全栈交付",
-                    "domain": "产品",
-                    "timeEstimate": 120,
-                    "priority": "high",
-                    "status": "in_progress",
-                    "category": "focus",
-                    "impactScore": 95,
-                    "progress": 62,
-                },
-                "content": "- 前端完成主题化\n- 后端完成聚合接口\n- 联调构建",
-            },
-            {
-                "id": "focus-ai-workflow",
-                "metadata": {
-                    "title": "AI 工作流设计整理",
-                    "domain": "设计",
-                    "timeEstimate": 90,
-                    "priority": "high",
-                    "status": "in_progress",
-                    "category": "focus",
-                    "impactScore": 88,
-                    "progress": 46,
-                },
-                "content": "- 明确 Refinery -> Note -> Task 闭环",
-            },
-            {
-                "id": "alert-web3-gap",
-                "metadata": {
-                    "title": "补足 Web3 支付领域知识断层",
-                    "domain": "技术",
-                    "timeEstimate": 50,
-                    "priority": "high",
-                    "status": "todo",
-                    "category": "alert",
-                    "impactScore": 81,
-                    "progress": 0,
-                },
-                "content": "- 阅读稳定币结算材料\n- 补全支付链路图",
-            },
-            {
-                "id": "alert-distributed-gap",
-                "metadata": {
-                    "title": "分布式系统一致性理论补课",
-                    "domain": "技术",
-                    "timeEstimate": 40,
-                    "priority": "medium",
-                    "status": "todo",
-                    "category": "alert",
-                    "impactScore": 76,
-                    "progress": 0,
-                },
-                "content": "- 对比 Paxos / Raft\n- 补齐 CAP 误区",
-            },
-            {
-                "id": "quick-rust-ch3",
-                "metadata": {
-                    "title": "阅读 Rust 并发模型第 3 章",
-                    "domain": "技术",
-                    "timeEstimate": 25,
-                    "priority": "medium",
-                    "status": "todo",
-                    "category": "quick_win",
-                    "impactScore": 66,
-                    "progress": 0,
-                },
-                "content": "- 提炼 3 条可迁移结论",
-            },
-            {
-                "id": "quick-capsule-sort",
-                "metadata": {
-                    "title": "整理今日闪念笔记",
-                    "domain": "个人",
-                    "timeEstimate": 15,
-                    "priority": "low",
-                    "status": "todo",
-                    "category": "quick_win",
-                    "impactScore": 58,
-                    "progress": 0,
-                },
-                "content": "- 归类、打标签、决定是否进入评估",
-            },
-            {
-                "id": "done-react-doc",
-                "metadata": {
-                    "title": "完成 React 性能优化文档",
-                    "domain": "工作",
-                    "timeEstimate": 80,
-                    "priority": "high",
-                    "status": "done",
-                    "category": "focus",
-                    "impactScore": 89,
-                    "progress": 100,
-                },
-                "content": "- 输出 15 条优化技巧和观测指标",
-            },
+            {"id": "review-react-rendering", "metadata": {"title": "Review React 渲染边界", "domain": "技术", "timeEstimate": 30, "priority": "medium", "status": "todo", "category": "review", "impactScore": 72, "progress": 0}, "content": "- 对照 profiler 结果\n- 标记可拆分组件"},
+            {"id": "focus-vault-integration", "metadata": {"title": "完成 Vault 接入设计", "domain": "产品", "timeEstimate": 120, "priority": "high", "status": "in_progress", "category": "focus", "impactScore": 94, "progress": 58}, "content": "- 接 Obsidian vault\n- 挂 git 历史\n- 打通设置面板"},
+            {"id": "alert-finance-gap", "metadata": {"title": "补现金流复盘知识缺口", "domain": "理财", "timeEstimate": 45, "priority": "high", "status": "todo", "category": "alert", "impactScore": 80, "progress": 0}, "content": "- 比较月度复盘模板\n- 写一版自己的版本"},
+            {"id": "quick-distill-note", "metadata": {"title": "提炼知识蒸馏写作笔记", "domain": "写作", "timeEstimate": 20, "priority": "low", "status": "todo", "category": "quick_win", "impactScore": 60, "progress": 0}, "content": "- 写一条为什么这条判断重要"},
         ],
         "evaluations": [
-            {
-                "id": "eval-finance-assistant",
-                "metadata": generate_assessment("AI 个人理财助手"),
-                "content": "# Evaluation\n\n需要验证高频使用场景和留存机制。",
-            },
-            {
-                "id": "eval-distributed-notes",
-                "metadata": generate_assessment("分布式笔记系统"),
-                "content": "# Evaluation\n\n优势在架构深度，风险在需求边界过宽。",
-            },
-            {
-                "id": "eval-testing-framework",
-                "metadata": generate_assessment("自动化测试框架"),
-                "content": "# Evaluation\n\n若能聚焦 Electron + Web 双端，会更容易形成差异化。",
-            },
+            {"id": "eval-agent-notes", "metadata": generate_assessment("面向 Obsidian 的 AI 笔记管家"), "content": "# Evaluation\n\n需要验证真实用户是否愿意让系统代为整理。"},
+            {"id": "eval-reading-workbench", "metadata": generate_assessment("沉浸式阅读精炼工作台"), "content": "# Evaluation\n\n核心风险在于是否足够高频和可复用。"},
         ],
         "materials": [
-            {
-                "id": "rag-future",
-                "metadata": {
-                    "title": "为什么 RAG 是未来？",
-                    "sourceUrl": "https://example.com/blog/rag-future",
-                    "summary": "RAG 仍然是构建可靠 AI 应用的关键技术，重点在成本、实时性和可解释性。",
-                    "status": "reading",
-                },
-                "content": "# 为什么 RAG 是未来？\n\n## 核心论点\n\n1. 长上下文不能替代高质量检索。\n2. RAG 让答案来源可追踪。\n3. 未来会是混合架构，而不是二选一。",
-            },
-            {
-                "id": "react19-overview",
-                "metadata": {
-                    "title": "React 19 新特性速览",
-                    "sourceUrl": "https://example.com/blog/react-19-overview",
-                    "summary": "重点在 actions、server components 配套能力和表单工作流收敛。",
-                    "status": "unread",
-                },
-                "content": "# React 19 新特性速览\n\n需要重点判断哪些能力适合真实生产环境。",
-            },
+            {"id": "material-rag-future", "metadata": {"title": "为什么 RAG 仍然重要", "sourceUrl": "https://example.com/rag", "summary": "文章讨论了长上下文不能完全替代检索增强。", "status": "reading"}, "content": "# 为什么 RAG 仍然重要\n\n文章强调检索、引用和评测依旧是可靠系统的核心。"},
         ],
         "conversations": [
-            {
-                "id": "conv-rag-deep-dive",
-                "metadata": {
-                    "title": "RAG 深挖对话",
-                    "contextId": "rag-future",
-                    "messages": [
-                        {
-                            "role": "assistant",
-                            "content": "这篇材料核心在于：RAG 不是旧时代方案，而是长上下文时代的配套机制。",
-                            "timestamp": now_iso(),
-                        },
-                        {
-                            "role": "user",
-                            "content": "用大白话解释一下中间遗忘。",
-                            "timestamp": now_iso(),
-                        },
-                        {
-                            "role": "assistant",
-                            "content": "就是模型虽然看完了整篇文章，但越靠中间的信息越容易想不起来。",
-                            "timestamp": now_iso(),
-                        },
-                    ],
-                },
-                "content": "# AI Refinery Conversation\n\n围绕 RAG 和长上下文的精炼对话。",
-            }
+            {"id": "conversation-rag", "metadata": {"title": "RAG 精炼对话", "contextId": "material-rag-future", "messages": [{"role": "assistant", "content": "这篇材料的重点不是模型参数，而是证据链。", "timestamp": now_iso()}]}, "content": "# Conversation\n\n初始精炼对话。"},
         ],
     }
 
     for collection, items in seeds.items():
         for item in items:
-            MarkdownDB.ensure(collection, item["id"], item["metadata"], item["content"])
+            MarkdownDB.ensure(collection, item["id"], item["metadata"], item["content"], vault_path=sample_path, track=False)
+
+    commit_all_in_vault(sample_path, "bootstrap sample vault")
+
+    config = load_config()
+    if not os.path.exists(config["vault"]["activePath"]):
+        config["vault"]["activePath"] = sample_path
+        save_config(config)
 
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    load_config()
-    seed_demo_data()
+    bootstrap_sample_vaults()
+    MarkdownDB.ensure_vault(MarkdownDB.active_vault_path(), create_obsidian=False)
 
 
 @app.get("/api/health")
 async def health() -> Dict[str, Any]:
     overview = build_dashboard()
     return {"status": "ok", "health": overview.health, "updatedAt": now_iso()}
+
+
+@app.get("/api/settings", response_model=SettingsPayload)
+async def get_settings() -> SettingsPayload:
+    return current_settings()
+
+
+@app.put("/api/settings", response_model=SettingsPayload)
+async def update_settings(payload: SettingsUpdate) -> SettingsPayload:
+    config = load_config()
+    if payload.activeTheme is not None:
+        config["activeTheme"] = payload.activeTheme
+    if payload.activeVaultPath:
+        MarkdownDB.switch_vault(payload.activeVaultPath)
+        config = load_config()
+    if payload.llm is not None:
+        config["llm"] = {
+            "baseUrl": payload.llm.baseUrl,
+            "apiKey": payload.llm.apiKey,
+            "defaultModel": payload.llm.defaultModel,
+            "moduleModels": payload.llm.moduleModels.model_dump(),
+        }
+    save_config(config)
+    return current_settings()
+
+
+@app.get("/api/vaults", response_model=List[VaultSummary])
+async def list_vaults() -> List[VaultSummary]:
+    return [VaultSummary(**item) for item in MarkdownDB.list_available_vaults()]
+
+
+@app.post("/api/vaults/create", response_model=VaultSummary, status_code=201)
+async def create_vault(payload: VaultCreateRequest) -> VaultSummary:
+    return VaultSummary(**MarkdownDB.create_empty_vault(payload.name))
+
+
+@app.post("/api/vaults/select", response_model=VaultSummary)
+async def select_vault(payload: VaultSelectRequest) -> VaultSummary:
+    return VaultSummary(**MarkdownDB.switch_vault(payload.path))
 
 
 @app.get("/api/dashboard/overview", response_model=DashboardOverview)
@@ -806,19 +636,21 @@ async def blueprint_graph() -> BlueprintGraph:
 
 @app.get("/api/config/theme", response_model=ThemeConfig)
 async def get_theme() -> ThemeConfig:
-    return ThemeConfig(**load_config())
+    return ThemeConfig(activeTheme=load_config()["activeTheme"])
 
 
 @app.put("/api/config/theme", response_model=ThemeConfig)
 async def update_theme(theme: ThemeConfig) -> ThemeConfig:
-    config = save_config(theme.model_dump())
-    return ThemeConfig(**config)
+    config = load_config()
+    config["activeTheme"] = theme.activeTheme
+    save_config(config)
+    return ThemeConfig(activeTheme=config["activeTheme"])
 
 
 @app.get("/api/notes", response_model=List[Note])
 async def list_notes(
     domain: Optional[str] = None,
-    type: Optional[NoteType] = Query(default=None),
+    note_type: Optional[NoteType] = Query(default=None, alias="type"),
     search: Optional[str] = None,
 ) -> List[Note]:
     notes = MarkdownDB.list("notes")
@@ -826,7 +658,7 @@ async def list_notes(
     for note in notes:
         if domain and note.get("domain") != domain:
             continue
-        if type and note.get("type") != type:
+        if note_type and note.get("type") != note_type:
             continue
         if search:
             haystack = f"{note.get('title', '')}\n{note.get('content', '')}".lower()
@@ -840,18 +672,13 @@ async def list_notes(
 async def create_note(note: NoteCreate) -> Note:
     created = MarkdownDB.create(
         "notes",
-        {
-            "title": note.title,
-            "domain": note.domain,
-            "type": note.type,
-            "tags": normalize_tags(note.tags),
-        },
+        {"title": note.title, "domain": note.domain, "type": note.type, "tags": normalize_tags(note.tags)},
         note.content,
     )
     return Note(**created)
 
 
-@app.get("/api/notes/{id}", response_model=Note)
+@app.get("/api/notes/{id:path}", response_model=Note)
 async def get_note(id: str) -> Note:
     note = MarkdownDB.get("notes", id)
     if not note:
@@ -859,15 +686,13 @@ async def get_note(id: str) -> Note:
     return Note(**note)
 
 
-@app.put("/api/notes/{id}", response_model=Note)
+@app.put("/api/notes/{id:path}", response_model=Note)
 async def update_note(id: str, note_update: NoteUpdate) -> Note:
     note = MarkdownDB.get("notes", id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
-
     metadata = {key: value for key, value in note.items() if key not in {"id", "content"}}
     content = note.get("content", "")
-
     if note_update.title is not None:
         metadata["title"] = note_update.title
     if note_update.domain is not None:
@@ -878,16 +703,12 @@ async def update_note(id: str, note_update: NoteUpdate) -> Note:
         metadata["tags"] = normalize_tags(note_update.tags)
     if note_update.content is not None:
         content = f"{content.rstrip()}\n\n{note_update.content}" if note_update.append and content else note_update.content
-
     updated = MarkdownDB.save("notes", id, metadata, content)
     return Note(**updated)
 
 
 @app.get("/api/tasks", response_model=List[Task])
-async def list_tasks(
-    status: Optional[TaskStatus] = None,
-    category: Optional[TaskCategory] = None,
-) -> List[Task]:
+async def list_tasks(status: Optional[TaskStatus] = None, category: Optional[TaskCategory] = None) -> List[Task]:
     tasks = MarkdownDB.list("tasks")
     filtered = []
     for task in tasks:
@@ -925,11 +746,7 @@ async def list_evaluations() -> List[Evaluation]:
 @app.post("/api/evaluations", response_model=Evaluation, status_code=201)
 async def create_evaluation(payload: EvaluationCreate) -> Evaluation:
     data = generate_assessment(payload.idea)
-    created = MarkdownDB.create(
-        "evaluations",
-        data,
-        f"# Evaluation for {payload.idea}\n\n请继续验证用户、频率和替代方案。",
-    )
+    created = MarkdownDB.create("evaluations", data, f"# Evaluation for {payload.idea}\n\n请继续验证用户、频率和替代方案。")
     return Evaluation(**created)
 
 
@@ -989,11 +806,7 @@ async def start_conversation(payload: ConversationCreate) -> Conversation:
             "contextId": payload.contextId,
             "messages": [
                 {"role": "user", "content": payload.initialMessage, "timestamp": now_iso()},
-                {
-                    "role": "assistant",
-                    "content": generate_refinery_reply(payload.initialMessage, context_title),
-                    "timestamp": now_iso(),
-                },
+                {"role": "assistant", "content": generate_refinery_reply(payload.initialMessage, context_title), "timestamp": now_iso()},
             ],
         },
         "# AI Refinery Conversation\n\n自动生成的精炼会话。",
@@ -1006,24 +819,20 @@ async def send_message(id: str, payload: MessageCreate) -> Conversation:
     conversation = MarkdownDB.get("conversations", id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
-
     messages = list(conversation.get("messages", []))
     messages.append({"role": payload.role, "content": payload.content, "timestamp": now_iso()})
-
     if payload.role == "user":
         context_id = conversation.get("contextId")
-        context_title = None
-        if context_id:
-            context_item = MarkdownDB.get("materials", context_id) or MarkdownDB.get("notes", context_id)
-            context_title = context_item.get("title") if context_item else None
+        context_item = MarkdownDB.get("materials", context_id) if context_id else None
+        if not context_item and context_id:
+            context_item = MarkdownDB.get("notes", context_id)
         messages.append(
             {
                 "role": "assistant",
-                "content": generate_refinery_reply(payload.content, context_title),
+                "content": generate_refinery_reply(payload.content, context_item.get("title") if context_item else None),
                 "timestamp": now_iso(),
             }
         )
-
     metadata = {key: value for key, value in conversation.items() if key not in {"id", "content"}}
     metadata["messages"] = messages
     updated = MarkdownDB.save("conversations", id, metadata, conversation.get("content", ""))
