@@ -46,3 +46,5 @@ Thumbs.db
 
 # Runtime vaults
 app/vaults/
+!app/frontend/src/lib/
+!app/frontend/src/lib/**

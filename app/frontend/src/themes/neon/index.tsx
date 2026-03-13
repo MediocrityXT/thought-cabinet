@@ -23,24 +23,29 @@ import {
   MessageSquareText,
   Network,
   Play,
+  Plus,
   RefreshCw,
   Scale,
   Search,
   Send,
+  Settings2,
   Sparkles,
   Target,
   TimerReset,
+  X,
   Zap,
 } from 'lucide-react';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import {
   addMaterial,
+  createVault,
   createEvaluation,
   getConversation,
   getWorkspaceSnapshot,
   listConversations,
   sendConversationMessage,
   startConversation,
+  updateSettings,
 } from '@/lib/api';
 import { clamp, cn, formatRelativeTime } from '@/lib/utils';
 import type {
@@ -48,9 +53,12 @@ import type {
   ConversationMetadata,
   Evaluation,
   GraphNode,
+  SettingsPayload,
   Material,
   Note,
   Task,
+  ThemeName,
+  VaultSummary,
 } from '@/lib/types';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -209,16 +217,18 @@ function SectionTitle({
 
 function StatusBar({
   health,
+  vaultName,
   vaultPath,
   refreshing,
   onRefresh,
-  onSwitchTheme,
+  onOpenSettings,
 }: {
   health: number;
+  vaultName: string;
   vaultPath: string;
   refreshing: boolean;
   onRefresh: () => void;
-  onSwitchTheme: () => void;
+  onOpenSettings: () => void;
 }) {
   return (
     <header className="tc-panel-strong sticky top-0 z-30 mx-3 mt-3 flex flex-col gap-4 rounded-[24px] px-4 py-4 sm:mx-4 lg:mx-6 lg:flex-row lg:items-center lg:justify-between">
@@ -227,8 +237,9 @@ function StatusBar({
           <p className="text-[11px] uppercase tracking-[0.28em] text-slate-500">Vault</p>
           <p className="mt-1 flex items-center gap-2 text-sm text-slate-200">
             <Database className="h-4 w-4 text-cyan-200" />
-            <span className="truncate">{vaultPath}</span>
+            <span className="truncate">{vaultName}</span>
           </p>
+          <p className="mt-1 text-xs text-slate-500">{vaultPath}</p>
         </div>
         <div>
           <p className="text-[11px] uppercase tracking-[0.28em] text-slate-500">System health</p>
@@ -256,14 +267,189 @@ function StatusBar({
         </button>
         <button
           type="button"
-          onClick={onSwitchTheme}
+          onClick={onOpenSettings}
           className="inline-flex items-center gap-2 rounded-full border border-cyan-300/15 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 transition hover:bg-cyan-300/20"
         >
-          <Sparkles className="h-4 w-4" />
-          切换主题
+          <Settings2 className="h-4 w-4" />
+          设置
         </button>
       </div>
     </header>
+  );
+}
+
+function SettingsDrawer({
+  open,
+  busy,
+  settings,
+  newVaultName,
+  onClose,
+  onThemeChange,
+  onVaultChange,
+  onNewVaultNameChange,
+  onModelChange,
+  onCreateVault,
+  onSave,
+}: {
+  open: boolean;
+  busy: boolean;
+  settings: SettingsPayload | null;
+  newVaultName: string;
+  onClose: () => void;
+  onThemeChange: (theme: ThemeName) => void;
+  onVaultChange: (vault: VaultSummary) => void;
+  onNewVaultNameChange: (value: string) => void;
+  onModelChange: (module: keyof SettingsPayload['llm']['moduleModels'] | 'baseUrl' | 'apiKey' | 'defaultModel', value: string) => void;
+  onCreateVault: () => void;
+  onSave: () => void;
+}) {
+  if (!open || !settings) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-[rgba(3,5,8,0.72)] backdrop-blur-sm">
+      <div className="h-full w-full max-w-2xl overflow-auto border-l border-white/10 bg-[#081019] p-6 shadow-[0_24px_120px_rgba(0,0,0,0.45)]">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.32em] text-cyan-200">Settings</p>
+            <h2 className="mt-2 text-3xl font-semibold text-white">Vault 与 LLM 配置</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              在这里切换 active vault、新建空 vault，并指定 OpenAI 兼容接口的 base URL、API key、默认模型和模块级模型覆盖。
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="tc-panel rounded-[24px] p-5">
+            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Theme</p>
+            <select
+              value={settings.activeTheme}
+              onChange={(event) => onThemeChange(event.target.value as ThemeName)}
+              className="mt-3 w-full rounded-[16px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none"
+            >
+              {['NEON', 'ZEN', 'EPOCH', 'GLITCH', 'SKY', 'AURA', 'AUGURY', 'LIBRARY', 'ATELIER', 'PRISM', 'FORGE', 'VOID', 'HOME', 'WARROOM'].map((theme) => (
+                <option key={theme} value={theme}>
+                  {theme}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="tc-panel rounded-[24px] p-5">
+            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Active vault</p>
+            <select
+              value={settings.vault.path}
+              onChange={(event) => {
+                const next = settings.availableVaults.find((vault) => vault.path === event.target.value);
+                if (next) onVaultChange(next);
+              }}
+              className="mt-3 w-full rounded-[16px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none"
+            >
+              {settings.availableVaults.map((vault) => (
+                <option key={vault.path} value={vault.path}>
+                  {vault.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-3 text-sm leading-6 text-slate-300">
+              {settings.vault.noteCount} notes · {settings.vault.gitInitialized ? 'git enabled' : 'git missing'} · {settings.vault.isObsidian ? 'obsidian' : 'plain markdown'}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 tc-panel rounded-[24px] p-5">
+          <div className="flex flex-col gap-3 md:flex-row">
+            <input
+              value={newVaultName}
+              onChange={(event) => onNewVaultNameChange(event.target.value)}
+              placeholder="新空 vault 名称，例如 product-lab"
+              className="flex-1 rounded-[16px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none"
+            />
+            <button
+              type="button"
+              onClick={onCreateVault}
+              className="inline-flex items-center justify-center gap-2 rounded-[16px] border border-emerald-300/18 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100"
+            >
+              <Plus className="h-4 w-4" />
+              新建空 vault
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 tc-panel rounded-[24px] p-5">
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">OpenAI-compatible LLM</p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <label className="block">
+              <span className="text-sm text-slate-300">Base URL</span>
+              <input
+                value={settings.llm.baseUrl}
+                onChange={(event) => onModelChange('baseUrl', event.target.value)}
+                className="mt-2 w-full rounded-[16px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm text-slate-300">Default model</span>
+              <input
+                value={settings.llm.defaultModel}
+                onChange={(event) => onModelChange('defaultModel', event.target.value)}
+                className="mt-2 w-full rounded-[16px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none"
+              />
+            </label>
+          </div>
+          <label className="mt-4 block">
+            <span className="text-sm text-slate-300">API key</span>
+            <input
+              value={settings.llm.apiKey}
+              onChange={(event) => onModelChange('apiKey', event.target.value)}
+              className="mt-2 w-full rounded-[16px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none"
+            />
+          </label>
+        </div>
+
+        <div className="mt-4 tc-panel rounded-[24px] p-5">
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Module model overrides</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {moduleItems.map((item) => (
+              <label key={item.id} className="block">
+                <span className="text-sm text-slate-300">{item.label}</span>
+                <input
+                  value={settings.llm.moduleModels[item.id]}
+                  onChange={(event) => onModelChange(item.id, event.target.value)}
+                  placeholder="留空则继承 default model"
+                  className="mt-2 w-full rounded-[16px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none"
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-slate-200"
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={busy}
+            className="rounded-full border border-cyan-300/18 bg-cyan-300/10 px-5 py-3 text-sm text-cyan-100 disabled:opacity-60"
+          >
+            保存设置
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1125,7 +1311,7 @@ function FocusOverlay({
 }
 
 export default function NeonTheme() {
-  const { setTheme } = useTheme();
+  const { refreshTheme } = useTheme();
   const workspaceState = useAsyncData(loadWorkspace);
 
   const [workspace, setWorkspace] = useState<WorkspaceState | null>(null);
@@ -1139,6 +1325,9 @@ export default function NeonTheme() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [focusTask, setFocusTask] = useState<Task | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsDraft, setSettingsDraft] = useState<SettingsPayload | null>(null);
+  const [newVaultName, setNewVaultName] = useState('');
 
   useEffect(() => {
     const snapshot = workspaceState.data;
@@ -1146,6 +1335,7 @@ export default function NeonTheme() {
       return;
     }
     setWorkspace(snapshot);
+    setSettingsDraft(snapshot.settings);
     setSelectedMaterialId((current) => current ?? snapshot.materials[0]?.id ?? null);
     setSelectedNodeId((current) => current ?? snapshot.graph.nodes[0]?.id ?? null);
   }, [workspaceState.data]);
@@ -1154,6 +1344,39 @@ export default function NeonTheme() {
 
   async function refreshWorkspace() {
     await workspaceState.reload();
+  }
+
+  async function handleSaveSettings() {
+    if (!settingsDraft) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await updateSettings({
+        activeTheme: settingsDraft.activeTheme,
+        activeVaultPath: settingsDraft.vault.path,
+        llm: settingsDraft.llm,
+      });
+      await refreshTheme();
+      await refreshWorkspace();
+      setShowSettings(false);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleCreateVault() {
+    if (!newVaultName.trim()) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await createVault(newVaultName.trim());
+      setNewVaultName('');
+      await refreshWorkspace();
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleAddMaterial() {
@@ -1320,10 +1543,11 @@ export default function NeonTheme() {
       <div className="relative lg:ml-[112px]">
         <StatusBar
           health={overview?.health ?? 96}
+          vaultName={workspace.settings.vault.name}
           vaultPath={overview?.vaultPath ?? ''}
           refreshing={workspaceState.loading || busy}
           onRefresh={() => void refreshWorkspace()}
-          onSwitchTheme={() => void setTheme('ZEN')}
+          onOpenSettings={() => setShowSettings(true)}
         />
         <main className="px-3 pb-24 pt-4 sm:px-4 lg:px-6 lg:pb-10">
           {workspaceState.error ? (
@@ -1334,6 +1558,48 @@ export default function NeonTheme() {
           {content}
         </main>
       </div>
+      <SettingsDrawer
+        open={showSettings}
+        busy={busy}
+        settings={settingsDraft}
+        newVaultName={newVaultName}
+        onClose={() => setShowSettings(false)}
+        onThemeChange={(theme) =>
+          setSettingsDraft((current) => (current ? { ...current, activeTheme: theme } : current))
+        }
+        onVaultChange={(vault) =>
+          setSettingsDraft((current) => (current ? { ...current, vault } : current))
+        }
+        onNewVaultNameChange={setNewVaultName}
+        onModelChange={(field, value) =>
+          setSettingsDraft((current) => {
+            if (!current) {
+              return current;
+            }
+            if (field === 'baseUrl' || field === 'apiKey' || field === 'defaultModel') {
+              return {
+                ...current,
+                llm: {
+                  ...current.llm,
+                  [field]: value,
+                },
+              };
+            }
+            return {
+              ...current,
+              llm: {
+                ...current.llm,
+                moduleModels: {
+                  ...current.llm.moduleModels,
+                  [field]: value,
+                },
+              },
+            };
+          })
+        }
+        onCreateVault={() => void handleCreateVault()}
+        onSave={() => void handleSaveSettings()}
+      />
       {focusTask ? <FocusOverlay task={focusTask} onClose={() => setFocusTask(null)} /> : null}
     </div>
   );
