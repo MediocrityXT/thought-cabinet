@@ -13,6 +13,7 @@ import type {
   ThemeConfig,
   ThemeName,
   VaultSummary,
+  WorkspaceSnapshot,
 } from './types';
 
 const api = axios.create({
@@ -122,24 +123,7 @@ export async function sendConversationMessage(id: string, content: string): Prom
   return data;
 }
 
-export async function getWorkspaceSnapshot(): Promise<{
-  settings: SettingsPayload;
-  overview: DashboardOverview;
-  graph: BlueprintGraph;
-  notes: Note[];
-  tasks: Task[];
-  evaluations: Evaluation[];
-  materials: Material[];
-}> {
-  const [settings, overview, graph, notes, tasks, evaluations, materials] = await Promise.all([
-    getSettings(),
-    getDashboardOverview(),
-    getBlueprintGraph(),
-    listNotes(),
-    listTasks(),
-    listEvaluations(),
-    listMaterials(),
-  ]);
-
-  return { settings, overview, graph, notes, tasks, evaluations, materials };
+export async function getWorkspaceSnapshot(): Promise<WorkspaceSnapshot> {
+  const { data } = await api.get<WorkspaceSnapshot>('/workspace');
+  return data;
 }

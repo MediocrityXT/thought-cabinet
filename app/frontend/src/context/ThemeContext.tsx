@@ -13,7 +13,10 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeName>('NEON');
+  const [theme, setThemeState] = useState<ThemeName>(() => {
+    const cached = window.localStorage.getItem('thoughtcabinet.theme') as ThemeName | null;
+    return cached ?? 'NEON';
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,6 +25,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       const config = await getThemeConfig();
       setThemeState(config.activeTheme);
+      window.localStorage.setItem('thoughtcabinet.theme', config.activeTheme);
     } catch (loadError) {
       console.error('Failed to fetch theme config', loadError);
       setError('Theme config unavailable, using NEON fallback.');
@@ -37,10 +41,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   async function setTheme(nextTheme: ThemeName) {
     setThemeState(nextTheme);
+    window.localStorage.setItem('thoughtcabinet.theme', nextTheme);
     setError(null);
     try {
       const config = await updateThemeConfig(nextTheme);
       setThemeState(config.activeTheme);
+      window.localStorage.setItem('thoughtcabinet.theme', config.activeTheme);
     } catch (updateError) {
       console.error('Failed to update theme config', updateError);
       setError('Theme update failed. Local UI state may be out of sync.');
@@ -48,7 +54,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function refreshTheme() {
-    setLoading(true);
     await loadTheme();
   }
 

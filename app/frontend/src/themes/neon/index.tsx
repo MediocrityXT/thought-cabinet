@@ -42,7 +42,6 @@ import {
   createEvaluation,
   getConversation,
   getWorkspaceSnapshot,
-  listConversations,
   sendConversationMessage,
   startConversation,
   updateSettings,
@@ -76,19 +75,7 @@ const moduleItems: { id: ModuleId; label: string; short: string; icon: typeof La
 ];
 
 async function loadWorkspace() {
-  const [snapshot, conversationMetas] = await Promise.all([
-    getWorkspaceSnapshot(),
-    listConversations(),
-  ]);
-  const activeConversation = conversationMetas[0]
-    ? await getConversation(conversationMetas[0].id)
-    : null;
-
-  return {
-    ...snapshot,
-    conversationMetas,
-    activeConversation,
-  };
+  return getWorkspaceSnapshot();
 }
 
 function metricCards(tasks: WorkspaceState['overview']['stats']) {
@@ -1470,7 +1457,7 @@ export default function NeonTheme() {
     }
   }
 
-  if (workspaceState.loading || !workspace) {
+  if (!workspace) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#05060a] px-6 text-white">
         <div className="tc-panel rounded-[28px] p-8 text-center">

@@ -58,6 +58,18 @@ export interface SettingsPayload {
   llm: LLMSettings;
 }
 
+export interface WorkspaceSnapshot {
+  settings: SettingsPayload;
+  overview: DashboardOverview;
+  graph: BlueprintGraph;
+  notes: Note[];
+  tasks: Task[];
+  evaluations: Evaluation[];
+  materials: Material[];
+  conversationMetas: ConversationMetadata[];
+  activeConversation: Conversation | null;
+}
+
 export interface Note {
   id: string;
   title: string;

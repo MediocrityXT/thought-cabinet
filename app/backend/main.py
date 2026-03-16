@@ -81,6 +81,18 @@ class SettingsPayload(BaseModel):
     llm: LLMSettings
 
 
+class WorkspaceSnapshot(BaseModel):
+    settings: SettingsPayload
+    overview: DashboardOverview
+    graph: BlueprintGraph
+    notes: List[Note]
+    tasks: List[Task]
+    evaluations: List[Evaluation]
+    materials: List[Material]
+    conversationMetas: List[ConversationMetadata]
+    activeConversation: Optional[Conversation] = None
+
+
 class SettingsUpdate(BaseModel):
     activeTheme: Optional[ThemeName] = None
     llm: Optional[LLMSettings] = None
@@ -627,6 +639,27 @@ async def select_vault(payload: VaultSelectRequest) -> VaultSummary:
 @app.get("/api/dashboard/overview", response_model=DashboardOverview)
 async def dashboard_overview() -> DashboardOverview:
     return build_dashboard()
+
+
+@app.get("/api/workspace", response_model=WorkspaceSnapshot)
+async def workspace_snapshot() -> WorkspaceSnapshot:
+    conversations = MarkdownDB.list("conversations")
+    conversation_metas = [
+        ConversationMetadata(id=item["id"], title=item["title"], updatedAt=item.get("updatedAt"))
+        for item in conversations
+    ]
+    active = Conversation(**conversations[0]) if conversations else None
+    return WorkspaceSnapshot(
+        settings=current_settings(),
+        overview=build_dashboard(),
+        graph=build_blueprint_graph(),
+        notes=[Note(**item) for item in MarkdownDB.list("notes")],
+        tasks=[Task(**item) for item in MarkdownDB.list("tasks")],
+        evaluations=[Evaluation(**item) for item in MarkdownDB.list("evaluations")],
+        materials=[Material(**item) for item in MarkdownDB.list("materials")],
+        conversationMetas=conversation_metas,
+        activeConversation=active,
+    )
 
 
 @app.get("/api/blueprint/graph", response_model=BlueprintGraph)
