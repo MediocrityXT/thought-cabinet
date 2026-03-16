@@ -75,6 +75,17 @@ export async function listNotes(): Promise<Note[]> {
   return data;
 }
 
+export async function createNote(payload: {
+  title: string;
+  content: string;
+  domain: string;
+  type: Note['type'];
+  tags: string[];
+}): Promise<Note> {
+  const { data } = await api.post<Note>('/notes', payload);
+  return data;
+}
+
 export async function listTasks(): Promise<Task[]> {
   const { data } = await api.get<Task[]>('/tasks');
   return data;
