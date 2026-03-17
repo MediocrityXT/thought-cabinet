@@ -58,6 +58,7 @@ export function Organizer({ notes, saving, onCreateNote }: OrganizerProps) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [capsuleExpanded, setCapsuleExpanded] = useState(false);
   const [capsuleInput, setCapsuleInput] = useState('');
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const deferredSearch = useDeferredValue(search);
 
   const domains = useMemo(() => {
@@ -227,9 +228,15 @@ export function Organizer({ notes, saving, onCreateNote }: OrganizerProps) {
         <div className="custom-scrollbar flex-1 overflow-auto p-6">
           <div className="grid grid-cols-2 gap-4">
             {filteredNotes.map((note) => (
-              <div key={note.id} className="group cursor-pointer rounded-xl border border-white/5 bg-panel p-5 transition-all hover:border-white/10 hover:bg-elevated">
+              <button
+                key={note.id}
+                onClick={() => setSelectedNote(note)}
+                className="group cursor-pointer rounded-xl border border-white/5 bg-panel p-5 text-left transition-all hover:border-white/10 hover:bg-elevated"
+              >
                 <h3 className="mb-2 font-medium text-white transition-colors group-hover:text-cyan">{note.title}</h3>
-                <p className="mb-4 line-clamp-2 text-sm text-star-dust">{note.content}</p>
+                <p className="mb-4 line-clamp-3 text-sm leading-6 text-star-dust">
+                  {note.content.replace(/\n+/g, ' ')}
+                </p>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 text-xs text-star-dust">
                     <span className="flex items-center gap-1">
@@ -244,7 +251,7 @@ export function Organizer({ notes, saving, onCreateNote }: OrganizerProps) {
                     ))}
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -337,6 +344,41 @@ export function Organizer({ notes, saving, onCreateNote }: OrganizerProps) {
               <span className="flex items-center gap-1.5"><span className="text-rose">👈</span> 归档</span>
               <span className="flex items-center gap-1.5"><span className="text-amber">👆</span> 待办</span>
               <span className="flex items-center gap-1.5"><span className="text-emerald">👉</span> 保留</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {selectedNote ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-3xl rounded-[28px] border border-white/10 bg-panel shadow-2xl animate-slide-up">
+            <div className="flex items-start justify-between border-b border-white/5 px-6 py-5">
+              <div>
+                <h3 className="text-2xl font-semibold text-white">{selectedNote.title}</h3>
+                <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-star-dust">
+                  <span className="flex items-center gap-1">
+                    <Folder className="h-4 w-4" />
+                    {selectedNote.domain}
+                  </span>
+                  <span>{selectedNote.updatedAt ?? selectedNote.createdAt ?? ''}</span>
+                </div>
+              </div>
+              <button onClick={() => setSelectedNote(null)} className="rounded-lg p-2 transition-colors hover:bg-white/10">
+                <X className="h-5 w-5 text-star-dust" />
+              </button>
+            </div>
+
+            <div className="custom-scrollbar max-h-[70vh] overflow-auto px-6 py-6">
+              {selectedNote.tags.length ? (
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {selectedNote.tags.map((tag) => (
+                    <span key={tag} className="rounded-full border border-cyan/20 bg-cyan/10 px-3 py-1 text-xs text-cyan">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <div className="whitespace-pre-wrap text-sm leading-7 text-white/90">{selectedNote.content}</div>
             </div>
           </div>
         </div>

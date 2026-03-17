@@ -51,66 +51,62 @@ export function Dashboard({ overview, vaultName, onOpenPlanner }: DashboardProps
         ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="rounded-xl border border-white/5 bg-panel p-6">
+      <div className="grid grid-cols-4 gap-6">
+        <div className="rounded-xl border border-cyan/20 bg-panel p-6 shadow-glow-cyan">
           <div className="mb-6 flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple" />
+            <Zap className="h-5 w-5 text-cyan" />
             <h2 className="text-lg font-semibold text-white">近期进展</h2>
           </div>
           <ProgressTimeline events={overview.recentProgress} />
         </div>
 
-        <div className="col-span-2 space-y-6">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-xl border border-white/5 bg-panel p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-amber" />
-                  <h3 className="text-sm font-medium text-white">待办审批</h3>
-                </div>
-                <span className="tc-badge tc-badge-amber">{overview.reviewQueue.length}</span>
-              </div>
-              <div className="space-y-3">
-                {overview.reviewQueue.slice(0, 3).map((task) => (
-                  <TaskCard key={task.id} {...task} />
-                ))}
-              </div>
+        <div className="rounded-xl border border-amber/20 bg-panel p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-amber" />
+              <h3 className="text-sm font-medium text-white">待办审批</h3>
             </div>
+            <span className="tc-badge tc-badge-amber">{overview.reviewQueue.length}</span>
+          </div>
+          <div className="space-y-3">
+            {overview.reviewQueue.slice(0, 3).map((task) => (
+              <TaskCard key={task.id} {...task} />
+            ))}
+          </div>
+        </div>
 
-            <div className="rounded-xl border border-white/5 bg-panel p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-cyan" />
-                  <h3 className="text-sm font-medium text-white">重点项目</h3>
-                </div>
-                <span className="tc-badge tc-badge-cyan">{overview.focusProjects.length}</span>
-              </div>
-              <div className="space-y-3">
-                {overview.focusProjects.slice(0, 3).map((task) => (
-                  <TaskCard key={task.id} {...task} />
-                ))}
-              </div>
+        <div className="rounded-xl border border-purple/20 bg-panel p-5 shadow-glow-purple">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-purple" />
+              <h3 className="text-sm font-medium text-white">重点项目</h3>
             </div>
+            <span className="tc-badge tc-badge-purple">{overview.focusProjects.length}</span>
+          </div>
+          <div className="space-y-3">
+            {overview.focusProjects.slice(0, 3).map((task) => (
+              <TaskCard key={task.id} {...task} />
+            ))}
+          </div>
+        </div>
 
-            <div className="rounded-xl border border-white/5 bg-panel p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-rose" />
-                  <h3 className="text-sm font-medium text-white">认知警报</h3>
-                </div>
-                <span className="tc-badge tc-badge-rose">{overview.cognitiveAlerts.length}</span>
-              </div>
-              <div className="space-y-3">
-                {overview.cognitiveAlerts.slice(0, 3).map((alert) => (
-                  <div key={alert.id} className="cursor-pointer rounded-lg border border-rose/20 bg-elevated p-4 transition-all hover:border-rose/40">
-                    <h4 className="mb-2 text-sm font-medium text-white">{alert.title}</h4>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-star-dust">{alert.domain}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+        <div className="rounded-xl border border-rose/20 bg-panel p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-rose" />
+              <h3 className="text-sm font-medium text-white">认知警报</h3>
             </div>
+            <span className="tc-badge tc-badge-rose">{overview.cognitiveAlerts.length}</span>
+          </div>
+          <div className="space-y-3">
+            {overview.cognitiveAlerts.slice(0, 3).map((alert) => (
+              <div key={alert.id} className="cursor-pointer rounded-lg border border-rose/20 bg-elevated p-4 transition-all hover:border-rose/40">
+                <h4 className="mb-2 text-sm font-medium text-white">{alert.title}</h4>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-star-dust">{alert.domain}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
