@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Clock, Flame, Lock, Play, Target, TrendingUp, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Task } from '@/lib/types';
+import type { Evaluation, Task } from '@/lib/types';
 
 interface PlannerProps {
   tasks: Task[];
+  evaluations: Evaluation[];
+  selectedGoalId: string | null;
+  onSelectGoal: (evaluationId: string) => void;
 }
 
 const timeSlots = [
@@ -14,7 +17,14 @@ const timeSlots = [
   { label: '2小时', minutes: 120 },
 ];
 
-export function Planner({ tasks }: PlannerProps) {
+type LadderNode = {
+  id: string;
+  title: string;
+  subtitle: string;
+  tone: 'root' | 'focus' | 'support' | 'locked';
+};
+
+export function Planner({ tasks, evaluations, selectedGoalId, onSelectGoal }: PlannerProps) {
   const [selectedTime, setSelectedTime] = useState(30);
   const [activeTab, setActiveTab] = useState<'capsule' | 'ladder' | 'heatmap'>('capsule');
   const [focusMode, setFocusMode] = useState(false);
@@ -22,7 +32,54 @@ export function Planner({ tasks }: PlannerProps) {
   const [focusTimeLeft, setFocusTimeLeft] = useState(0);
 
   const capsuleTasks = useMemo(() => tasks.filter((task) => task.timeEstimate <= selectedTime).slice(0, 3), [selectedTime, tasks]);
-  const ladderSteps = useMemo(() => tasks.slice(0, 8), [tasks]);
+  const selectedGoal = useMemo(
+    () => evaluations.find((evaluation) => evaluation.id === selectedGoalId) ?? evaluations[0] ?? null,
+    [evaluations, selectedGoalId],
+  );
+
+  const ladderTree = useMemo(() => {
+    if (!selectedGoal) {
+      return null;
+    }
+    const relatedTasks = tasks.filter((task) => task.domain === selectedGoal.domain).slice(0, 4);
+    const fallbackTasks = tasks.slice(0, 4);
+    const leaves = (relatedTasks.length ? relatedTasks : fallbackTasks).slice(0, 4);
+
+    return {
+      root: {
+        id: `root-${selectedGoal.id}`,
+        title: selectedGoal.idea,
+        subtitle: `${selectedGoal.domain} · 影响 ${selectedGoal.impact} / 可行 ${selectedGoal.feasibility}`,
+        tone: 'root' as const,
+      },
+      branches: [
+        {
+          id: `market-${selectedGoal.id}`,
+          title: selectedGoal.assessment.opportunities[0] ?? '市场验证',
+          subtitle: '机会窗口',
+          tone: 'focus' as const,
+        },
+        {
+          id: `build-${selectedGoal.id}`,
+          title: selectedGoal.assessment.strengths[0] ?? '产品实现',
+          subtitle: '能力锚点',
+          tone: 'support' as const,
+        },
+        {
+          id: `risk-${selectedGoal.id}`,
+          title: selectedGoal.assessment.threats[0] ?? '风险控制',
+          subtitle: '主要阻力',
+          tone: 'locked' as const,
+        },
+      ] satisfies LadderNode[],
+      leaves: leaves.map((task, index) => ({
+        id: task.id,
+        title: task.title,
+        subtitle: `${task.timeEstimate} 分钟 · ${task.domain}`,
+        tone: index < 2 ? 'focus' as const : 'support' as const,
+      })),
+    };
+  }, [selectedGoal, tasks]);
   const procrastinationData = useMemo(() => {
     const byDomain = new Map<string, { total: number; delayed: number }>();
     for (const task of tasks) {
@@ -178,8 +235,10 @@ export function Planner({ tasks }: PlannerProps) {
           <div className="mx-auto max-w-4xl">
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-white">{ladderSteps[0]?.title ?? '任务阶梯'}</h2>
-                <p className="text-sm text-star-dust">已拆解为 {ladderSteps.length} 个可执行步骤</p>
+                <h2 className="text-xl font-semibold text-white">{selectedGoal?.idea ?? '任务阶梯'}</h2>
+                <p className="text-sm text-star-dust">
+                  {selectedGoal ? `从价值四象限项目拆解为 ${ladderTree?.leaves.length ?? 0} 个执行节点` : '先在价值四象限里创建或选择项目'}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-star-dust">进度:</span>
@@ -187,48 +246,87 @@ export function Planner({ tasks }: PlannerProps) {
               </div>
             </div>
 
-            <div className="relative">
-              <svg className="pointer-events-none absolute inset-0 h-full w-full" style={{ minHeight: '400px' }}>
-                <line x1="50%" y1="40" x2="25%" y2="120" stroke="rgba(0, 212, 255, 0.3)" strokeWidth="2" />
-                <line x1="50%" y1="40" x2="75%" y2="120" stroke="rgba(0, 212, 255, 0.3)" strokeWidth="2" />
-                <line x1="25%" y1="160" x2="15%" y2="240" stroke="rgba(0, 212, 255, 0.3)" strokeWidth="2" />
-                <line x1="25%" y1="160" x2="35%" y2="240" stroke="rgba(0, 212, 255, 0.3)" strokeWidth="2" />
-                <line x1="75%" y1="160" x2="65%" y2="240" stroke="rgba(0, 212, 255, 0.3)" strokeWidth="2" strokeDasharray="5,5" />
-                <line x1="75%" y1="160" x2="85%" y2="240" stroke="rgba(0, 212, 255, 0.3)" strokeWidth="2" strokeDasharray="5,5" />
-              </svg>
+            <div className="mb-6 flex flex-wrap gap-3">
+              {evaluations.map((evaluation) => (
+                <button
+                  key={evaluation.id}
+                  onClick={() => onSelectGoal(evaluation.id)}
+                  className={cn(
+                    'rounded-full border px-4 py-2 text-sm transition-colors',
+                    selectedGoal?.id === evaluation.id
+                      ? 'border-cyan/30 bg-cyan/10 text-cyan'
+                      : 'border-white/10 bg-white/5 text-star-dust hover:text-white',
+                  )}
+                >
+                  {evaluation.idea}
+                </button>
+              ))}
+            </div>
 
-              <div className="space-y-16">
-                <div className="flex justify-center">
-                  <div className="w-48 rounded-xl border border-purple/30 bg-purple/10 p-4 text-center">
-                    <div className="mb-2 text-2xl">🎯</div>
-                    <div className="font-medium text-white">{ladderSteps[0]?.title ?? '终极目标'}</div>
-                    <div className="mt-1 text-xs text-star-dust">终极目标</div>
+            <div className="relative min-h-[480px] rounded-2xl border border-white/5 bg-panel/40 p-6">
+              {ladderTree ? (
+                <>
+                  <svg className="pointer-events-none absolute inset-0 h-full w-full">
+                    <polyline points="420,100 420,128 220,128 220,164" fill="none" stroke="rgba(0, 212, 255, 0.35)" strokeWidth="2" />
+                    <polyline points="420,100 420,136 420,136 420,164" fill="none" stroke="rgba(0, 212, 255, 0.35)" strokeWidth="2" />
+                    <polyline points="420,100 420,128 620,128 620,164" fill="none" stroke="rgba(168, 85, 247, 0.35)" strokeWidth="2" />
+                    <polyline points="220,236 220,264 150,264 150,326" fill="none" stroke="rgba(0, 212, 255, 0.28)" strokeWidth="2" />
+                    <polyline points="220,236 220,280 330,280 330,326" fill="none" stroke="rgba(0, 212, 255, 0.28)" strokeWidth="2" />
+                    <polyline points="620,236 620,264 510,264 510,326" fill="none" stroke="rgba(168, 85, 247, 0.28)" strokeWidth="2" />
+                    <polyline points="620,236 620,280 690,280 690,326" fill="none" stroke="rgba(244, 63, 94, 0.28)" strokeWidth="2" />
+                  </svg>
+
+                  <div className="flex justify-center">
+                    <div className="w-72 rounded-xl border border-purple/30 bg-purple/10 p-4 text-center">
+                      <div className="mb-2 text-2xl">🎯</div>
+                      <div className="font-medium text-white">{ladderTree.root.title}</div>
+                      <div className="mt-1 text-xs text-star-dust">{ladderTree.root.subtitle}</div>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex justify-around">
-                  {ladderSteps.slice(1, 3).map((item) => (
-                    <div key={item.id} className={cn('w-40 rounded-xl p-4 text-center transition-all', item.status === 'done' ? 'border border-emerald/30 bg-emerald/10' : 'border border-cyan/30 bg-cyan/10')}>
-                      <div className={cn('mb-2 text-xl', item.status === 'done' ? 'text-emerald' : 'text-cyan')}>{item.status === 'done' ? '✓' : '○'}</div>
-                      <div className="text-sm font-medium text-white">{item.title}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex justify-around">
-                  {ladderSteps.slice(3, 7).map((item, index) => (
-                    <div key={item.id} className={cn(
-                      'w-32 rounded-xl p-3 text-center transition-all',
-                      item.status === 'done' ? 'border border-emerald/30 bg-emerald/10' : index >= 2 ? 'border border-white/10 bg-white/5 opacity-50' : 'border border-cyan/30 bg-cyan/10',
-                    )}>
-                      <div className={cn('mb-1 text-lg', item.status === 'done' ? 'text-emerald' : index >= 2 ? 'text-star-dust' : 'text-cyan')}>
-                        {item.status === 'done' ? '✓' : index >= 2 ? <Lock className="mx-auto h-4 w-4" /> : '○'}
+                  <div className="mt-14 grid grid-cols-3 gap-8">
+                    {ladderTree.branches.map((branch) => (
+                      <div
+                        key={branch.id}
+                        className={cn(
+                          'rounded-xl p-4 text-center',
+                          branch.tone === 'focus'
+                            ? 'border border-cyan/30 bg-cyan/10'
+                            : branch.tone === 'support'
+                              ? 'border border-emerald/30 bg-emerald/10'
+                              : 'border border-rose/30 bg-rose/10',
+                        )}
+                      >
+                        <div className={cn('mb-2 text-lg', branch.tone === 'focus' ? 'text-cyan' : branch.tone === 'support' ? 'text-emerald' : 'text-rose')}>
+                          {branch.tone === 'locked' ? <Lock className="mx-auto h-4 w-4" /> : '○'}
+                        </div>
+                        <div className="text-sm font-medium text-white">{branch.title}</div>
+                        <div className="mt-1 text-xs text-star-dust">{branch.subtitle}</div>
                       </div>
-                      <div className="text-xs font-medium text-white">{item.title}</div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+
+                  <div className="mt-16 grid grid-cols-4 gap-6 px-4">
+                    {ladderTree.leaves.map((leaf) => (
+                      <div
+                        key={leaf.id}
+                        className={cn(
+                          'rounded-xl p-3 text-center',
+                          leaf.tone === 'focus' ? 'border border-cyan/30 bg-cyan/10' : 'border border-emerald/30 bg-emerald/10',
+                        )}
+                      >
+                        <div className={cn('mb-1 text-lg', leaf.tone === 'focus' ? 'text-cyan' : 'text-emerald')}>{leaf.tone === 'focus' ? '△' : '✓'}</div>
+                        <div className="text-xs font-medium text-white">{leaf.title}</div>
+                        <div className="mt-1 text-[11px] text-star-dust">{leaf.subtitle}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="flex h-full items-center justify-center text-star-dust">
+                  先在价值四象限里创建项目，再来拆解任务树。
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="mt-12 rounded-xl border border-cyan/30 bg-cyan/10 p-4">
@@ -238,7 +336,7 @@ export function Planner({ tasks }: PlannerProps) {
                 </div>
                 <div>
                   <div className="text-sm text-star-dust">当前推荐</div>
-                  <div className="font-medium text-white">{tasks.find((task) => task.status !== 'done')?.title ?? '暂无待办任务'}</div>
+                  <div className="font-medium text-white">{ladderTree?.leaves[0]?.title ?? tasks.find((task) => task.status !== 'done')?.title ?? '暂无待办任务'}</div>
                 </div>
                 <button className="ml-auto rounded-lg bg-cyan/20 px-4 py-2 text-cyan transition-colors hover:bg-cyan/30">开始执行</button>
               </div>

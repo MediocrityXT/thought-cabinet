@@ -7,11 +7,12 @@ interface EvaluatorProps {
   evaluations: Evaluation[];
   notes: Note[];
   creating: boolean;
-  onCreateEvaluation: (idea: string) => Promise<void>;
+  onCreateEvaluation: (idea: string) => Promise<Evaluation>;
   onSaveSerendipity: (content: string) => Promise<void>;
+  onPromoteToPlanner: (evaluationId: string) => void;
 }
 
-export function Evaluator({ evaluations, notes, creating, onCreateEvaluation, onSaveSerendipity }: EvaluatorProps) {
+export function Evaluator({ evaluations, notes, creating, onCreateEvaluation, onSaveSerendipity, onPromoteToPlanner }: EvaluatorProps) {
   const [ideaInput, setIdeaInput] = useState('');
   const [showAssessment, setShowAssessment] = useState(false);
   const [selectedEvaluation, setSelectedEvaluation] = useState<Evaluation | null>(null);
@@ -95,9 +96,8 @@ export function Evaluator({ evaluations, notes, creating, onCreateEvaluation, on
     if (!ideaInput.trim()) {
       return;
     }
-    await onCreateEvaluation(ideaInput.trim());
-    const latest = evaluations[0];
-    setSelectedEvaluation(latest ?? null);
+    const created = await onCreateEvaluation(ideaInput.trim());
+    setSelectedEvaluation(created);
     setShowAssessment(true);
     setIdeaInput('');
   }
@@ -222,7 +222,12 @@ export function Evaluator({ evaluations, notes, creating, onCreateEvaluation, on
               </div>
 
               <div className="flex items-center gap-3">
-                <button className="flex-1 rounded-lg bg-emerald/20 px-4 py-2 text-sm text-emerald transition-colors hover:bg-emerald/30">立项为项目</button>
+                <button
+                  onClick={() => activeEvaluation && onPromoteToPlanner(activeEvaluation.id)}
+                  className="flex-1 rounded-lg bg-emerald/20 px-4 py-2 text-sm text-emerald transition-colors hover:bg-emerald/30"
+                >
+                  立项为项目
+                </button>
                 <button className="flex-1 rounded-lg bg-amber/20 px-4 py-2 text-sm text-amber transition-colors hover:bg-amber/30">加入待评估</button>
                 <button
                   onClick={() => {

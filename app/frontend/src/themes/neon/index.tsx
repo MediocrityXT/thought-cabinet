@@ -203,6 +203,7 @@ function SettingsSheet({
 export default function NeonTheme() {
   const [workspace, setWorkspace] = useState<WorkspaceSnapshot | null>(null);
   const [activeModule, setActiveModule] = useState<ModuleId>('dashboard');
+  const [plannerGoalId, setPlannerGoalId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -300,6 +301,7 @@ export default function NeonTheme() {
   async function handleCreateEvaluation(idea: string) {
     const evaluation = await createEvaluation(idea);
     setWorkspace((current) => (current ? { ...current, evaluations: [evaluation, ...current.evaluations] } : current));
+    return evaluation;
   }
 
   async function handleSaveSettings(payload: { activeTheme: SettingsPayload['activeTheme']; activeVaultPath: string; llm: LLMSettings }) {
@@ -355,11 +357,30 @@ export default function NeonTheme() {
       case 'organizer':
         return <Organizer notes={workspace.notes} saving={submitting} onCreateNote={handleCreateNote} />;
       case 'evaluator':
-        return <Evaluator evaluations={workspace.evaluations} notes={workspace.notes} creating={submitting} onCreateEvaluation={handleCreateEvaluation} onSaveSerendipity={(content) => handleCreateNote({ title: content.slice(0, 24), content, domain: 'Evaluator', type: 'unknown', tags: ['serendipity'] })} />;
+        return (
+          <Evaluator
+            evaluations={workspace.evaluations}
+            notes={workspace.notes}
+            creating={submitting}
+            onCreateEvaluation={handleCreateEvaluation}
+            onSaveSerendipity={(content) => handleCreateNote({ title: content.slice(0, 24), content, domain: 'Evaluator', type: 'unknown', tags: ['serendipity'] })}
+            onPromoteToPlanner={(evaluationId) => {
+              setPlannerGoalId(evaluationId);
+              startTransition(() => setActiveModule('planner'));
+            }}
+          />
+        );
       case 'blueprint':
         return <Blueprint graph={workspace.graph} notes={workspace.notes} />;
       case 'planner':
-        return <Planner tasks={workspace.tasks} />;
+        return (
+          <Planner
+            tasks={workspace.tasks}
+            evaluations={workspace.evaluations}
+            selectedGoalId={plannerGoalId}
+            onSelectGoal={setPlannerGoalId}
+          />
+        );
       default:
         return null;
     }
