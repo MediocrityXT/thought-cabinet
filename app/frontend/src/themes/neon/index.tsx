@@ -357,7 +357,7 @@ export default function NeonTheme() {
       case 'evaluator':
         return <Evaluator evaluations={workspace.evaluations} notes={workspace.notes} creating={submitting} onCreateEvaluation={handleCreateEvaluation} onSaveSerendipity={(content) => handleCreateNote({ title: content.slice(0, 24), content, domain: 'Evaluator', type: 'unknown', tags: ['serendipity'] })} />;
       case 'blueprint':
-        return <Blueprint graph={workspace.graph} />;
+        return <Blueprint graph={workspace.graph} notes={workspace.notes} />;
       case 'planner':
         return <Planner tasks={workspace.tasks} />;
       default:
