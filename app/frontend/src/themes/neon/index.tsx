@@ -11,17 +11,21 @@ import { Refinery } from '@/pages/Refinery';
 import { useTheme } from '@/context/ThemeContext';
 import {
   addMaterial,
+  assignPlannerTask,
+  createPlannerFeedback,
   createEvaluation,
   createNote,
   createVault,
   getConversation,
+  getPlannerBoard,
   getWorkspaceSnapshot,
+  sendPlannerChat,
   sendConversationMessage,
   startConversation,
   updateSettings,
 } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import type { LLMSettings, SettingsPayload, WorkspaceSnapshot } from '@/lib/types';
+import type { LLMSettings, PlannerBoard, PlannerFeedbackCreate, SettingsPayload, WorkspaceSnapshot } from '@/lib/types';
 
 function cloneLlmSettings(llm: LLMSettings): LLMSettings {
   return {
@@ -204,10 +208,12 @@ export default function NeonTheme() {
   const [workspace, setWorkspace] = useState<WorkspaceSnapshot | null>(null);
   const [activeModule, setActiveModule] = useState<ModuleId>('dashboard');
   const [plannerGoalId, setPlannerGoalId] = useState<string | null>(null);
+  const [plannerBoard, setPlannerBoard] = useState<PlannerBoard | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [plannerLoading, setPlannerLoading] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { refreshTheme } = useTheme();
@@ -217,6 +223,14 @@ export default function NeonTheme() {
       setError(null);
       const snapshot = await getWorkspaceSnapshot();
       setWorkspace(snapshot);
+      const defaultGoalId = plannerGoalId ?? snapshot.evaluations[0]?.id ?? null;
+      if (defaultGoalId) {
+        const board = await getPlannerBoard({ evaluationId: defaultGoalId });
+        setPlannerBoard(board);
+        setPlannerGoalId(board.evaluationId);
+      } else {
+        setPlannerBoard(null);
+      }
     } catch (loadError) {
       console.error(loadError);
       setError(loadError instanceof Error ? loadError.message : 'Workspace unavailable');
@@ -301,7 +315,73 @@ export default function NeonTheme() {
   async function handleCreateEvaluation(idea: string) {
     const evaluation = await createEvaluation(idea);
     setWorkspace((current) => (current ? { ...current, evaluations: [evaluation, ...current.evaluations] } : current));
+    setPlannerGoalId(evaluation.id);
+    const board = await getPlannerBoard({ evaluationId: evaluation.id });
+    setPlannerBoard(board);
     return evaluation;
+  }
+
+  async function loadPlannerBoard(evaluationId: string | null, activeNodeId?: string | null) {
+    if (!evaluationId) {
+      setPlannerBoard(null);
+      return;
+    }
+    setPlannerLoading(true);
+    try {
+      const board = await getPlannerBoard({ evaluationId, activeNodeId });
+      setPlannerBoard(board);
+      setPlannerGoalId(board.evaluationId);
+    } finally {
+      setPlannerLoading(false);
+    }
+  }
+
+  async function handleSelectPlannerGoal(evaluationId: string) {
+    await loadPlannerBoard(evaluationId);
+  }
+
+  async function handleSelectPlannerNode(nodeId: string) {
+    if (!plannerGoalId) {
+      return;
+    }
+    await loadPlannerBoard(plannerGoalId, nodeId);
+  }
+
+  async function handlePlannerAssign(minutes: number) {
+    setSubmitting(true);
+    try {
+      const assignment = await assignPlannerTask({ evaluationId: plannerGoalId, minutes });
+      await loadPlannerBoard(assignment.evaluationId, assignment.selectedNode.id);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handlePlannerFeedback(payload: PlannerFeedbackCreate) {
+    if (!plannerGoalId) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await createPlannerFeedback(plannerGoalId, payload);
+      await loadPlannerBoard(plannerGoalId, payload.nodeId);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handlePlannerChat(message: string) {
+    if (!plannerGoalId) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const board = await sendPlannerChat(plannerGoalId, message);
+      setPlannerBoard(board);
+      setPlannerGoalId(board.evaluationId);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function handleSaveSettings(payload: { activeTheme: SettingsPayload['activeTheme']; activeVaultPath: string; llm: LLMSettings }) {
@@ -365,7 +445,7 @@ export default function NeonTheme() {
             onCreateEvaluation={handleCreateEvaluation}
             onSaveSerendipity={(content) => handleCreateNote({ title: content.slice(0, 24), content, domain: 'Evaluator', type: 'unknown', tags: ['serendipity'] })}
             onPromoteToPlanner={(evaluationId) => {
-              setPlannerGoalId(evaluationId);
+              void loadPlannerBoard(evaluationId);
               startTransition(() => setActiveModule('planner'));
             }}
           />
@@ -375,10 +455,16 @@ export default function NeonTheme() {
       case 'planner':
         return (
           <Planner
-            tasks={workspace.tasks}
+            board={plannerBoard}
             evaluations={workspace.evaluations}
+            loading={plannerLoading}
+            submitting={submitting}
             selectedGoalId={plannerGoalId}
-            onSelectGoal={setPlannerGoalId}
+            onSelectGoal={(evaluationId) => void handleSelectPlannerGoal(evaluationId)}
+            onSelectNode={(nodeId) => void handleSelectPlannerNode(nodeId)}
+            onAssign={(minutes) => void handlePlannerAssign(minutes)}
+            onSendFeedback={(payload) => void handlePlannerFeedback(payload)}
+            onSendChat={(message) => void handlePlannerChat(message)}
           />
         );
       default:

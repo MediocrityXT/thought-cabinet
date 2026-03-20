@@ -21,6 +21,9 @@ export type TaskCategory = 'review' | 'focus' | 'alert' | 'quick_win';
 export type EvaluationStatus = 'idea' | 'evaluating' | 'active' | 'archived';
 export type MaterialStatus = 'unread' | 'reading' | 'refined';
 export type MessageRole = 'user' | 'assistant' | 'system';
+export type PlannerNodeStatus = 'todo' | 'in_progress' | 'done' | 'blocked';
+export type PlannerFeedbackStatus = 'started' | 'progress' | 'blocked' | 'done' | 'adjusted';
+export type PlannerEnergy = 'low' | 'medium' | 'high';
 
 export interface ThemeConfig {
   activeTheme: ThemeName;
@@ -196,4 +199,90 @@ export interface GraphEdge {
 export interface BlueprintGraph {
   nodes: GraphNode[];
   edges: GraphEdge[];
+}
+
+export interface PlannerNode {
+  id: string;
+  title: string;
+  detail: string;
+  status: PlannerNodeStatus;
+  ddl?: string;
+  parentId?: string;
+  depth: number;
+  timeEstimate: number;
+  taskId?: string;
+}
+
+export interface PlannerBrief {
+  evaluationId: string;
+  nodeId: string;
+  title: string;
+  minimumOutcome: string;
+  contextSummary: string;
+  docLinks: string[];
+  prerequisiteNotes: ConversationMetadata[];
+  relatedTaskIds: string[];
+}
+
+export interface PlannerFeedback {
+  id: string;
+  evaluationId: string;
+  nodeId: string;
+  taskId?: string;
+  status: PlannerFeedbackStatus;
+  progressNote: string;
+  blocker?: string;
+  nextSuggestion: string;
+  actualMinutes?: number;
+  createdAt?: string;
+}
+
+export interface PlannerFeedbackCreate {
+  nodeId: string;
+  taskId?: string;
+  status: PlannerFeedbackStatus;
+  progressNote: string;
+  blocker?: string;
+  actualMinutes?: number;
+}
+
+export interface PlannerScheduleBlock {
+  id: string;
+  title: string;
+  reason: string;
+  startsAt: string;
+  endsAt: string;
+  energy: PlannerEnergy;
+  nodeId: string;
+}
+
+export interface PlannerHeatmapCell {
+  domain: string;
+  rate: number;
+  tasks: number;
+}
+
+export interface PlannerSchedule {
+  evaluationId: string;
+  blocks: PlannerScheduleBlock[];
+  heatmap: PlannerHeatmapCell[];
+  summary: string;
+}
+
+export interface PlannerBoard {
+  evaluationId: string;
+  goalTitle: string;
+  goalDdl?: string;
+  activeNodeId?: string;
+  nodes: PlannerNode[];
+  brief: PlannerBrief;
+  schedule: PlannerSchedule;
+  feedback: PlannerFeedback[];
+}
+
+export interface PlannerAssignment {
+  evaluationId: string;
+  selectedNode: PlannerNode;
+  brief: PlannerBrief;
+  rationale: string;
 }

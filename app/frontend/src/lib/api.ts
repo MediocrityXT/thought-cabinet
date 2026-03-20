@@ -8,6 +8,12 @@ import type {
   LLMSettings,
   Material,
   Note,
+  PlannerAssignment,
+  PlannerBoard,
+  PlannerBrief,
+  PlannerFeedback,
+  PlannerFeedbackCreate,
+  PlannerSchedule,
   SettingsPayload,
   Task,
   ThemeConfig,
@@ -98,6 +104,48 @@ export async function listEvaluations(): Promise<Evaluation[]> {
 
 export async function createEvaluation(idea: string): Promise<Evaluation> {
   const { data } = await api.post<Evaluation>('/evaluations', { idea });
+  return data;
+}
+
+export async function getPlannerBoard(params?: { evaluationId?: string | null; activeNodeId?: string | null }): Promise<PlannerBoard> {
+  const { data } = await api.get<PlannerBoard>('/planner/board', {
+    params: {
+      evaluationId: params?.evaluationId ?? undefined,
+      activeNodeId: params?.activeNodeId ?? undefined,
+    },
+  });
+  return data;
+}
+
+export async function assignPlannerTask(payload: { evaluationId?: string | null; minutes: number }): Promise<PlannerAssignment> {
+  const { data } = await api.post<PlannerAssignment>('/planner/assign', payload);
+  return data;
+}
+
+export async function getPlannerBrief(evaluationId: string, nodeId?: string | null): Promise<PlannerBrief> {
+  const { data } = await api.get<PlannerBrief>(`/planner/goals/${evaluationId}/brief`, {
+    params: { nodeId: nodeId ?? undefined },
+  });
+  return data;
+}
+
+export async function listPlannerFeedback(evaluationId: string): Promise<PlannerFeedback[]> {
+  const { data } = await api.get<PlannerFeedback[]>(`/planner/goals/${evaluationId}/feedback`);
+  return data;
+}
+
+export async function createPlannerFeedback(evaluationId: string, payload: PlannerFeedbackCreate): Promise<PlannerFeedback> {
+  const { data } = await api.post<PlannerFeedback>(`/planner/goals/${evaluationId}/feedback`, payload);
+  return data;
+}
+
+export async function getPlannerSchedule(evaluationId: string): Promise<PlannerSchedule> {
+  const { data } = await api.get<PlannerSchedule>(`/planner/goals/${evaluationId}/schedule`);
+  return data;
+}
+
+export async function sendPlannerChat(evaluationId: string, message: string): Promise<PlannerBoard> {
+  const { data } = await api.post<PlannerBoard>(`/planner/goals/${evaluationId}/chat`, { message });
   return data;
 }
 
