@@ -4,7 +4,7 @@ import json
 import os
 import re
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Literal, Optional
 from urllib.parse import urlparse
 
@@ -39,6 +39,9 @@ TaskCategory = Literal["review", "focus", "alert", "quick_win"]
 EvaluationStatus = Literal["idea", "evaluating", "active", "archived"]
 MaterialStatus = Literal["unread", "reading", "refined"]
 MessageRole = Literal["user", "assistant", "system"]
+PlannerNodeStatus = Literal["todo", "in_progress", "done", "blocked"]
+PlannerFeedbackStatus = Literal["started", "progress", "blocked", "done", "adjusted"]
+PlannerEnergy = Literal["low", "medium", "high"]
 
 
 def now_iso() -> str:
@@ -296,6 +299,101 @@ class BlueprintGraph(BaseModel):
     edges: List[GraphEdge]
 
 
+class PlannerNode(BaseModel):
+    id: str
+    title: str
+    detail: str
+    status: PlannerNodeStatus
+    ddl: Optional[str] = None
+    parentId: Optional[str] = None
+    depth: int
+    timeEstimate: int
+    taskId: Optional[str] = None
+
+
+class PlannerBrief(BaseModel):
+    evaluationId: str
+    nodeId: str
+    title: str
+    minimumOutcome: str
+    contextSummary: str
+    docLinks: List[str]
+    prerequisiteNotes: List[ConversationMetadata]
+    relatedTaskIds: List[str]
+
+
+class PlannerFeedback(BaseModel):
+    id: str
+    evaluationId: str
+    nodeId: str
+    taskId: Optional[str] = None
+    status: PlannerFeedbackStatus
+    progressNote: str
+    blocker: Optional[str] = None
+    nextSuggestion: str
+    actualMinutes: Optional[int] = None
+    createdAt: Optional[str] = None
+
+
+class PlannerFeedbackCreate(BaseModel):
+    nodeId: str
+    taskId: Optional[str] = None
+    status: PlannerFeedbackStatus
+    progressNote: str
+    blocker: Optional[str] = None
+    actualMinutes: Optional[int] = None
+
+
+class PlannerScheduleBlock(BaseModel):
+    id: str
+    title: str
+    reason: str
+    startsAt: str
+    endsAt: str
+    energy: PlannerEnergy
+    nodeId: str
+
+
+class PlannerHeatmapCell(BaseModel):
+    domain: str
+    rate: int
+    tasks: int
+
+
+class PlannerSchedule(BaseModel):
+    evaluationId: str
+    blocks: List[PlannerScheduleBlock]
+    heatmap: List[PlannerHeatmapCell]
+    summary: str
+
+
+class PlannerAssignment(BaseModel):
+    evaluationId: str
+    selectedNode: PlannerNode
+    brief: PlannerBrief
+    rationale: str
+
+
+class PlannerAssignRequest(BaseModel):
+    evaluationId: Optional[str] = None
+    minutes: int
+
+
+class PlannerChatRequest(BaseModel):
+    message: str
+
+
+class PlannerBoard(BaseModel):
+    evaluationId: str
+    goalTitle: str
+    goalDdl: Optional[str] = None
+    activeNodeId: Optional[str] = None
+    nodes: List[PlannerNode]
+    brief: PlannerBrief
+    schedule: PlannerSchedule
+    feedback: List[PlannerFeedback]
+
+
 app = FastAPI(title="ThoughtCabinet Core API", version="2.0.0")
 
 app.add_middleware(
@@ -522,6 +620,258 @@ def build_blueprint_graph() -> BlueprintGraph:
             elif left.get("domain") == right.get("domain") and len(edges) < len(notes) * 2:
                 edges.append(GraphEdge(source=left["id"], target=right["id"], label="同领域"))
     return BlueprintGraph(nodes=nodes, edges=edges[:24])
+
+
+def planner_goal_ddl(evaluation: Dict[str, Any]) -> str:
+    anchor_raw = evaluation.get("updatedAt") or evaluation.get("createdAt") or now_iso()
+    anchor = datetime.fromisoformat(anchor_raw)
+    horizon = 10 + max(7, 100 - int(evaluation.get("feasibility", 60))) // 6
+    return (anchor + timedelta(days=horizon)).isoformat(timespec="seconds")
+
+
+def planner_feedback_items(evaluation_id: str) -> List[PlannerFeedback]:
+    items = []
+    for entry in MarkdownDB.list("planner_feedback"):
+        if entry.get("evaluationId") != evaluation_id:
+            continue
+        items.append(PlannerFeedback(**entry))
+    return sorted(items, key=lambda item: item.createdAt or "", reverse=True)
+
+
+def planner_related_tasks(evaluation: Dict[str, Any]) -> List[Dict[str, Any]]:
+    tasks = MarkdownDB.list("tasks")
+    domain = evaluation.get("domain", "General")
+    related = [task for task in tasks if task.get("domain") == domain]
+    if related:
+        return related
+    return tasks[:6]
+
+
+def planner_nodes(evaluation: Dict[str, Any]) -> List[PlannerNode]:
+    related_tasks = planner_related_tasks(evaluation)
+    goal_ddl = planner_goal_ddl(evaluation)
+    goal = PlannerNode(
+        id=f"{evaluation['id']}:goal",
+        title=evaluation["idea"],
+        detail=f"{evaluation.get('domain', 'General')} 总目标，影响 {evaluation.get('impact', 0)} / 可行 {evaluation.get('feasibility', 0)}。",
+        status="in_progress" if any(task.get("status") == "in_progress" for task in related_tasks) else "todo",
+        ddl=goal_ddl,
+        depth=0,
+        timeEstimate=sum(int(task.get("timeEstimate", 20)) for task in related_tasks[:4]) or 120,
+    )
+
+    branches = [
+        PlannerNode(
+            id=f"{evaluation['id']}:scope",
+            title=evaluation.get("assessment", {}).get("opportunities", ["验证范围"])[0],
+            detail="先确认这件事为什么值得做，以及最小验证边界。",
+            status="done" if related_tasks and related_tasks[0].get("status") == "done" else "todo",
+            ddl=(datetime.fromisoformat(goal_ddl) - timedelta(days=9)).isoformat(timespec="seconds"),
+            parentId=goal.id,
+            depth=1,
+            timeEstimate=45,
+        ),
+        PlannerNode(
+            id=f"{evaluation['id']}:build",
+            title=evaluation.get("assessment", {}).get("strengths", ["实现主路径"])[0],
+            detail="把核心交付链路做通，优先处理最关键的产出。",
+            status="in_progress" if any(task.get("status") == "in_progress" for task in related_tasks) else "todo",
+            ddl=(datetime.fromisoformat(goal_ddl) - timedelta(days=5)).isoformat(timespec="seconds"),
+            parentId=goal.id,
+            depth=1,
+            timeEstimate=90,
+        ),
+        PlannerNode(
+            id=f"{evaluation['id']}:risk",
+            title=evaluation.get("assessment", {}).get("threats", ["收敛风险"])[0],
+            detail="处理最大的阻塞项，否则计划会持续漂移。",
+            status="blocked" if any(task.get("status") == "todo" and task.get("priority") == "high" for task in related_tasks) else "todo",
+            ddl=(datetime.fromisoformat(goal_ddl) - timedelta(days=2)).isoformat(timespec="seconds"),
+            parentId=goal.id,
+            depth=1,
+            timeEstimate=60,
+        ),
+    ]
+
+    leaves: List[PlannerNode] = []
+    branch_cycle = [branches[0].id, branches[1].id, branches[1].id, branches[2].id]
+    for index, task in enumerate(related_tasks[:8]):
+        status = task.get("status", "todo")
+        leaves.append(
+            PlannerNode(
+                id=f"{evaluation['id']}:task:{task['id']}",
+                title=task["title"],
+                detail=f"{task.get('domain', 'General')} · {task.get('category', 'quick_win')}",
+                status="done" if status == "done" else "in_progress" if status == "in_progress" else "todo",
+                ddl=(datetime.fromisoformat(goal_ddl) - timedelta(days=max(1, 8 - index))).isoformat(timespec="seconds"),
+                parentId=branch_cycle[index % len(branch_cycle)],
+                depth=2,
+                timeEstimate=int(task.get("timeEstimate", 25)),
+                taskId=task["id"],
+            )
+        )
+
+    return [goal, *branches, *leaves]
+
+
+def planner_brief_from_nodes(evaluation: Dict[str, Any], nodes: List[PlannerNode], node_id: Optional[str] = None) -> PlannerBrief:
+    target = next((node for node in nodes if node.id == node_id), None)
+    if not target:
+        target = next((node for node in nodes if node.depth == 2 and node.status != "done"), nodes[0])
+
+    note_pool = MarkdownDB.list("notes")
+    material_pool = MarkdownDB.list("materials")
+    note_links: List[ConversationMetadata] = []
+    domain = evaluation.get("domain", "General")
+    for item in note_pool:
+        if item.get("domain") == domain and len(note_links) < 2:
+            note_links.append(ConversationMetadata(id=item["id"], title=item["title"], updatedAt=item.get("updatedAt")))
+    for item in material_pool:
+        if len(note_links) >= 4:
+            break
+        note_links.append(ConversationMetadata(id=item["id"], title=item["title"], updatedAt=item.get("updatedAt")))
+
+    doc_links = []
+    if "scope" in target.id:
+        doc_links = ["obsidian://open?vault=active&file=.thoughtcabinet/tasks", "https://en.wikipedia.org/wiki/Minimum_viable_product"]
+    elif "build" in target.id:
+        doc_links = ["obsidian://open?vault=active&file=.thoughtcabinet/evaluations", "https://12factor.net/"]
+    else:
+        doc_links = ["obsidian://open?vault=active&file=.thoughtcabinet/planner_feedback", "https://en.wikipedia.org/wiki/Risk_management"]
+
+    return PlannerBrief(
+        evaluationId=evaluation["id"],
+        nodeId=target.id,
+        title=target.title,
+        minimumOutcome=f"最小交付：在 {target.timeEstimate} 分钟内，把“{target.title}”推进到一个可验证的小结果。",
+        contextSummary=f"这一步属于“{evaluation['idea']}”目标树中的第 {target.depth + 1} 层节点，当前状态为 {target.status}，DDL 为 {target.ddl or '未指定'}。",
+        docLinks=doc_links,
+        prerequisiteNotes=note_links,
+        relatedTaskIds=[node.taskId for node in nodes if node.parentId == target.parentId and node.taskId][:4],
+    )
+
+
+def planner_schedule(evaluation: Dict[str, Any], nodes: List[PlannerNode]) -> PlannerSchedule:
+    anchor = datetime.now().replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+    active_nodes = [node for node in nodes if node.depth >= 1 and node.status != "done"][:5]
+    blocks = []
+    for index, node in enumerate(active_nodes):
+        start = anchor + timedelta(hours=index * 3)
+        duration = max(30, node.timeEstimate)
+        blocks.append(
+            PlannerScheduleBlock(
+                id=f"block-{node.id}",
+                title=node.title,
+                reason=f"因为 {node.status} 且靠近 DDL，所以安排在 {start.strftime('%m-%d %H:%M')} 开始。",
+                startsAt=start.isoformat(timespec="seconds"),
+                endsAt=(start + timedelta(minutes=duration)).isoformat(timespec="seconds"),
+                energy="high" if duration >= 60 else "medium" if duration >= 40 else "low",
+                nodeId=node.id,
+            )
+        )
+
+    tasks = planner_related_tasks(evaluation)
+    by_domain: Dict[str, Dict[str, int]] = {}
+    for task in tasks:
+        bucket = by_domain.setdefault(task.get("domain", "General"), {"total": 0, "delayed": 0})
+        bucket["total"] += 1
+        if task.get("priority") == "high" and task.get("status") != "done":
+            bucket["delayed"] += 1
+    heatmap = [
+        PlannerHeatmapCell(
+            domain=domain,
+            rate=0 if values["total"] == 0 else round(values["delayed"] / values["total"] * 100),
+            tasks=values["total"],
+        )
+        for domain, values in by_domain.items()
+    ]
+
+    return PlannerSchedule(
+        evaluationId=evaluation["id"],
+        blocks=blocks,
+        heatmap=sorted(heatmap, key=lambda item: item.rate, reverse=True),
+        summary=f"AI 已根据 DDL、节点状态和阻塞风险，给 “{evaluation['idea']}” 生成未来一周的战术排程预览。",
+    )
+
+
+def build_planner_board(evaluation_id: Optional[str] = None, active_node_id: Optional[str] = None) -> PlannerBoard:
+    evaluations = MarkdownDB.list("evaluations")
+    if not evaluations:
+        raise HTTPException(status_code=404, detail="No evaluations available for planner")
+    evaluation = next((item for item in evaluations if item["id"] == evaluation_id), evaluations[0])
+    nodes = planner_nodes(evaluation)
+    brief = planner_brief_from_nodes(evaluation, nodes, active_node_id)
+    feedback = planner_feedback_items(evaluation["id"])
+    schedule = planner_schedule(evaluation, nodes)
+    return PlannerBoard(
+        evaluationId=evaluation["id"],
+        goalTitle=evaluation["idea"],
+        goalDdl=planner_goal_ddl(evaluation),
+        activeNodeId=brief.nodeId,
+        nodes=nodes,
+        brief=brief,
+        schedule=schedule,
+        feedback=feedback,
+    )
+
+
+def planner_assignment_for_minutes(minutes: int, evaluation_id: Optional[str] = None) -> PlannerAssignment:
+    board = build_planner_board(evaluation_id=evaluation_id)
+    unfinished = [node for node in board.nodes if node.depth >= 1 and node.status != "done"]
+    selected = next((node for node in unfinished if node.timeEstimate <= minutes), None)
+    if not selected and unfinished:
+        selected = sorted(unfinished, key=lambda node: node.timeEstimate)[0]
+    if not selected:
+        selected = board.nodes[0]
+    brief = planner_brief_from_nodes({"id": board.evaluationId, "idea": board.goalTitle}, board.nodes, selected.id)
+    rationale = (
+        f"你有 {minutes} 分钟，AI 优先选择了时间成本 {selected.timeEstimate} 分钟、"
+        f"状态为 {selected.status} 的节点，以降低启动摩擦并贴近当前 DDL。"
+    )
+    return PlannerAssignment(
+        evaluationId=board.evaluationId,
+        selectedNode=selected,
+        brief=brief,
+        rationale=rationale,
+    )
+
+
+def planner_feedback_suggestion(status: PlannerFeedbackStatus, progress_note: str, blocker: Optional[str]) -> str:
+    if status == "blocked":
+        return f"先拆掉阻塞项：{blocker or '把当前卡点写成一个可验证问题'}，然后缩小到 15 分钟内能推进的一步。"
+    if status == "done":
+        return "把这次产出沉淀成一条可复用笔记，并推进下一个已解锁节点。"
+    if status == "adjusted":
+        return "AI 已记录你的计划调整，下一步建议重新校准 DDL 和最近三个节点的优先级。"
+    if "文档" in progress_note or "资料" in progress_note:
+        return "既然上下文已补齐，下一步直接进入最小交付动作，不要继续停留在收集材料。"
+    return "继续保持当前推进节奏，并在下一次 check-in 时补充实际产出和偏差原因。"
+
+
+def create_planner_feedback(evaluation_id: str, payload: PlannerFeedbackCreate) -> PlannerFeedback:
+    created = MarkdownDB.create(
+        "planner_feedback",
+        {
+            "evaluationId": evaluation_id,
+            "nodeId": payload.nodeId,
+            "taskId": payload.taskId,
+            "status": payload.status,
+            "progressNote": payload.progressNote,
+            "blocker": payload.blocker,
+            "nextSuggestion": planner_feedback_suggestion(payload.status, payload.progressNote, payload.blocker),
+            "actualMinutes": payload.actualMinutes,
+        },
+        (
+            f"# Planner Feedback\n\n"
+            f"- Evaluation: {evaluation_id}\n"
+            f"- Node: {payload.nodeId}\n"
+            f"- Status: {payload.status}\n"
+            f"- Minutes: {payload.actualMinutes or 0}\n\n"
+            f"## Progress\n\n{payload.progressNote}\n\n"
+            f"## Blocker\n\n{payload.blocker or 'None'}\n"
+        ),
+    )
+    return PlannerFeedback(**created)
 
 
 def commit_all_in_vault(vault_path: str, message: str) -> None:
@@ -781,6 +1131,60 @@ async def create_evaluation(payload: EvaluationCreate) -> Evaluation:
     data = generate_assessment(payload.idea)
     created = MarkdownDB.create("evaluations", data, f"# Evaluation for {payload.idea}\n\n请继续验证用户、频率和替代方案。")
     return Evaluation(**created)
+
+
+@app.get("/api/planner/board", response_model=PlannerBoard)
+async def get_planner_board(
+    evaluationId: Optional[str] = Query(default=None),
+    activeNodeId: Optional[str] = Query(default=None),
+) -> PlannerBoard:
+    return build_planner_board(evaluation_id=evaluationId, active_node_id=activeNodeId)
+
+
+@app.post("/api/planner/assign", response_model=PlannerAssignment)
+async def assign_planner_task(payload: PlannerAssignRequest) -> PlannerAssignment:
+    return planner_assignment_for_minutes(payload.minutes, payload.evaluationId)
+
+
+@app.get("/api/planner/goals/{evaluation_id}/brief", response_model=PlannerBrief)
+async def get_planner_brief(evaluation_id: str, nodeId: Optional[str] = Query(default=None)) -> PlannerBrief:
+    board = build_planner_board(evaluation_id=evaluation_id, active_node_id=nodeId)
+    return board.brief
+
+
+@app.get("/api/planner/goals/{evaluation_id}/feedback", response_model=List[PlannerFeedback])
+async def get_planner_feedback(evaluation_id: str) -> List[PlannerFeedback]:
+    _ = build_planner_board(evaluation_id=evaluation_id)
+    return planner_feedback_items(evaluation_id)
+
+
+@app.post("/api/planner/goals/{evaluation_id}/feedback", response_model=PlannerFeedback, status_code=201)
+async def add_planner_feedback(evaluation_id: str, payload: PlannerFeedbackCreate) -> PlannerFeedback:
+    _ = build_planner_board(evaluation_id=evaluation_id, active_node_id=payload.nodeId)
+    return create_planner_feedback(evaluation_id, payload)
+
+
+@app.get("/api/planner/goals/{evaluation_id}/schedule", response_model=PlannerSchedule)
+async def get_planner_schedule(evaluation_id: str) -> PlannerSchedule:
+    board = build_planner_board(evaluation_id=evaluation_id)
+    return board.schedule
+
+
+@app.post("/api/planner/goals/{evaluation_id}/chat", response_model=PlannerBoard)
+async def chat_with_planner(evaluation_id: str, payload: PlannerChatRequest) -> PlannerBoard:
+    board = build_planner_board(evaluation_id=evaluation_id)
+    create_planner_feedback(
+        evaluation_id,
+        PlannerFeedbackCreate(
+            nodeId=board.activeNodeId or board.nodes[0].id,
+            taskId=next((node.taskId for node in board.nodes if node.id == board.activeNodeId), None),
+            status="adjusted",
+            progressNote=payload.message,
+            blocker=None,
+            actualMinutes=None,
+        ),
+    )
+    return build_planner_board(evaluation_id=evaluation_id, active_node_id=board.activeNodeId)
 
 
 @app.get("/api/refinery/materials", response_model=List[Material])
