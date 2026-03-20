@@ -44,6 +44,147 @@ paths:
               schema:
                 $ref: '#/components/schemas/BlueprintGraph'
 
+  /planner/board:
+    get:
+      summary: Get tactical planner board with strategic tree, current brief and AI schedule preview
+      operationId: getPlannerBoard
+      parameters:
+        - name: evaluationId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Planner board state for the selected project goal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannerBoard'
+
+  /planner/assign:
+    post:
+      summary: Let AI assign the best next task for the available time budget
+      operationId: assignPlannerTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerAssignRequest'
+      responses:
+        '200':
+          description: Recommended node and brief for immediate execution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannerAssignment'
+
+  /planner/goals/{evaluationId}/brief:
+    get:
+      summary: Build a mission brief for a strategic goal or sub-goal
+      operationId: getPlannerBrief
+      parameters:
+        - name: evaluationId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: nodeId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Mission brief with objective, context and linked materials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannerBrief'
+
+  /planner/goals/{evaluationId}/feedback:
+    get:
+      summary: List execution feedback logs for a goal
+      operationId: listPlannerFeedback
+      parameters:
+        - name: evaluationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ordered execution feedback timeline
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlannerFeedback'
+    post:
+      summary: Append execution feedback and allow AI to adapt future tasks
+      operationId: createPlannerFeedback
+      parameters:
+        - name: evaluationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerFeedbackCreate'
+      responses:
+        '201':
+          description: Stored feedback entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannerFeedback'
+
+  /planner/goals/{evaluationId}/schedule:
+    get:
+      summary: Get AI-generated schedule preview and procrastination heatmap for a goal
+      operationId: getPlannerSchedule
+      parameters:
+        - name: evaluationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Schedule preview merged with delay analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannerSchedule'
+
+  /planner/goals/{evaluationId}/chat:
+    post:
+      summary: Discuss schedule or plan adjustments with the planner copilot
+      operationId: chatPlannerGoal
+      parameters:
+        - name: evaluationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerChatRequest'
+      responses:
+        '200':
+          description: Updated planner board after AI-assisted schedule discussion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannerBoard'
+
   /config/theme:
     get:
       summary: Get active theme
@@ -900,3 +1041,197 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GraphEdge'
+
+    PlannerNode:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        status:
+          type: string
+          enum: [todo, in_progress, done, blocked]
+        ddl:
+          type: string
+          format: date-time
+        parentId:
+          type: string
+        depth:
+          type: integer
+        timeEstimate:
+          type: integer
+        taskId:
+          type: string
+
+    PlannerBrief:
+      type: object
+      properties:
+        evaluationId:
+          type: string
+        nodeId:
+          type: string
+        title:
+          type: string
+        minimumOutcome:
+          type: string
+        contextSummary:
+          type: string
+        docLinks:
+          type: array
+          items:
+            type: string
+        prerequisiteNotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationMetadata'
+        relatedTaskIds:
+          type: array
+          items:
+            type: string
+
+    PlannerFeedback:
+      type: object
+      properties:
+        id:
+          type: string
+        evaluationId:
+          type: string
+        nodeId:
+          type: string
+        taskId:
+          type: string
+        status:
+          type: string
+          enum: [started, progress, blocked, done, adjusted]
+        progressNote:
+          type: string
+        blocker:
+          type: string
+        nextSuggestion:
+          type: string
+        actualMinutes:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    PlannerFeedbackCreate:
+      type: object
+      required: [nodeId, status, progressNote]
+      properties:
+        nodeId:
+          type: string
+        taskId:
+          type: string
+        status:
+          type: string
+          enum: [started, progress, blocked, done, adjusted]
+        progressNote:
+          type: string
+        blocker:
+          type: string
+        actualMinutes:
+          type: integer
+
+    PlannerScheduleBlock:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        reason:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        energy:
+          type: string
+          enum: [low, medium, high]
+        nodeId:
+          type: string
+
+    PlannerHeatmapCell:
+      type: object
+      properties:
+        domain:
+          type: string
+        rate:
+          type: integer
+        tasks:
+          type: integer
+
+    PlannerSchedule:
+      type: object
+      properties:
+        evaluationId:
+          type: string
+        blocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerScheduleBlock'
+        heatmap:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerHeatmapCell'
+        summary:
+          type: string
+
+    PlannerAssignment:
+      type: object
+      properties:
+        evaluationId:
+          type: string
+        selectedNode:
+          $ref: '#/components/schemas/PlannerNode'
+        brief:
+          $ref: '#/components/schemas/PlannerBrief'
+        rationale:
+          type: string
+
+    PlannerAssignRequest:
+      type: object
+      required: [minutes]
+      properties:
+        evaluationId:
+          type: string
+        minutes:
+          type: integer
+
+    PlannerChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    PlannerBoard:
+      type: object
+      properties:
+        evaluationId:
+          type: string
+        goalTitle:
+          type: string
+        goalDdl:
+          type: string
+          format: date-time
+        activeNodeId:
+          type: string
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerNode'
+        brief:
+          $ref: '#/components/schemas/PlannerBrief'
+        schedule:
+          $ref: '#/components/schemas/PlannerSchedule'
+        feedback:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerFeedback'
