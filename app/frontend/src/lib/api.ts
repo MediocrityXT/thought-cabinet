@@ -176,6 +176,14 @@ export async function addMaterial(input: string, title?: string): Promise<Materi
   return data;
 }
 
+export async function updateRefineryMaterial(
+  id: string,
+  payload: { title?: string; report?: string; summary?: string; status?: Material['status'] },
+): Promise<Material> {
+  const { data } = await api.put<Material>(`/refinery/materials/${id}`, payload);
+  return data;
+}
+
 export async function listConversations(): Promise<ConversationMetadata[]> {
   const { data } = await api.get<ConversationMetadata[]>('/refinery/conversations');
   return data;
@@ -196,6 +204,11 @@ export async function sendConversationMessage(id: string, content: string): Prom
     role: 'user',
     content,
   });
+  return data;
+}
+
+export async function resetRefineryConversation(id: string): Promise<Conversation> {
+  const { data } = await api.post<Conversation>(`/refinery/conversations/${id}/reset`);
   return data;
 }
 

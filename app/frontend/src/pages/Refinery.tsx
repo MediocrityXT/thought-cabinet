@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpenText, FileCog, FileText, Link2, Save, Send, Sparkles, X } from 'lucide-react';
+import { BookOpenText, Eraser, FileCog, FileText, Link2, Save, Send, Sparkles, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Conversation, Material, RefinerySettings } from '@/lib/types';
 
@@ -11,8 +11,10 @@ interface RefineryProps {
   onAddMaterial: (input: string) => Promise<void>;
   onOpenMaterial: (materialId: string) => Promise<void>;
   onSendMessage: (content: string) => Promise<void>;
+  onResetConversation: () => Promise<void>;
   onPublishNote: () => Promise<void>;
   onSavePrompt: (defaultPrompt: string) => Promise<void>;
+  onSaveReport: (report: string) => Promise<void>;
 }
 
 function PromptSheet({
@@ -80,12 +82,15 @@ export function Refinery({
   onAddMaterial,
   onOpenMaterial,
   onSendMessage,
+  onResetConversation,
   onPublishNote,
   onSavePrompt,
+  onSaveReport,
 }: RefineryProps) {
   const [input, setInput] = useState('');
   const [inputMessage, setInputMessage] = useState('');
   const [promptOpen, setPromptOpen] = useState(false);
+  const [reportDraft, setReportDraft] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const activeMaterial = useMemo(
@@ -96,6 +101,10 @@ export function Refinery({
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeConversation]);
+
+  useEffect(() => {
+    setReportDraft(activeMaterial?.report ?? '');
+  }, [activeMaterial?.id, activeMaterial?.report]);
 
   async function handleProcess() {
     if (!input.trim()) {
@@ -194,11 +203,25 @@ export function Refinery({
                   </div>
 
                   <div className="mb-6 rounded-2xl border border-purple/20 bg-purple/10 p-5">
-                    <div className="mb-3 flex items-center gap-2">
+                  <div className="mb-3 flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-purple" />
                       <span className="text-sm font-medium text-white">30 秒速读报告</span>
                     </div>
-                    <div className="whitespace-pre-line text-sm leading-7 text-white/90">{activeMaterial.report}</div>
+                    <textarea
+                      value={reportDraft}
+                      onChange={(event) => setReportDraft(event.target.value)}
+                      className="min-h-[220px] w-full rounded-xl border border-white/10 bg-panel/60 px-4 py-4 text-sm leading-7 text-white/90 focus:border-cyan focus:outline-none"
+                    />
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        onClick={() => void onSaveReport(reportDraft)}
+                        disabled={submitting || !activeMaterial}
+                        className="flex items-center gap-2 rounded-lg border border-cyan/20 bg-cyan/10 px-4 py-2 text-cyan transition-colors hover:bg-cyan/15 disabled:opacity-50"
+                      >
+                        <Save className="h-4 w-4" />
+                        保存报告
+                      </button>
+                    </div>
                   </div>
 
                   <div className="whitespace-pre-line text-white/90">{activeMaterial.content}</div>
@@ -220,6 +243,16 @@ export function Refinery({
                 <span className="text-sm font-medium text-white">精炼对话</span>
               </div>
               <p className="text-xs text-star-dust">围绕短文本报告继续讨论；发布时会把报告和对话一起写进正式笔记。</p>
+              <div className="mt-3 flex justify-end">
+                <button
+                  onClick={() => void onResetConversation()}
+                  disabled={submitting || !activeConversation}
+                  className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-star-dust transition-colors hover:border-rose/20 hover:text-white disabled:opacity-50"
+                >
+                  <Eraser className="h-4 w-4" />
+                  清空对话
+                </button>
+              </div>
             </div>
 
             <div className="custom-scrollbar min-h-0 flex-1 space-y-4 overflow-auto p-4">

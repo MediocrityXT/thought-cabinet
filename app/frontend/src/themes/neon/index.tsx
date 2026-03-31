@@ -20,9 +20,11 @@ import {
   getWorkspaceSnapshot,
   intakeRefineryMaterial,
   publishRefineryNote,
+  resetRefineryConversation,
   sendPlannerChat,
   sendConversationMessage,
   startConversation,
+  updateRefineryMaterial,
   updateRefinerySettings,
   updateSettings,
 } from '@/lib/api';
@@ -365,6 +367,39 @@ export default function NeonTheme() {
     }
   }
 
+  async function handleResetRefineryConversation() {
+    if (!workspace?.activeConversation) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const conversation = await resetRefineryConversation(workspace.activeConversation.id);
+      setWorkspace((current) => (current ? { ...current, activeConversation: conversation } : current));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleSaveRefineryReport(report: string) {
+    if (!workspace?.activeConversation?.contextId) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const material = await updateRefineryMaterial(workspace.activeConversation.contextId, { report });
+      setWorkspace((current) =>
+        current
+          ? {
+              ...current,
+              materials: current.materials.map((item) => (item.id === material.id ? material : item)),
+            }
+          : current,
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function handleSaveRefineryPrompt(defaultPrompt: string) {
     setSubmitting(true);
     try {
@@ -477,8 +512,10 @@ export default function NeonTheme() {
             onAddMaterial={handleAddMaterial}
             onOpenMaterial={handleOpenRefineryMaterial}
             onSendMessage={handleSendConversationMessage}
+            onResetConversation={handleResetRefineryConversation}
             onPublishNote={handlePublishRefineryNote}
             onSavePrompt={handleSaveRefineryPrompt}
+            onSaveReport={handleSaveRefineryReport}
           />
         );
       case 'organizer':
