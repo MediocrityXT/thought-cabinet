@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useEffectEvent, useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import { AlertTriangle, LoaderCircle, Plus, Save, X } from 'lucide-react';
 import { Sidebar, type ModuleId } from '@/components/layout/Sidebar';
 import { StatusBar } from '@/components/layout/StatusBar';
@@ -218,7 +218,7 @@ export default function NeonTheme() {
   const [error, setError] = useState<string | null>(null);
   const { refreshTheme } = useTheme();
 
-  const loadWorkspace = useEffectEvent(async () => {
+  async function loadWorkspace() {
     try {
       setError(null);
       const snapshot = await getWorkspaceSnapshot();
@@ -238,11 +238,11 @@ export default function NeonTheme() {
       setLoading(false);
       setRefreshing(false);
     }
-  });
+  }
 
   useEffect(() => {
     void loadWorkspace();
-  }, [loadWorkspace]);
+  }, []);
 
   async function refreshWorkspace() {
     setRefreshing(true);
