@@ -1018,6 +1018,8 @@ components:
       properties:
         title:
           type: string
+        content:
+          type: string
         report:
           type: string
         summary:

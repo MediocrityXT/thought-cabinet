@@ -237,6 +237,7 @@ class MaterialCreate(BaseModel):
 
 class MaterialUpdate(BaseModel):
     title: Optional[str] = None
+    content: Optional[str] = None
     report: Optional[str] = None
     summary: Optional[str] = None
     status: Optional[MaterialStatus] = None
@@ -1307,9 +1308,13 @@ async def update_material(id: str, payload: MaterialUpdate) -> Material:
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
     metadata = {key: value for key, value in material.items() if key not in {"id", "content"}}
+    content = material.get("content", "")
     for key, value in payload.model_dump(exclude_none=True).items():
-        metadata[key] = value
-    updated = MarkdownDB.save("materials", id, metadata, material.get("content", ""))
+        if key == "content":
+            content = value
+        else:
+            metadata[key] = value
+    updated = MarkdownDB.save("materials", id, metadata, content)
     return Material(**updated)
 
 
