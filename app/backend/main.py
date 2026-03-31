@@ -68,6 +68,14 @@ class LLMSettings(BaseModel):
     moduleModels: ModuleModels
 
 
+class RefinerySettings(BaseModel):
+    defaultPrompt: str
+
+
+class RefinerySettingsUpdate(BaseModel):
+    defaultPrompt: str
+
+
 class VaultSummary(BaseModel):
     name: str
     path: str
@@ -215,14 +223,16 @@ class Material(BaseModel):
     sourceUrl: str
     content: str
     summary: str
+    report: str = ""
     status: MaterialStatus
     createdAt: Optional[str] = None
     updatedAt: Optional[str] = None
 
 
 class MaterialCreate(BaseModel):
-    sourceUrl: str
+    input: str
     title: Optional[str] = None
+    kind: Optional[Literal["url", "text"]] = None
 
 
 class ConversationMessage(BaseModel):
@@ -251,6 +261,12 @@ class ConversationCreate(BaseModel):
 class MessageCreate(BaseModel):
     role: MessageRole
     content: str
+
+
+class RefinerySession(BaseModel):
+    material: Material
+    conversation: Conversation
+    settings: RefinerySettings
 
 
 class DashboardStats(BaseModel):
@@ -424,27 +440,6 @@ def infer_domain(text: str) -> str:
     return "General"
 
 
-def synthesize_material(payload: MaterialCreate) -> Dict[str, str]:
-    parsed = urlparse(payload.sourceUrl)
-    host = parsed.netloc or "source"
-    title = payload.title or parsed.path.strip("/").replace("-", " ").title() or host
-    summary = f"{title} 主要讨论了问题背景、证据链和可执行动作三部分，适合进入 Socratic 精炼流程。"
-    content = (
-        f"# {title}\n\n"
-        f"- Source: {payload.sourceUrl}\n"
-        f"- Captured: {now_iso()}\n\n"
-        "## 30 秒速读报告\n\n"
-        "1. 核心论点：作者试图给出可执行的工作流，而不是抽象口号。\n"
-        "2. 关键数据：需要验证样本范围、时间窗口和适用前提。\n"
-        "3. 争议点：结论是否可迁移到你的语境，还需要对照现有知识库。\n\n"
-        "## 建议提问\n\n"
-        "- 这篇材料和你已有哪条判断冲突？\n"
-        "- 哪一句话值得萃取成永久笔记？\n"
-        "- 下一步要补的证据是什么？\n"
-    )
-    return {"title": title, "summary": summary, "content": content, "status": "unread"}
-
-
 def generate_assessment(idea: str) -> Dict[str, Any]:
     signal = sum(ord(char) for char in idea)
     innovation = 2 + signal % 4
@@ -503,18 +498,81 @@ def generate_assessment(idea: str) -> Dict[str, Any]:
     }
 
 
-def generate_refinery_reply(message: str, context_title: Optional[str]) -> str:
+def refinery_settings() -> RefinerySettings:
+    return RefinerySettings(defaultPrompt=load_config()["refinery"]["defaultPrompt"])
+
+
+def synthesize_refinery_report(title: str, body: str) -> str:
+    excerpt = body.replace("\n", " ").strip()
+    if len(excerpt) > 180:
+        excerpt = f"{excerpt[:180]}..."
+    return (
+        f"## 30 秒速读报告\n\n"
+        f"1. 核心论点：{title} 主要在讨论一个可执行判断，而不是纯收藏信息。\n"
+        f"2. 关键数据：目前最值得核验的是样本范围、约束条件和能否迁移到你的场景。\n"
+        f"3. 争议点：如果直接接受这份材料，最容易忽略的前提是它的适用边界。\n"
+        f"4. 可讨论问题：这份材料和你已有知识库里哪条判断冲突？\n\n"
+        f"> 摘要切片：{excerpt or '材料长度较短，建议直接围绕原文意图展开讨论。'}"
+    )
+
+
+def synthesize_material(payload: MaterialCreate) -> Dict[str, str]:
+    inferred_kind = payload.kind or ("url" if re.match(r"^https?://", payload.input.strip(), flags=re.IGNORECASE) else "text")
+    if inferred_kind == "url":
+        parsed = urlparse(payload.input.strip())
+        host = parsed.netloc or "source"
+        title = payload.title or parsed.path.strip("/").replace("-", " ").title() or host
+        source_url = payload.input.strip()
+        body = (
+            f"# {title}\n\n"
+            f"- Source: {source_url}\n"
+            f"- Captured: {now_iso()}\n\n"
+            "作者试图给出一套可执行方法，而不是抽象口号。这里最值得保留的是论证链、反例和下一步可验证动作。"
+        )
+    else:
+        normalized = payload.input.strip()
+        title = payload.title or normalized.splitlines()[0][:28] or f"Text Capture {datetime.now().strftime('%H:%M')}"
+        source_url = "text://clipboard"
+        body = normalized
+    report = synthesize_refinery_report(title, body)
+    summary = f"{title} 已生成短文本报告，可以直接进入对话精炼。"
+    content = f"# {title}\n\n- Source: {source_url}\n- Captured: {now_iso()}\n\n{body}\n\n{report}\n"
+    return {"title": title, "sourceUrl": source_url, "summary": summary, "report": report, "content": content, "status": "unread"}
+
+
+def generate_refinery_reply(message: str, context_title: Optional[str], report: Optional[str] = None) -> str:
     summary = (
         f"基于 {context_title or '当前上下文'}，我会先把问题拆成三个层次："
         "\n\n1. 原文到底在声称什么？"
         "\n2. 这个结论成立的前提是什么？"
         "\n3. 哪一部分值得提炼成你的永久笔记？"
     )
+    if report:
+        summary = f"{report}\n\n{summary}"
     if re.search(r"总结|summary|tl;dr", message, flags=re.IGNORECASE):
         return f"{summary}\n\n简版结论：这条材料值得保留，但需要补一句“为什么这对我重要”。"
     if re.search(r"区别|difference|比较", message, flags=re.IGNORECASE):
         return f"{summary}\n\n比较建议：先写共同目标，再写约束差异，最后写适用边界。"
     return f"{summary}\n\n你刚才提到“{message[:36]}”，下一步建议把它改写成一句可验证判断。"
+
+
+def create_refinery_conversation(context_id: str, initial_message: str = "请基于短文本报告继续精炼这份材料。") -> Conversation:
+    material = MarkdownDB.get("materials", context_id)
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+    created = MarkdownDB.create(
+        "conversations",
+        {
+            "title": material["title"],
+            "contextId": context_id,
+            "messages": [
+                {"role": "assistant", "content": material.get("report", material.get("summary", "")), "timestamp": now_iso()},
+                {"role": "assistant", "content": generate_refinery_reply(initial_message, material.get("title"), material.get("report")), "timestamp": now_iso()},
+            ],
+        },
+        "# AI Refinery Conversation\n\n自动生成的精炼会话。",
+    )
+    return Conversation(**created)
 
 
 def current_settings() -> SettingsPayload:
@@ -1192,6 +1250,19 @@ async def list_materials() -> List[Material]:
     return [Material(**item) for item in MarkdownDB.list("materials")]
 
 
+@app.get("/api/refinery/settings", response_model=RefinerySettings)
+async def get_refinery_settings() -> RefinerySettings:
+    return refinery_settings()
+
+
+@app.put("/api/refinery/settings", response_model=RefinerySettings)
+async def update_refinery_settings(payload: RefinerySettingsUpdate) -> RefinerySettings:
+    config = load_config()
+    config["refinery"]["defaultPrompt"] = payload.defaultPrompt
+    save_config(config)
+    return refinery_settings()
+
+
 @app.get("/api/refinery/materials/{id}", response_model=Material)
 async def get_material(id: str) -> Material:
     material = MarkdownDB.get("materials", id)
@@ -1207,13 +1278,21 @@ async def add_material(payload: MaterialCreate) -> Material:
         "materials",
         {
             "title": synthesized["title"],
-            "sourceUrl": payload.sourceUrl,
+            "sourceUrl": synthesized["sourceUrl"],
             "summary": synthesized["summary"],
+            "report": synthesized["report"],
             "status": synthesized["status"],
         },
         synthesized["content"],
     )
     return Material(**created)
+
+
+@app.post("/api/refinery/intake", response_model=RefinerySession, status_code=201)
+async def intake_refinery_material(payload: MaterialCreate) -> RefinerySession:
+    material = await add_material(payload)
+    conversation = create_refinery_conversation(material.id)
+    return RefinerySession(material=material, conversation=conversation, settings=refinery_settings())
 
 
 @app.get("/api/refinery/conversations", response_model=List[ConversationMetadata])
@@ -1232,10 +1311,12 @@ async def get_conversation(id: str) -> Conversation:
 
 @app.post("/api/refinery/conversations", response_model=Conversation, status_code=201)
 async def start_conversation(payload: ConversationCreate) -> Conversation:
+    if payload.contextId and MarkdownDB.get("materials", payload.contextId):
+        return create_refinery_conversation(payload.contextId, payload.initialMessage)
     context_title = None
     if payload.contextId:
-        material = MarkdownDB.get("materials", payload.contextId) or MarkdownDB.get("notes", payload.contextId)
-        context_title = material.get("title") if material else None
+        note = MarkdownDB.get("notes", payload.contextId)
+        context_title = note.get("title") if note else None
     created = MarkdownDB.create(
         "conversations",
         {
@@ -1266,7 +1347,11 @@ async def send_message(id: str, payload: MessageCreate) -> Conversation:
         messages.append(
             {
                 "role": "assistant",
-                "content": generate_refinery_reply(payload.content, context_item.get("title") if context_item else None),
+                "content": generate_refinery_reply(
+                    payload.content,
+                    context_item.get("title") if context_item else None,
+                    context_item.get("report") if context_item else None,
+                ),
                 "timestamp": now_iso(),
             }
         )
@@ -1274,6 +1359,43 @@ async def send_message(id: str, payload: MessageCreate) -> Conversation:
     metadata["messages"] = messages
     updated = MarkdownDB.save("conversations", id, metadata, conversation.get("content", ""))
     return Conversation(**updated)
+
+
+@app.post("/api/refinery/conversations/{id}/publish-note", response_model=Note, status_code=201)
+async def publish_refinery_note(id: str) -> Note:
+    conversation = MarkdownDB.get("conversations", id)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    material = MarkdownDB.get("materials", conversation.get("contextId", ""))
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+
+    transcript = "\n".join(
+        f"- {message['role']}: {message['content']}"
+        for message in conversation.get("messages", [])
+        if message.get("content")
+    )
+    body = (
+        f"# {material['title']}\n\n"
+        f"## Source\n\n{material.get('sourceUrl', 'unknown')}\n\n"
+        f"## Short Report\n\n{material.get('report', material.get('summary', ''))}\n\n"
+        f"## Refinery Conversation\n\n{transcript}\n"
+    )
+    note = MarkdownDB.create(
+        "notes",
+        {
+            "title": material["title"],
+            "domain": infer_domain(body),
+            "type": "known",
+            "tags": normalize_tags(["refinery", material.get("title", ""), material.get("sourceUrl", "")]),
+        },
+        body,
+    )
+
+    material_metadata = {key: value for key, value in material.items() if key not in {"id", "content"}}
+    material_metadata["status"] = "refined"
+    MarkdownDB.save("materials", material["id"], material_metadata, material.get("content", ""))
+    return Note(**note)
 
 
 if __name__ == "__main__":

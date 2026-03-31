@@ -35,6 +35,13 @@ def default_config() -> Dict[str, Any]:
             "defaultModel": "gpt-4.1-mini",
             "moduleModels": {module: "" for module in MODULE_KEYS},
         },
+        "refinery": {
+            "defaultPrompt": (
+                "你是 ThoughtCabinet 的信息精炼助手。先根据材料生成一份短文本报告，"
+                "包含：核心论点、关键数据、争议点、下一步值得讨论的问题。随后在对话中"
+                "持续引用这份报告，帮助用户把材料压缩成可发布的永久笔记。"
+            ),
+        },
     }
 
 
@@ -44,6 +51,7 @@ def with_defaults(config: Dict[str, Any]) -> Dict[str, Any]:
     merged["vault"].update(config.get("vault", {}))
     merged["llm"].update({key: value for key, value in config.get("llm", {}).items() if key != "moduleModels"})
     merged["llm"]["moduleModels"].update(config.get("llm", {}).get("moduleModels", {}))
+    merged["refinery"].update(config.get("refinery", {}))
     return merged
 
 
