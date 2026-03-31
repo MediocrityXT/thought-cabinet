@@ -37,9 +37,15 @@ def default_config() -> Dict[str, Any]:
         },
         "refinery": {
             "defaultPrompt": (
-                "你是 ThoughtCabinet 的信息精炼助手。先根据材料生成一份短文本报告，"
-                "包含：核心论点、关键数据、争议点、下一步值得讨论的问题。随后在对话中"
-                "持续引用这份报告，帮助用户把材料压缩成可发布的永久笔记。"
+                "你是 ThoughtCabinet 的信息精炼助手。请先阅读前面拼接的原始材料，再输出一个 JSON 对象，"
+                "严格遵守下面的 schema，不要输出额外解释：\n"
+                "{\n"
+                '  "coreArgument": "string",\n'
+                '  "keyEvidence": ["string"],\n'
+                '  "controversies": ["string"],\n'
+                '  "nextQuestions": ["string"]\n'
+                "}\n"
+                "然后基于这个 JSON 继续和用户讨论，帮助用户把材料压缩成可发布的永久笔记。"
             ),
         },
     }

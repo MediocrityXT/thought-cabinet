@@ -542,6 +542,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Material'
+    put:
+      summary: Update refinery material metadata such as editable report
+      operationId: updateRefineryMaterial
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialUpdate'
+      responses:
+        '200':
+          description: Material updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Material'
 
   /refinery/conversations:
     get:
@@ -622,6 +644,24 @@ paths:
       responses:
         '200':
           description: AI Response appended to conversation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+
+  /refinery/conversations/{id}/reset:
+    post:
+      summary: Reset a refinery conversation back to the report seed
+      operationId: resetRefineryConversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conversation reset
           content:
             application/json:
               schema:
@@ -972,6 +1012,19 @@ components:
         kind:
           type: string
           enum: [url, text]
+
+    MaterialUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        report:
+          type: string
+        summary:
+          type: string
+        status:
+          type: string
+          enum: [unread, reading, refined]
 
     RefinerySettings:
       type: object
