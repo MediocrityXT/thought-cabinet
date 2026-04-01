@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpenText, Eraser, FileCog, FileText, Link2, Save, Send, Sparkles, X } from 'lucide-react';
+import { BookOpenText, FileCog, FileText, Link2, Save, Send, Sparkles, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Conversation, Material, RefinerySettings } from '@/lib/types';
 
@@ -14,7 +14,19 @@ interface RefineryProps {
   onResetConversation: () => Promise<void>;
   onPublishNote: () => Promise<void>;
   onSavePrompt: (defaultPrompt: string) => Promise<void>;
-  onSaveReport: (report: string) => Promise<void>;
+  onSaveMaterialMarkdown: (markdown: string) => Promise<void>;
+}
+
+function materialMarkdown(material: Material | null) {
+  if (!material) {
+    return '';
+  }
+  return material.content?.trim() || material.report?.trim() || '';
+}
+
+function extractCallout(markdown: string) {
+  const match = markdown.match(/^\s*(> \[![A-Z]+\].*(?:\n>.*)*)/m);
+  return match?.[1]?.trim() ?? '';
 }
 
 function PromptSheet({
@@ -85,12 +97,13 @@ export function Refinery({
   onResetConversation,
   onPublishNote,
   onSavePrompt,
-  onSaveReport,
+  onSaveMaterialMarkdown,
 }: RefineryProps) {
   const [input, setInput] = useState('');
   const [inputMessage, setInputMessage] = useState('');
   const [promptOpen, setPromptOpen] = useState(false);
-  const [reportDraft, setReportDraft] = useState('');
+  const [editorDraft, setEditorDraft] = useState('');
+  const [draftMaterialId, setDraftMaterialId] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const activeMaterial = useMemo(
@@ -103,8 +116,19 @@ export function Refinery({
   }, [activeConversation]);
 
   useEffect(() => {
-    setReportDraft(activeMaterial?.report ?? '');
-  }, [activeMaterial?.id, activeMaterial?.report]);
+    setEditorDraft(materialMarkdown(activeMaterial));
+    setDraftMaterialId(activeMaterial?.id ?? null);
+  }, [activeMaterial?.id, activeMaterial?.content, activeMaterial?.report]);
+
+  useEffect(() => {
+    if (!activeMaterial || draftMaterialId !== activeMaterial.id || editorDraft === materialMarkdown(activeMaterial)) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      void onSaveMaterialMarkdown(editorDraft);
+    }, 600);
+    return () => window.clearTimeout(timeoutId);
+  }, [activeMaterial, draftMaterialId, editorDraft, onSaveMaterialMarkdown]);
 
   async function handleProcess() {
     if (!input.trim()) {
@@ -121,6 +145,8 @@ export function Refinery({
     await onSendMessage(inputMessage.trim());
     setInputMessage('');
   }
+
+  const calloutPreview = useMemo(() => extractCallout(editorDraft), [editorDraft]);
 
   return (
     <>
@@ -202,29 +228,32 @@ export function Refinery({
                     <p className="text-sm leading-6 text-star-dust">{activeMaterial.summary}</p>
                   </div>
 
-                  <div className="mb-6 rounded-2xl border border-purple/20 bg-purple/10 p-5">
-                  <div className="mb-3 flex items-center gap-2">
+                  {calloutPreview ? (
+                    <div className="mb-5 rounded-2xl border border-purple/20 bg-purple/10 p-5">
+                      <div className="mb-3 flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-purple" />
+                        <span className="text-sm font-medium text-white">30 秒速读报告</span>
+                      </div>
+                      <div className="whitespace-pre-line text-sm leading-7 text-white/90">{calloutPreview.replace(/^> ?/gm, '')}</div>
+                    </div>
+                  ) : null}
+
+                  <div className="rounded-2xl border border-white/10 bg-panel/70 p-4">
+                    <div className="flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-purple" />
-                      <span className="text-sm font-medium text-white">30 秒速读报告</span>
+                      <span className="text-sm font-medium text-white">Markdown 工作区</span>
+                      <span className="text-xs text-star-dust">自动保存到当前材料</span>
                     </div>
                     <textarea
-                      value={reportDraft}
-                      onChange={(event) => setReportDraft(event.target.value)}
-                      className="min-h-[220px] w-full rounded-xl border border-white/10 bg-panel/60 px-4 py-4 text-sm leading-7 text-white/90 focus:border-cyan focus:outline-none"
+                      value={editorDraft}
+                      onChange={(event) => setEditorDraft(event.target.value)}
+                      className="custom-scrollbar mt-4 min-h-[520px] w-full rounded-xl border border-white/10 bg-elevated px-4 py-4 font-mono text-sm leading-7 text-white/90 focus:border-cyan focus:outline-none"
+                      placeholder="在这里直接编辑整篇 Markdown。顶部 callout 会被识别为 30 秒速读报告。"
                     />
-                    <div className="mt-3 flex justify-end">
-                      <button
-                        onClick={() => void onSaveReport(reportDraft)}
-                        disabled={submitting || !activeMaterial}
-                        className="flex items-center gap-2 rounded-lg border border-cyan/20 bg-cyan/10 px-4 py-2 text-cyan transition-colors hover:bg-cyan/15 disabled:opacity-50"
-                      >
-                        <Save className="h-4 w-4" />
-                        保存报告
-                      </button>
-                    </div>
+                    <p className="mt-3 text-xs leading-6 text-star-dust">
+                      支持直接编辑全文 Markdown。保存永久笔记时，会把这里的内容和右侧对话记录一起写入 Vault。
+                    </p>
                   </div>
-
-                  <div className="whitespace-pre-line text-white/90">{activeMaterial.content}</div>
                 </>
               ) : (
                 <div className="rounded-2xl border border-dashed border-white/10 bg-panel/50 p-8 text-center">
@@ -243,16 +272,6 @@ export function Refinery({
                 <span className="text-sm font-medium text-white">精炼对话</span>
               </div>
               <p className="text-xs text-star-dust">围绕短文本报告继续讨论；发布时会把报告和对话一起写进正式笔记。</p>
-              <div className="mt-3 flex justify-end">
-                <button
-                  onClick={() => void onResetConversation()}
-                  disabled={submitting || !activeConversation}
-                  className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-star-dust transition-colors hover:border-rose/20 hover:text-white disabled:opacity-50"
-                >
-                  <Eraser className="h-4 w-4" />
-                  清空对话
-                </button>
-              </div>
             </div>
 
             <div className="custom-scrollbar min-h-0 flex-1 space-y-4 overflow-auto p-4">
@@ -280,17 +299,15 @@ export function Refinery({
             </div>
 
             <div className="border-t border-white/5 p-4">
-              <div className="mb-3 flex gap-3">
-                <button
-                  onClick={() => void onPublishNote()}
-                  disabled={submitting || !activeConversation}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gradient-cyan-purple px-4 py-2.5 font-medium text-white transition-all hover:brightness-110 disabled:opacity-50"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  生成永久笔记
-                </button>
-              </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => void onResetConversation()}
+                  title="清空本轮对话"
+                  disabled={submitting || !activeConversation}
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-star-dust transition-colors hover:border-rose/20 hover:text-white disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
                 <input
                   type="text"
                   placeholder="继续围绕短报告讨论..."
@@ -304,6 +321,16 @@ export function Refinery({
                   className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-cyan-purple transition-all hover:brightness-110"
                 >
                   <Send className="h-4 w-4 text-white" />
+                </button>
+              </div>
+              <div className="mt-3">
+                <button
+                  onClick={() => void onPublishNote()}
+                  disabled={submitting || !activeConversation}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-cyan-purple px-4 py-2.5 font-medium text-white transition-all hover:brightness-110 disabled:opacity-50"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  生成永久笔记
                 </button>
               </div>
             </div>

@@ -178,7 +178,7 @@ export async function addMaterial(input: string, title?: string): Promise<Materi
 
 export async function updateRefineryMaterial(
   id: string,
-  payload: { title?: string; report?: string; summary?: string; status?: Material['status'] },
+  payload: { title?: string; content?: string; report?: string; summary?: string; status?: Material['status'] },
 ): Promise<Material> {
   const { data } = await api.put<Material>(`/refinery/materials/${id}`, payload);
   return data;

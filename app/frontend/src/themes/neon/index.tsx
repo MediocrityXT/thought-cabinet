@@ -40,6 +40,11 @@ function cloneLlmSettings(llm: LLMSettings): LLMSettings {
   };
 }
 
+function extractRefineryReport(markdown: string) {
+  const match = markdown.match(/^\s*(> \[![A-Z]+\].*(?:\n>.*)*)/m);
+  return match?.[1]?.trim() ?? '';
+}
+
 function SettingsSheet({
   open,
   settings,
@@ -380,13 +385,16 @@ export default function NeonTheme() {
     }
   }
 
-  async function handleSaveRefineryReport(report: string) {
+  async function handleSaveRefineryMaterial(markdown: string) {
     if (!workspace?.activeConversation?.contextId) {
       return;
     }
     setSubmitting(true);
     try {
-      const material = await updateRefineryMaterial(workspace.activeConversation.contextId, { report });
+      const material = await updateRefineryMaterial(workspace.activeConversation.contextId, {
+        content: markdown,
+        report: extractRefineryReport(markdown),
+      });
       setWorkspace((current) =>
         current
           ? {
@@ -515,7 +523,7 @@ export default function NeonTheme() {
             onResetConversation={handleResetRefineryConversation}
             onPublishNote={handlePublishRefineryNote}
             onSavePrompt={handleSaveRefineryPrompt}
-            onSaveReport={handleSaveRefineryReport}
+            onSaveMaterialMarkdown={handleSaveRefineryMaterial}
           />
         );
       case 'organizer':
