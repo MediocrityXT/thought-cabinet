@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ThoughtCabinet Core API
-  version: 1.0.0
+  version: 0.1
   description: API for ThoughtCabinet, supporting multiple frontend prototypes (NEON, ZEN, etc.) with a Markdown-based backend.
 servers:
   - url: http://localhost:8000/api
@@ -614,6 +614,8 @@ components:
           type: string
         moduleModels:
           $ref: '#/components/schemas/ModuleModels'
+        apiConfigPath:
+          type: string
 
     VaultSummary:
       type: object

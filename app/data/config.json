@@ -1,13 +1,11 @@
 {
   "activeTheme": "NEON",
   "vault": {
-    "activePath": "/Users/summer/Documents/thought-cabinet/app/vaults/sample-obsidian-vault",
+    "activePath": "D:\\AllCode\\thought-cabinet\\app\\vaults\\sample-obsidian-vault",
     "appFolder": ".thoughtcabinet",
     "inboxFolder": "inbox"
   },
   "llm": {
-    "baseUrl": "https://api.openai.com/v1",
-    "apiKey": "",
     "defaultModel": "gpt-4.1-mini",
     "moduleModels": {
       "dashboard": "",
@@ -16,6 +14,7 @@
       "evaluator": "",
       "blueprint": "",
       "planner": ""
-    }
+    },
+    "apiConfigPath": "C:\\Users\\admin\\api.yaml"
   }
 }

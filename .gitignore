@@ -48,3 +48,11 @@ Thumbs.db
 app/vaults/
 !app/frontend/src/lib/
 !app/frontend/src/lib/**
+
+# Local install caches
+.tmp-pip/
+.tmp-pip2/
+app/backend/.tmp/
+app/backend/.pip-cache/
+app/frontend/.npm-cache/
+logs/

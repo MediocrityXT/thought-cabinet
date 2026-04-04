@@ -6,12 +6,15 @@ import re
 import subprocess
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Literal, Optional
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from api_config import ensure_api_config, read_api_config
 from config_store import MODULE_KEYS, default_blank_vault_path, default_sample_vault_path, load_config, save_config
 from db import MarkdownDB
 
@@ -66,6 +69,7 @@ class LLMSettings(BaseModel):
     apiKey: str
     defaultModel: str
     moduleModels: ModuleModels
+    apiConfigPath: str = r"C:\Users\admin\api.yaml"
 
 
 class VaultSummary(BaseModel):
@@ -394,7 +398,7 @@ class PlannerBoard(BaseModel):
     feedback: List[PlannerFeedback]
 
 
-app = FastAPI(title="ThoughtCabinet Core API", version="2.0.0")
+app = FastAPI(title="ThoughtCabinet Core API", version="0.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -424,28 +428,7 @@ def infer_domain(text: str) -> str:
     return "General"
 
 
-def synthesize_material(payload: MaterialCreate) -> Dict[str, str]:
-    parsed = urlparse(payload.sourceUrl)
-    host = parsed.netloc or "source"
-    title = payload.title or parsed.path.strip("/").replace("-", " ").title() or host
-    summary = f"{title} 主要讨论了问题背景、证据链和可执行动作三部分，适合进入 Socratic 精炼流程。"
-    content = (
-        f"# {title}\n\n"
-        f"- Source: {payload.sourceUrl}\n"
-        f"- Captured: {now_iso()}\n\n"
-        "## 30 秒速读报告\n\n"
-        "1. 核心论点：作者试图给出可执行的工作流，而不是抽象口号。\n"
-        "2. 关键数据：需要验证样本范围、时间窗口和适用前提。\n"
-        "3. 争议点：结论是否可迁移到你的语境，还需要对照现有知识库。\n\n"
-        "## 建议提问\n\n"
-        "- 这篇材料和你已有哪条判断冲突？\n"
-        "- 哪一句话值得萃取成永久笔记？\n"
-        "- 下一步要补的证据是什么？\n"
-    )
-    return {"title": title, "summary": summary, "content": content, "status": "unread"}
-
-
-def generate_assessment(idea: str) -> Dict[str, Any]:
+def generate_assessment_seed(idea: str) -> Dict[str, Any]:
     signal = sum(ord(char) for char in idea)
     innovation = 2 + signal % 4
     market = 2 + (signal // 7) % 4
@@ -503,31 +486,261 @@ def generate_assessment(idea: str) -> Dict[str, Any]:
     }
 
 
-def generate_refinery_reply(message: str, context_title: Optional[str]) -> str:
-    summary = (
-        f"基于 {context_title or '当前上下文'}，我会先把问题拆成三个层次："
-        "\n\n1. 原文到底在声称什么？"
-        "\n2. 这个结论成立的前提是什么？"
-        "\n3. 哪一部分值得提炼成你的永久笔记？"
+def _resolve_model(module: ModuleName) -> str:
+    config = load_config()
+    llm_config = config.get("llm", {})
+    module_models = llm_config.get("moduleModels", {})
+    if isinstance(module_models, dict):
+        picked = str(module_models.get(module, "")).strip()
+        if picked:
+            return picked
+    default_model = str(llm_config.get("defaultModel", "")).strip()
+    return default_model or "gpt-4.1-mini"
+
+
+def _llm_api_path() -> str:
+    config = load_config()
+    llm_config = config.get("llm", {})
+    return str(llm_config.get("apiConfigPath", r"C:\Users\admin\api.yaml"))
+
+
+def _extract_json_object(raw: str) -> Dict[str, Any]:
+    candidate = raw.strip()
+    try:
+        parsed = json.loads(candidate)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+
+    start = candidate.find("{")
+    end = candidate.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        raise HTTPException(status_code=502, detail="LLM response does not contain a JSON object")
+    try:
+        parsed = json.loads(candidate[start : end + 1])
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to parse JSON from LLM response: {exc}") from exc
+    if not isinstance(parsed, dict):
+        raise HTTPException(status_code=502, detail="LLM JSON payload must be an object")
+    return parsed
+
+
+def _llm_completion(module: ModuleName, messages: List[Dict[str, str]], temperature: float = 0.3) -> str:
+    config_path = _llm_api_path()
+    try:
+        api_config = read_api_config(config_path)
+    except (ValueError, OSError) as exc:
+        raise HTTPException(status_code=500, detail=f"Invalid api config at {config_path}: {exc}") from exc
+
+    base_url = api_config["baseUrl"].strip()
+    api_key = api_config["apiKey"].strip()
+    if not api_key or api_key == "sk-xxxx":
+        raise HTTPException(status_code=400, detail=f"API_KEY missing in {config_path}")
+
+    payload = {
+        "model": _resolve_model(module),
+        "messages": messages,
+        "temperature": temperature,
+    }
+    request = Request(
+        base_url,
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
     )
-    if re.search(r"总结|summary|tl;dr", message, flags=re.IGNORECASE):
-        return f"{summary}\n\n简版结论：这条材料值得保留，但需要补一句“为什么这对我重要”。"
-    if re.search(r"区别|difference|比较", message, flags=re.IGNORECASE):
-        return f"{summary}\n\n比较建议：先写共同目标，再写约束差异，最后写适用边界。"
-    return f"{summary}\n\n你刚才提到“{message[:36]}”，下一步建议把它改写成一句可验证判断。"
+
+    try:
+        with urlopen(request, timeout=45) as response:
+            response_text = response.read().decode("utf-8")
+    except HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="ignore")
+        detail = body[:300] if body else str(exc)
+        raise HTTPException(status_code=502, detail=f"LLM HTTP {exc.code}: {detail}") from exc
+    except URLError as exc:
+        raise HTTPException(status_code=502, detail=f"LLM request failed: {exc.reason}") from exc
+
+    try:
+        response_json = json.loads(response_text)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=502, detail=f"LLM response is not valid JSON: {exc}") from exc
+
+    choices = response_json.get("choices")
+    if not isinstance(choices, list) or not choices:
+        raise HTTPException(status_code=502, detail="LLM response missing choices")
+
+    first = choices[0] if isinstance(choices[0], dict) else {}
+    message = first.get("message", {}) if isinstance(first, dict) else {}
+    content = message.get("content") if isinstance(message, dict) else None
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict) and isinstance(item.get("text"), str):
+                parts.append(item["text"])
+        content = "\n".join(part for part in parts if part.strip())
+    if not isinstance(content, str) or not content.strip():
+        raise HTTPException(status_code=502, detail="LLM response content is empty")
+    return content.strip()
+
+
+def _normalize_score(value: Any, fallback: int) -> int:
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        number = fallback
+    return max(1, min(5, number))
+
+
+def _normalize_percent(value: Any, fallback: int) -> int:
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        number = fallback
+    return max(0, min(100, number))
+
+
+def _normalize_string_list(value: Any, fallback: List[str]) -> List[str]:
+    if isinstance(value, list):
+        normalized = [str(item).strip() for item in value if str(item).strip()]
+        if normalized:
+            return normalized[:5]
+    return fallback
+
+
+def synthesize_material(payload: MaterialCreate) -> Dict[str, str]:
+    parsed = urlparse(payload.sourceUrl)
+    host = parsed.netloc or "source"
+    title_hint = payload.title or parsed.path.strip("/").replace("-", " ").title() or host
+    completion = _llm_completion(
+        "refinery",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "你是知识精炼助手。请严格返回 JSON 对象，不能包含 markdown 代码块。"
+                    "字段必须包含 title, summary, content, status。status 只能是 unread/reading/refined。"
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"source_url: {payload.sourceUrl}\n"
+                    f"title_hint: {title_hint}\n"
+                    "请输出一份用于知识精炼流程的材料，content 需为 Markdown，且包含“30 秒速读报告”和“建议提问”两节。"
+                ),
+            },
+        ],
+        temperature=0.35,
+    )
+    parsed_json = _extract_json_object(completion)
+    title = str(parsed_json.get("title", "")).strip() or title_hint
+    summary = str(parsed_json.get("summary", "")).strip() or f"{title} 的核心结论和争议点已提取。"
+    content = str(parsed_json.get("content", "")).strip()
+    if not content:
+        raise HTTPException(status_code=502, detail="LLM material payload missing content")
+    status = str(parsed_json.get("status", "unread")).strip().lower()
+    if status not in {"unread", "reading", "refined"}:
+        status = "unread"
+    return {"title": title, "summary": summary, "content": content, "status": status}
+
+
+def generate_assessment(idea: str) -> Dict[str, Any]:
+    seed = generate_assessment_seed(idea)
+    completion = _llm_completion(
+        "evaluator",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "你是产品评估助手。输出严格 JSON 对象，不要 markdown，不要代码块。"
+                    "字段: impact(0-100), feasibility(0-100), domain, status(idea|evaluating|active|archived),"
+                    "assessment={strengths[], weaknesses[], opportunities[], threats[], roastComment, scores={innovation,market,feasibility,team}(1-5)}。"
+                ),
+            },
+            {
+                "role": "user",
+                "content": f"idea: {idea}\n请返回中文评估结果。",
+            },
+        ],
+        temperature=0.45,
+    )
+    payload = _extract_json_object(completion)
+    raw_assessment = payload.get("assessment", {})
+    if not isinstance(raw_assessment, dict):
+        raw_assessment = {}
+    raw_scores = raw_assessment.get("scores", {})
+    if not isinstance(raw_scores, dict):
+        raw_scores = {}
+
+    seed_assessment = seed["assessment"]
+    seed_scores = seed_assessment["scores"]
+    status = str(payload.get("status", seed["status"])).strip()
+    if status not in {"idea", "evaluating", "active", "archived"}:
+        status = seed["status"]
+
+    return {
+        "idea": idea,
+        "impact": _normalize_percent(payload.get("impact"), seed["impact"]),
+        "feasibility": _normalize_percent(payload.get("feasibility"), seed["feasibility"]),
+        "domain": str(payload.get("domain", "")).strip() or infer_domain(idea),
+        "status": status,
+        "assessment": {
+            "strengths": _normalize_string_list(raw_assessment.get("strengths"), seed_assessment["strengths"]),
+            "weaknesses": _normalize_string_list(raw_assessment.get("weaknesses"), seed_assessment["weaknesses"]),
+            "opportunities": _normalize_string_list(raw_assessment.get("opportunities"), seed_assessment["opportunities"]),
+            "threats": _normalize_string_list(raw_assessment.get("threats"), seed_assessment["threats"]),
+            "roastComment": str(raw_assessment.get("roastComment", "")).strip() or seed_assessment["roastComment"],
+            "scores": {
+                "innovation": _normalize_score(raw_scores.get("innovation"), seed_scores["innovation"]),
+                "market": _normalize_score(raw_scores.get("market"), seed_scores["market"]),
+                "feasibility": _normalize_score(raw_scores.get("feasibility"), seed_scores["feasibility"]),
+                "team": _normalize_score(raw_scores.get("team"), seed_scores["team"]),
+            },
+        },
+    }
+
+
+def generate_refinery_reply(message: str, context_title: Optional[str]) -> str:
+    context = context_title or "当前上下文"
+    completion = _llm_completion(
+        "refinery",
+        messages=[
+            {
+                "role": "system",
+                "content": "你是 Socratic 精炼助手。回答要简洁、可执行、使用中文，并优先给下一步行动建议。",
+            },
+            {
+                "role": "user",
+                "content": f"上下文标题：{context}\n用户消息：{message}",
+            },
+        ],
+        temperature=0.55,
+    )
+    return completion
 
 
 def current_settings() -> SettingsPayload:
     config = load_config()
+    config_path = str(config.get("llm", {}).get("apiConfigPath", r"C:\Users\admin\api.yaml"))
+    try:
+        api_config = read_api_config(config_path)
+    except (ValueError, OSError) as exc:
+        raise HTTPException(status_code=500, detail=f"Invalid api config at {config_path}: {exc}") from exc
     return SettingsPayload(
         activeTheme=config["activeTheme"],
         vault=VaultSummary(**MarkdownDB.get_vault_summary()),
         availableVaults=[VaultSummary(**item) for item in MarkdownDB.list_available_vaults()],
         llm=LLMSettings(
-            baseUrl=config["llm"]["baseUrl"],
-            apiKey=config["llm"]["apiKey"],
+            baseUrl=api_config["baseUrl"],
+            apiKey=api_config["apiKey"],
             defaultModel=config["llm"]["defaultModel"],
             moduleModels=ModuleModels(**config["llm"]["moduleModels"]),
+            apiConfigPath=config_path,
         ),
     )
 
@@ -912,8 +1125,8 @@ def bootstrap_sample_vaults() -> None:
             {"id": "quick-distill-note", "metadata": {"title": "提炼知识蒸馏写作笔记", "domain": "写作", "timeEstimate": 20, "priority": "low", "status": "todo", "category": "quick_win", "impactScore": 60, "progress": 0}, "content": "- 写一条为什么这条判断重要"},
         ],
         "evaluations": [
-            {"id": "eval-agent-notes", "metadata": generate_assessment("面向 Obsidian 的 AI 笔记管家"), "content": "# Evaluation\n\n需要验证真实用户是否愿意让系统代为整理。"},
-            {"id": "eval-reading-workbench", "metadata": generate_assessment("沉浸式阅读精炼工作台"), "content": "# Evaluation\n\n核心风险在于是否足够高频和可复用。"},
+            {"id": "eval-agent-notes", "metadata": generate_assessment_seed("面向 Obsidian 的 AI 笔记管家"), "content": "# Evaluation\n\n需要验证真实用户是否愿意让系统代为整理。"},
+            {"id": "eval-reading-workbench", "metadata": generate_assessment_seed("沉浸式阅读精炼工作台"), "content": "# Evaluation\n\n核心风险在于是否足够高频和可复用。"},
         ],
         "materials": [
             {"id": "material-rag-future", "metadata": {"title": "为什么 RAG 仍然重要", "sourceUrl": "https://example.com/rag", "summary": "文章讨论了长上下文不能完全替代检索增强。", "status": "reading"}, "content": "# 为什么 RAG 仍然重要\n\n文章强调检索、引用和评测依旧是可靠系统的核心。"},
@@ -937,6 +1150,8 @@ def bootstrap_sample_vaults() -> None:
 
 @app.on_event("startup")
 async def startup_event() -> None:
+    config = load_config()
+    ensure_api_config(str(config.get("llm", {}).get("apiConfigPath", r"C:\Users\admin\api.yaml")))
     bootstrap_sample_vaults()
     MarkdownDB.ensure_vault(MarkdownDB.active_vault_path(), create_obsidian=False)
 
@@ -955,17 +1170,19 @@ async def get_settings() -> SettingsPayload:
 @app.put("/api/settings", response_model=SettingsPayload)
 async def update_settings(payload: SettingsUpdate) -> SettingsPayload:
     config = load_config()
+    llm_config = config.setdefault("llm", {})
     if payload.activeTheme is not None:
         config["activeTheme"] = payload.activeTheme
     if payload.activeVaultPath:
         MarkdownDB.switch_vault(payload.activeVaultPath)
         config = load_config()
+        llm_config = config.setdefault("llm", {})
     if payload.llm is not None:
+        config_path = str(llm_config.get("apiConfigPath", r"C:\Users\admin\api.yaml"))
         config["llm"] = {
-            "baseUrl": payload.llm.baseUrl,
-            "apiKey": payload.llm.apiKey,
             "defaultModel": payload.llm.defaultModel,
             "moduleModels": payload.llm.moduleModels.model_dump(),
+            "apiConfigPath": config_path,
         }
     save_config(config)
     return current_settings()

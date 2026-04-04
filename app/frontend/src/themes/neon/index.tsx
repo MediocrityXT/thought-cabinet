@@ -33,6 +33,7 @@ function cloneLlmSettings(llm: LLMSettings): LLMSettings {
     apiKey: llm.apiKey,
     defaultModel: llm.defaultModel,
     moduleModels: { ...llm.moduleModels },
+    apiConfigPath: llm.apiConfigPath,
   };
 }
 
@@ -141,12 +142,15 @@ function SettingsSheet({
           <section className="space-y-4">
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-[0.24em] text-star-dust">LLM</h3>
+              <p className="mt-1 text-xs text-star-dust">
+                Base URL / API Key 当前为只读，来源于 <span className="font-mono">C:\Users\admin\api.yaml</span>
+              </p>
             </div>
             <label className="block space-y-2">
               <span className="text-sm text-white">Base URL</span>
               <input
                 value={llm.baseUrl}
-                onChange={(event) => setLlm({ ...llm, baseUrl: event.target.value })}
+                readOnly
                 className="w-full rounded-lg border border-white/10 bg-elevated px-4 py-3 text-white placeholder:text-star-dust focus:border-cyan focus:outline-none"
               />
             </label>
@@ -155,7 +159,7 @@ function SettingsSheet({
               <input
                 type="password"
                 value={llm.apiKey}
-                onChange={(event) => setLlm({ ...llm, apiKey: event.target.value })}
+                readOnly
                 className="w-full rounded-lg border border-white/10 bg-elevated px-4 py-3 text-white placeholder:text-star-dust focus:border-cyan focus:outline-none"
               />
             </label>

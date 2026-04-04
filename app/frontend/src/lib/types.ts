@@ -43,6 +43,7 @@ export interface LLMSettings {
   apiKey: string;
   defaultModel: string;
   moduleModels: ModuleModels;
+  apiConfigPath?: string;
 }
 
 export interface VaultSummary {
