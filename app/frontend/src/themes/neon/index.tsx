@@ -1,31 +1,33 @@
-import { startTransition, useEffect, useEffectEvent, useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import { AlertTriangle, LoaderCircle, Plus, Save, X } from 'lucide-react';
 import { Sidebar, type ModuleId } from '@/components/layout/Sidebar';
 import { StatusBar } from '@/components/layout/StatusBar';
-import { Blueprint } from '@/pages/Blueprint';
-import { Dashboard } from '@/pages/Dashboard';
-import { Evaluator } from '@/pages/Evaluator';
-import { Organizer } from '@/pages/Organizer';
-import { Planner } from '@/pages/Planner';
-import { Refinery } from '@/pages/Refinery';
+import { AssessmentCommittee } from '@/pages/AssessmentCommittee';
+import { Hopper } from '@/pages/Hopper';
+import { KnowledgeBlueprint } from '@/pages/KnowledgeBlueprint';
+import { WarRoom } from '@/pages/WarRoom';
 import { useTheme } from '@/context/ThemeContext';
 import {
-  addMaterial,
   assignPlannerTask,
   createPlannerFeedback,
   createEvaluation,
   createNote,
   createVault,
-  getConversation,
   getPlannerBoard,
+  getRefinerySettings,
   getWorkspaceSnapshot,
+  intakeRefineryMaterial,
+  publishRefineryNote,
+  resetRefineryConversation,
   sendPlannerChat,
   sendConversationMessage,
   startConversation,
+  updateRefineryMaterial,
+  updateRefinerySettings,
   updateSettings,
 } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import type { LLMSettings, PlannerBoard, PlannerFeedbackCreate, SettingsPayload, WorkspaceSnapshot } from '@/lib/types';
+import type { LLMSettings, PlannerBoard, PlannerFeedbackCreate, RefinerySettings, SettingsPayload, WorkspaceSnapshot } from '@/lib/types';
 
 function cloneLlmSettings(llm: LLMSettings): LLMSettings {
   return {
@@ -35,6 +37,11 @@ function cloneLlmSettings(llm: LLMSettings): LLMSettings {
     moduleModels: { ...llm.moduleModels },
     apiConfigPath: llm.apiConfigPath,
   };
+}
+
+function extractRefineryReport(markdown: string) {
+  const match = markdown.match(/^\s*(> \[![A-Z]+\].*(?:\n>.*)*)/m);
+  return match?.[1]?.trim() ?? '';
 }
 
 function SettingsSheet({
@@ -210,7 +217,7 @@ function SettingsSheet({
 
 export default function NeonTheme() {
   const [workspace, setWorkspace] = useState<WorkspaceSnapshot | null>(null);
-  const [activeModule, setActiveModule] = useState<ModuleId>('dashboard');
+  const [activeModule, setActiveModule] = useState<ModuleId>('hopper');
   const [plannerGoalId, setPlannerGoalId] = useState<string | null>(null);
   const [plannerBoard, setPlannerBoard] = useState<PlannerBoard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -218,15 +225,18 @@ export default function NeonTheme() {
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [plannerLoading, setPlannerLoading] = useState(false);
+  const [refinerySettings, setRefinerySettings] = useState<RefinerySettings | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { refreshTheme } = useTheme();
 
-  const loadWorkspace = useEffectEvent(async () => {
+  async function loadWorkspace() {
     try {
       setError(null);
       const snapshot = await getWorkspaceSnapshot();
+      const promptSettings = await getRefinerySettings();
       setWorkspace(snapshot);
+      setRefinerySettings(promptSettings);
       const defaultGoalId = plannerGoalId ?? snapshot.evaluations[0]?.id ?? null;
       if (defaultGoalId) {
         const board = await getPlannerBoard({ evaluationId: defaultGoalId });
@@ -242,11 +252,11 @@ export default function NeonTheme() {
       setLoading(false);
       setRefreshing(false);
     }
-  });
+  }
 
   useEffect(() => {
     void loadWorkspace();
-  }, [loadWorkspace]);
+  }, []);
 
   async function refreshWorkspace() {
     setRefreshing(true);
@@ -260,29 +270,45 @@ export default function NeonTheme() {
   async function handleAddMaterial(sourceUrl: string) {
     try {
       setSubmitting(true);
-      const material = await addMaterial(sourceUrl);
-      const conversation = await startConversation('请提炼这份材料的核心观点，并给出可执行笔记。', material.id);
+      const session = await intakeRefineryMaterial(sourceUrl);
       setWorkspace((current) =>
         current
           ? {
               ...current,
-              materials: [material, ...current.materials],
+              materials: [session.material, ...current.materials.filter((item) => item.id !== session.material.id)],
+              conversationMetas: [
+                { id: session.conversation.id, title: session.conversation.title, updatedAt: session.conversation.updatedAt },
+                ...current.conversationMetas.filter((item) => item.id !== session.conversation.id),
+              ],
+              activeConversation: session.conversation,
+            }
+          : current,
+      );
+      setRefinerySettings(session.settings);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleOpenRefineryMaterial(materialId: string) {
+    setSubmitting(true);
+    try {
+      const conversation = await startConversation('请基于短文本报告继续精炼这份材料。', materialId);
+      setWorkspace((current) =>
+        current
+          ? {
+              ...current,
+              activeConversation: conversation,
               conversationMetas: [
                 { id: conversation.id, title: conversation.title, updatedAt: conversation.updatedAt },
                 ...current.conversationMetas.filter((item) => item.id !== conversation.id),
               ],
-              activeConversation: conversation,
             }
           : current,
       );
     } finally {
       setSubmitting(false);
     }
-  }
-
-  async function handleSelectConversation(id: string) {
-    const conversation = await getConversation(id);
-    setWorkspace((current) => (current ? { ...current, activeConversation: conversation } : current));
   }
 
   async function handleSendConversationMessage(content: string) {
@@ -323,6 +349,75 @@ export default function NeonTheme() {
     const board = await getPlannerBoard({ evaluationId: evaluation.id });
     setPlannerBoard(board);
     return evaluation;
+  }
+
+  async function handlePublishRefineryNote() {
+    if (!workspace?.activeConversation) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const note = await publishRefineryNote(workspace.activeConversation.id);
+      setWorkspace((current) =>
+        current
+          ? {
+              ...current,
+              notes: [note, ...current.notes.filter((item) => item.id !== note.id)],
+              materials: current.materials.map((item) =>
+                item.id === current.activeConversation?.contextId ? { ...item, status: 'refined' } : item,
+              ),
+            }
+          : current,
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleResetRefineryConversation() {
+    if (!workspace?.activeConversation) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const conversation = await resetRefineryConversation(workspace.activeConversation.id);
+      setWorkspace((current) => (current ? { ...current, activeConversation: conversation } : current));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleSaveRefineryMaterial(markdown: string) {
+    if (!workspace?.activeConversation?.contextId) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const material = await updateRefineryMaterial(workspace.activeConversation.contextId, {
+        content: markdown,
+        report: extractRefineryReport(markdown),
+      });
+      setWorkspace((current) =>
+        current
+          ? {
+              ...current,
+              materials: current.materials.map((item) => (item.id === material.id ? material : item)),
+            }
+          : current,
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleSaveRefineryPrompt(defaultPrompt: string) {
+    setSubmitting(true);
+    try {
+      const nextSettings = await updateRefinerySettings(defaultPrompt);
+      setRefinerySettings(nextSettings);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function loadPlannerBoard(evaluationId: string | null, activeNodeId?: string | null) {
@@ -415,34 +510,26 @@ export default function NeonTheme() {
       return null;
     }
     switch (activeModule) {
-      case 'dashboard':
-        return <Dashboard overview={workspace.overview} vaultName={workspace.settings.vault.name} onOpenPlanner={() => setActiveModule('planner')} />;
-      case 'refinery':
+      case 'hopper':
         return (
-          <Refinery
+          <Hopper
             materials={workspace.materials}
-            conversationMetas={workspace.conversationMetas}
             activeConversation={workspace.activeConversation}
+            settings={refinerySettings}
             submitting={submitting}
             onAddMaterial={handleAddMaterial}
-            onSelectConversation={handleSelectConversation}
+            onOpenMaterial={handleOpenRefineryMaterial}
             onSendMessage={handleSendConversationMessage}
-            onExtractNote={(content, source) =>
-              handleCreateNote({
-                title: content.slice(0, 24),
-                content,
-                domain: 'Refinery',
-                type: 'known',
-                tags: [source],
-              })
-            }
+            onResetConversation={handleResetRefineryConversation}
+            onPublishNote={handlePublishRefineryNote}
+            onSavePrompt={handleSaveRefineryPrompt}
+            onSaveMaterialMarkdown={handleSaveRefineryMaterial}
+            notes={workspace.notes}
           />
         );
-      case 'organizer':
-        return <Organizer notes={workspace.notes} saving={submitting} onCreateNote={handleCreateNote} />;
-      case 'evaluator':
+      case 'committee':
         return (
-          <Evaluator
+          <AssessmentCommittee
             evaluations={workspace.evaluations}
             notes={workspace.notes}
             creating={submitting}
@@ -450,15 +537,17 @@ export default function NeonTheme() {
             onSaveSerendipity={(content) => handleCreateNote({ title: content.slice(0, 24), content, domain: 'Evaluator', type: 'unknown', tags: ['serendipity'] })}
             onPromoteToPlanner={(evaluationId) => {
               void loadPlannerBoard(evaluationId);
-              startTransition(() => setActiveModule('planner'));
+              startTransition(() => setActiveModule('war-room'));
             }}
           />
         );
       case 'blueprint':
-        return <Blueprint graph={workspace.graph} notes={workspace.notes} />;
-      case 'planner':
+        return <KnowledgeBlueprint graph={workspace.graph} notes={workspace.notes} />;
+      case 'war-room':
         return (
-          <Planner
+          <WarRoom
+            overview={workspace.overview}
+            vaultName={workspace.settings.vault.name}
             board={plannerBoard}
             evaluations={workspace.evaluations}
             loading={plannerLoading}

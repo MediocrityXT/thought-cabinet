@@ -14,6 +14,8 @@ import type {
   PlannerFeedback,
   PlannerFeedbackCreate,
   PlannerSchedule,
+  RefinerySession,
+  RefinerySettings,
   SettingsPayload,
   Task,
   ThemeConfig,
@@ -154,8 +156,31 @@ export async function listMaterials(): Promise<Material[]> {
   return data;
 }
 
-export async function addMaterial(sourceUrl: string, title?: string): Promise<Material> {
-  const { data } = await api.post<Material>('/refinery/materials', { sourceUrl, title });
+export async function getRefinerySettings(): Promise<RefinerySettings> {
+  const { data } = await api.get<RefinerySettings>('/refinery/settings');
+  return data;
+}
+
+export async function updateRefinerySettings(defaultPrompt: string): Promise<RefinerySettings> {
+  const { data } = await api.put<RefinerySettings>('/refinery/settings', { defaultPrompt });
+  return data;
+}
+
+export async function intakeRefineryMaterial(input: string, title?: string): Promise<RefinerySession> {
+  const { data } = await api.post<RefinerySession>('/refinery/intake', { input, title });
+  return data;
+}
+
+export async function addMaterial(input: string, title?: string): Promise<Material> {
+  const { data } = await api.post<Material>('/refinery/materials', { input, title });
+  return data;
+}
+
+export async function updateRefineryMaterial(
+  id: string,
+  payload: { title?: string; content?: string; report?: string; summary?: string; status?: Material['status'] },
+): Promise<Material> {
+  const { data } = await api.put<Material>(`/refinery/materials/${id}`, payload);
   return data;
 }
 
@@ -179,6 +204,16 @@ export async function sendConversationMessage(id: string, content: string): Prom
     role: 'user',
     content,
   });
+  return data;
+}
+
+export async function resetRefineryConversation(id: string): Promise<Conversation> {
+  const { data } = await api.post<Conversation>(`/refinery/conversations/${id}/reset`);
+  return data;
+}
+
+export async function publishRefineryNote(id: string): Promise<Note> {
+  const { data } = await api.post<Note>(`/refinery/conversations/${id}/publish-note`);
   return data;
 }
 

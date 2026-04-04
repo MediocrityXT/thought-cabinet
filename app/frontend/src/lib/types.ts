@@ -133,9 +133,20 @@ export interface Material {
   sourceUrl: string;
   content: string;
   summary: string;
+  report: string;
   status: MaterialStatus;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface RefinerySettings {
+  defaultPrompt: string;
+}
+
+export interface RefinerySession {
+  material: Material;
+  conversation: Conversation;
+  settings: RefinerySettings;
 }
 
 export interface ConversationMetadata {

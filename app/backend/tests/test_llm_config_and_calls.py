@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -31,11 +30,16 @@ class FakeHTTPResponse:
 
 class ApiConfigTests(unittest.TestCase):
     def test_read_api_config_creates_default_when_missing(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            path = os.path.join(temp_dir, "api.yaml")
+        path = Path(__file__).resolve().parent / "api-config-test.yaml"
+        if path.exists():
+            path.unlink()
+        try:
             config = read_api_config(path)
             self.assertEqual(config["baseUrl"], DEFAULT_BASE_URL)
             self.assertEqual(config["apiKey"], DEFAULT_API_KEY)
+        finally:
+            if path.exists():
+                path.unlink()
 
     def test_parse_api_config_rejects_missing_key(self) -> None:
         with self.assertRaises(ValueError):
@@ -97,12 +101,13 @@ class LLMFunctionParsingTests(unittest.TestCase):
             {
                 "title": "AI 观察",
                 "summary": "核心观点已提取",
-                "content": "# AI 观察\n\n## 30 秒速读报告\n\n- 观点 A\n\n## 建议提问\n\n- 问题 1",
+                "report": "> [!IMPORTANT] 30 秒速读报告\n> 核心论点：观点 A",
+                "content": "# AI 观察\n\n## 原始上下文\n\n- 观点 A\n\n> [!IMPORTANT] 30 秒速读报告\n> 核心论点：观点 A",
                 "status": "reading",
             },
             ensure_ascii=False,
         )
-        result = main.synthesize_material(main.MaterialCreate(sourceUrl="https://example.com/article"))
+        result = main.synthesize_material(main.MaterialCreate(input="https://example.com/article", kind="url"))
         self.assertEqual(result["title"], "AI 观察")
         self.assertEqual(result["status"], "reading")
 

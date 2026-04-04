@@ -479,6 +479,52 @@ paths:
               schema:
                 $ref: '#/components/schemas/Material'
 
+  /refinery/intake:
+    post:
+      summary: Intake pasted URL or raw text and open a refinery session
+      operationId: intakeRefineryMaterial
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefineryIntakeRequest'
+      responses:
+        '201':
+          description: Refinery session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefinerySession'
+
+  /refinery/settings:
+    get:
+      summary: Get refinery prompt settings
+      operationId: getRefinerySettings
+      responses:
+        '200':
+          description: Prompt settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefinerySettings'
+    put:
+      summary: Update refinery prompt settings
+      operationId: updateRefinerySettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefinerySettingsUpdate'
+      responses:
+        '200':
+          description: Prompt settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefinerySettings'
+
   /refinery/materials/{id}:
     get:
       summary: Get reading material by ID
@@ -492,6 +538,28 @@ paths:
       responses:
         '200':
           description: Material content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Material'
+    put:
+      summary: Update refinery material metadata such as editable report
+      operationId: updateRefineryMaterial
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialUpdate'
+      responses:
+        '200':
+          description: Material updated
           content:
             application/json:
               schema:
@@ -576,6 +644,46 @@ paths:
       responses:
         '200':
           description: AI Response appended to conversation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+
+  /refinery/conversations/{id}/reset:
+    post:
+      summary: Reset a refinery conversation back to the report seed
+      operationId: resetRefineryConversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conversation reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+
+  /refinery/conversations/{id}/publish-note:
+    post:
+      summary: Publish the refined material and conversation as a permanent note
+      operationId: publishRefineryNote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Permanent note created from refinery session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
 
 components:
   schemas:
@@ -889,16 +997,72 @@ components:
         status:
           type: string
           enum: [unread, reading, refined]
+        report:
+          type: string
+          description: Short AI-generated refinery report used to seed the discussion
 
     MaterialCreate:
       type: object
       required:
-        - sourceUrl
+        - input
       properties:
-        sourceUrl:
+        input:
+          type: string
+          description: A URL or raw text pasted by the user
+        title:
+          type: string
+        kind:
+          type: string
+          enum: [url, text]
+
+    MaterialUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        report:
+          type: string
+        summary:
+          type: string
+        status:
+          type: string
+          enum: [unread, reading, refined]
+
+    RefinerySettings:
+      type: object
+      properties:
+        defaultPrompt:
+          type: string
+
+    RefinerySettingsUpdate:
+      type: object
+      required:
+        - defaultPrompt
+      properties:
+        defaultPrompt:
+          type: string
+
+    RefineryIntakeRequest:
+      type: object
+      required:
+        - input
+      properties:
+        input:
           type: string
         title:
           type: string
+
+    RefinerySession:
+      type: object
+      properties:
+        material:
+          $ref: '#/components/schemas/Material'
+        conversation:
+          $ref: '#/components/schemas/Conversation'
+        settings:
+          $ref: '#/components/schemas/RefinerySettings'
 
     ConversationMetadata:
       type: object

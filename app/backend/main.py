@@ -72,6 +72,14 @@ class LLMSettings(BaseModel):
     apiConfigPath: str = r"C:\Users\admin\api.yaml"
 
 
+class RefinerySettings(BaseModel):
+    defaultPrompt: str
+
+
+class RefinerySettingsUpdate(BaseModel):
+    defaultPrompt: str
+
+
 class VaultSummary(BaseModel):
     name: str
     path: str
@@ -219,14 +227,24 @@ class Material(BaseModel):
     sourceUrl: str
     content: str
     summary: str
+    report: str = ""
     status: MaterialStatus
     createdAt: Optional[str] = None
     updatedAt: Optional[str] = None
 
 
 class MaterialCreate(BaseModel):
-    sourceUrl: str
+    input: str
     title: Optional[str] = None
+    kind: Optional[Literal["url", "text"]] = None
+
+
+class MaterialUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    report: Optional[str] = None
+    summary: Optional[str] = None
+    status: Optional[MaterialStatus] = None
 
 
 class ConversationMessage(BaseModel):
@@ -255,6 +273,12 @@ class ConversationCreate(BaseModel):
 class MessageCreate(BaseModel):
     role: MessageRole
     content: str
+
+
+class RefinerySession(BaseModel):
+    material: Material
+    conversation: Conversation
+    settings: RefinerySettings
 
 
 class DashboardStats(BaseModel):
@@ -486,6 +510,10 @@ def generate_assessment_seed(idea: str) -> Dict[str, Any]:
     }
 
 
+def refinery_settings() -> RefinerySettings:
+    return RefinerySettings(defaultPrompt=load_config()["refinery"]["defaultPrompt"])
+
+
 def _resolve_model(module: ModuleName) -> str:
     config = load_config()
     llm_config = config.get("llm", {})
@@ -612,26 +640,65 @@ def _normalize_string_list(value: Any, fallback: List[str]) -> List[str]:
     return fallback
 
 
+def synthesize_refinery_report(title: str, summary: str, raw_excerpt: str) -> str:
+    excerpt = raw_excerpt.replace("\n", " ").strip()
+    if len(excerpt) > 180:
+        excerpt = f"{excerpt[:180]}..."
+    return (
+        "> [!IMPORTANT] 30 秒速读报告\n"
+        f"> 核心论点：{summary or f'{title} 需要被压缩成一条可验证判断。'}\n"
+        f"> 关键证据：{excerpt or '当前只有链接或简短输入，建议在对话中补齐上下文。'}\n"
+        "> 争议点：这条材料最容易被忽略的是适用边界与反例。\n"
+        "> 下一步值得讨论的问题：它最值得沉淀成哪条事实或观点？"
+    )
+
+
+def build_refinery_prompt(material_body: str) -> str:
+    return f"{material_body.strip()}\n\n---\n\n{refinery_settings().defaultPrompt}"
+
+
 def synthesize_material(payload: MaterialCreate) -> Dict[str, str]:
-    parsed = urlparse(payload.sourceUrl)
-    host = parsed.netloc or "source"
-    title_hint = payload.title or parsed.path.strip("/").replace("-", " ").title() or host
+    normalized_input = payload.input.strip()
+    if not normalized_input:
+        raise HTTPException(status_code=400, detail="Material input is required")
+
+    inferred_kind = payload.kind or ("url" if re.match(r"^https?://", normalized_input, flags=re.IGNORECASE) else "text")
+    if inferred_kind == "url":
+        parsed = urlparse(normalized_input)
+        host = parsed.netloc or "source"
+        title_hint = payload.title or parsed.path.strip("/").replace("-", " ").title() or host
+        source_url = normalized_input
+        raw_context = (
+            f"Source URL: {source_url}\n"
+            f"Title hint: {title_hint}\n"
+            "The article body is not available locally. Generate a cautious first-pass report, "
+            "explicitly acknowledging that the content is inferred from the link metadata."
+        )
+    else:
+        title_hint = payload.title or normalized_input.splitlines()[0][:28] or f"Text Capture {datetime.now().strftime('%H:%M')}"
+        source_url = "text://clipboard"
+        raw_context = normalized_input
+
     completion = _llm_completion(
         "refinery",
         messages=[
             {
                 "role": "system",
                 "content": (
-                    "你是知识精炼助手。请严格返回 JSON 对象，不能包含 markdown 代码块。"
-                    "字段必须包含 title, summary, content, status。status 只能是 unread/reading/refined。"
+                    "你是 ThoughtCabinet 的知识精炼助手。请严格返回 JSON 对象，不要输出 markdown 代码块。"
+                    '字段必须包含 title, summary, report, content, status。'
+                    "其中 report 必须是 Markdown callout，status 只能是 unread/reading/refined。"
                 ),
             },
             {
                 "role": "user",
                 "content": (
-                    f"source_url: {payload.sourceUrl}\n"
+                    f"kind: {inferred_kind}\n"
                     f"title_hint: {title_hint}\n"
-                    "请输出一份用于知识精炼流程的材料，content 需为 Markdown，且包含“30 秒速读报告”和“建议提问”两节。"
+                    f"source_url: {source_url}\n"
+                    f"default_prompt: {refinery_settings().defaultPrompt}\n\n"
+                    "请输出一份用于知识精炼流程的材料。content 需为完整 Markdown，且应包含原始上下文和“30 秒速读报告”。\n\n"
+                    f"source_context:\n{raw_context}"
                 ),
             },
         ],
@@ -639,14 +706,43 @@ def synthesize_material(payload: MaterialCreate) -> Dict[str, str]:
     )
     parsed_json = _extract_json_object(completion)
     title = str(parsed_json.get("title", "")).strip() or title_hint
-    summary = str(parsed_json.get("summary", "")).strip() or f"{title} 的核心结论和争议点已提取。"
+    summary = str(parsed_json.get("summary", "")).strip() or f"{title} 已生成短文本报告，可以直接进入对话精炼。"
+    report = str(parsed_json.get("report", "")).strip() or synthesize_refinery_report(title, summary, raw_context)
     content = str(parsed_json.get("content", "")).strip()
     if not content:
-        raise HTTPException(status_code=502, detail="LLM material payload missing content")
+        if inferred_kind == "url":
+            body = (
+                f"# {title}\n\n"
+                f"- Source: {source_url}\n"
+                f"- Captured: {now_iso()}\n\n"
+                "## Raw Context\n\n"
+                "当前尚未抓取正文，先基于链接标题和来源建立初始阅读上下文。\n\n"
+                f"{report}\n"
+            )
+        else:
+            body = (
+                f"# {title}\n\n"
+                f"- Source: {source_url}\n"
+                f"- Captured: {now_iso()}\n\n"
+                f"{normalized_input}\n\n"
+                f"{report}\n"
+            )
+        content = body
+    elif report not in content:
+        content = f"{content.rstrip()}\n\n{report}\n"
     status = str(parsed_json.get("status", "unread")).strip().lower()
     if status not in {"unread", "reading", "refined"}:
         status = "unread"
-    return {"title": title, "summary": summary, "content": content, "status": status}
+    prompt_source = normalized_input if inferred_kind == "text" else f"# {title}\n\n- Source: {source_url}\n\n{summary}\n\n{report}"
+    return {
+        "title": title,
+        "sourceUrl": source_url,
+        "summary": summary,
+        "report": report,
+        "content": content,
+        "prompt": build_refinery_prompt(prompt_source),
+        "status": status,
+    }
 
 
 def generate_assessment(idea: str) -> Dict[str, Any]:
@@ -705,23 +801,61 @@ def generate_assessment(idea: str) -> Dict[str, Any]:
     }
 
 
-def generate_refinery_reply(message: str, context_title: Optional[str]) -> str:
+def generate_refinery_reply(message: str, context_title: Optional[str], report: Optional[str] = None, prompt: Optional[str] = None) -> str:
     context = context_title or "当前上下文"
-    completion = _llm_completion(
-        "refinery",
-        messages=[
+    messages: List[Dict[str, str]] = [
+        {
+            "role": "system",
+            "content": (
+                "你是 ThoughtCabinet 的 Socratic 精炼助手。请使用中文，回答简洁、具体、可执行。"
+                "优先帮助用户把材料压缩成可验证的事实、可复用的观点或可发布的永久笔记。"
+            ),
+        }
+    ]
+    if prompt:
+        messages.append(
             {
                 "role": "system",
-                "content": "你是 Socratic 精炼助手。回答要简洁、可执行、使用中文，并优先给下一步行动建议。",
-            },
-            {
-                "role": "user",
-                "content": f"上下文标题：{context}\n用户消息：{message}",
-            },
-        ],
-        temperature=0.55,
+                "content": f"当前精炼 Prompt 与材料上下文如下：\n{prompt}",
+            }
+        )
+    elif report:
+        messages.append({"role": "assistant", "content": report})
+    messages.append(
+        {
+            "role": "user",
+            "content": f"上下文标题：{context}\n用户消息：{message}",
+        }
     )
-    return completion
+    return _llm_completion("refinery", messages=messages, temperature=0.55)
+
+
+def create_refinery_conversation(context_id: str, initial_message: str = "请基于短文本报告继续精炼这份材料。") -> Conversation:
+    material = MarkdownDB.get("materials", context_id)
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+    created = MarkdownDB.create(
+        "conversations",
+        {
+            "title": material["title"],
+            "contextId": context_id,
+            "messages": [
+                {"role": "assistant", "content": material.get("report", material.get("summary", "")), "timestamp": now_iso()},
+                {
+                    "role": "assistant",
+                    "content": generate_refinery_reply(
+                        initial_message,
+                        material.get("title"),
+                        material.get("report"),
+                        material.get("prompt"),
+                    ),
+                    "timestamp": now_iso(),
+                },
+            ],
+        },
+        "# AI Refinery Conversation\n\n自动生成的精炼会话。",
+    )
+    return Conversation(**created)
 
 
 def current_settings() -> SettingsPayload:
@@ -1409,12 +1543,41 @@ async def list_materials() -> List[Material]:
     return [Material(**item) for item in MarkdownDB.list("materials")]
 
 
+@app.get("/api/refinery/settings", response_model=RefinerySettings)
+async def get_refinery_settings() -> RefinerySettings:
+    return refinery_settings()
+
+
+@app.put("/api/refinery/settings", response_model=RefinerySettings)
+async def update_refinery_settings(payload: RefinerySettingsUpdate) -> RefinerySettings:
+    config = load_config()
+    config["refinery"]["defaultPrompt"] = payload.defaultPrompt
+    save_config(config)
+    return refinery_settings()
+
+
 @app.get("/api/refinery/materials/{id}", response_model=Material)
 async def get_material(id: str) -> Material:
     material = MarkdownDB.get("materials", id)
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
     return Material(**material)
+
+
+@app.put("/api/refinery/materials/{id}", response_model=Material)
+async def update_material(id: str, payload: MaterialUpdate) -> Material:
+    material = MarkdownDB.get("materials", id)
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+    metadata = {key: value for key, value in material.items() if key not in {"id", "content"}}
+    content = material.get("content", "")
+    for key, value in payload.model_dump(exclude_none=True).items():
+        if key == "content":
+            content = value
+        else:
+            metadata[key] = value
+    updated = MarkdownDB.save("materials", id, metadata, content)
+    return Material(**updated)
 
 
 @app.post("/api/refinery/materials", response_model=Material, status_code=201)
@@ -1424,13 +1587,22 @@ async def add_material(payload: MaterialCreate) -> Material:
         "materials",
         {
             "title": synthesized["title"],
-            "sourceUrl": payload.sourceUrl,
+            "sourceUrl": synthesized["sourceUrl"],
             "summary": synthesized["summary"],
+            "report": synthesized["report"],
+            "prompt": synthesized["prompt"],
             "status": synthesized["status"],
         },
         synthesized["content"],
     )
     return Material(**created)
+
+
+@app.post("/api/refinery/intake", response_model=RefinerySession, status_code=201)
+async def intake_refinery_material(payload: MaterialCreate) -> RefinerySession:
+    material = await add_material(payload)
+    conversation = create_refinery_conversation(material.id)
+    return RefinerySession(material=material, conversation=conversation, settings=refinery_settings())
 
 
 @app.get("/api/refinery/conversations", response_model=List[ConversationMetadata])
@@ -1449,10 +1621,12 @@ async def get_conversation(id: str) -> Conversation:
 
 @app.post("/api/refinery/conversations", response_model=Conversation, status_code=201)
 async def start_conversation(payload: ConversationCreate) -> Conversation:
+    if payload.contextId and MarkdownDB.get("materials", payload.contextId):
+        return create_refinery_conversation(payload.contextId, payload.initialMessage)
     context_title = None
     if payload.contextId:
-        material = MarkdownDB.get("materials", payload.contextId) or MarkdownDB.get("notes", payload.contextId)
-        context_title = material.get("title") if material else None
+        note = MarkdownDB.get("notes", payload.contextId)
+        context_title = note.get("title") if note else None
     created = MarkdownDB.create(
         "conversations",
         {
@@ -1483,7 +1657,12 @@ async def send_message(id: str, payload: MessageCreate) -> Conversation:
         messages.append(
             {
                 "role": "assistant",
-                "content": generate_refinery_reply(payload.content, context_item.get("title") if context_item else None),
+                "content": generate_refinery_reply(
+                    payload.content,
+                    context_item.get("title") if context_item else None,
+                    context_item.get("report") if context_item else None,
+                    context_item.get("prompt") if context_item else None,
+                ),
                 "timestamp": now_iso(),
             }
         )
@@ -1491,6 +1670,69 @@ async def send_message(id: str, payload: MessageCreate) -> Conversation:
     metadata["messages"] = messages
     updated = MarkdownDB.save("conversations", id, metadata, conversation.get("content", ""))
     return Conversation(**updated)
+
+
+@app.post("/api/refinery/conversations/{id}/reset", response_model=Conversation)
+async def reset_refinery_conversation(id: str) -> Conversation:
+    conversation = MarkdownDB.get("conversations", id)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    material = MarkdownDB.get("materials", conversation.get("contextId", ""))
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+    metadata = {key: value for key, value in conversation.items() if key not in {"id", "content"}}
+    metadata["messages"] = [
+        {"role": "assistant", "content": material.get("report", material.get("summary", "")), "timestamp": now_iso()},
+        {
+            "role": "assistant",
+            "content": generate_refinery_reply(
+                "请基于短文本报告继续精炼这份材料。",
+                material.get("title"),
+                material.get("report"),
+                material.get("prompt"),
+            ),
+            "timestamp": now_iso(),
+        },
+    ]
+    updated = MarkdownDB.save("conversations", id, metadata, conversation.get("content", ""))
+    return Conversation(**updated)
+
+
+@app.post("/api/refinery/conversations/{id}/publish-note", response_model=Note, status_code=201)
+async def publish_refinery_note(id: str) -> Note:
+    conversation = MarkdownDB.get("conversations", id)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    material = MarkdownDB.get("materials", conversation.get("contextId", ""))
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+
+    transcript = "\n".join(
+        f"- {message['role']}: {message['content']}"
+        for message in conversation.get("messages", [])
+        if message.get("content")
+    )
+    body = (
+        f"# {material['title']}\n\n"
+        f"## Source\n\n{material.get('sourceUrl', 'unknown')}\n\n"
+        f"## Short Report\n\n{material.get('report', material.get('summary', ''))}\n\n"
+        f"## Refinery Conversation\n\n{transcript}\n"
+    )
+    note = MarkdownDB.create(
+        "notes",
+        {
+            "title": material["title"],
+            "domain": infer_domain(body),
+            "type": "known",
+            "tags": normalize_tags(["refinery", material.get("title", ""), material.get("sourceUrl", "")]),
+        },
+        body,
+    )
+
+    material_metadata = {key: value for key, value in material.items() if key not in {"id", "content"}}
+    material_metadata["status"] = "refined"
+    MarkdownDB.save("materials", material["id"], material_metadata, material.get("content", ""))
+    return Note(**note)
 
 
 if __name__ == "__main__":

@@ -35,6 +35,19 @@ def default_config() -> Dict[str, Any]:
             "moduleModels": {module: "" for module in MODULE_KEYS},
             "apiConfigPath": API_CONFIG_PATH,
         },
+        "refinery": {
+            "defaultPrompt": (
+                "你是 ThoughtCabinet 的信息精炼助手。请先阅读前面拼接的原始材料，再输出一个 JSON 对象，"
+                "严格遵守下面的 schema，不要输出额外解释：\n"
+                "{\n"
+                '  "coreArgument": "string",\n'
+                '  "keyEvidence": ["string"],\n'
+                '  "controversies": ["string"],\n'
+                '  "nextQuestions": ["string"]\n'
+                "}\n"
+                "然后基于这个 JSON 继续和用户讨论，帮助用户把材料压缩成可发布的永久笔记。"
+            ),
+        },
     }
 
 
@@ -46,6 +59,7 @@ def with_defaults(config: Dict[str, Any]) -> Dict[str, Any]:
     merged["llm"]["defaultModel"] = llm_config.get("defaultModel", merged["llm"]["defaultModel"])
     merged["llm"]["apiConfigPath"] = API_CONFIG_PATH
     merged["llm"]["moduleModels"].update(llm_config.get("moduleModels", {}))
+    merged["refinery"].update(config.get("refinery", {}))
     return merged
 
 
