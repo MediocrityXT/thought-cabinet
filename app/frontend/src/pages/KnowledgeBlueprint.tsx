@@ -1,11 +1,24 @@
 import { useMemo } from 'react';
-import { Bot, Link2, Map as MapIcon, Pin, TriangleAlert } from 'lucide-react';
+import { HelpCircle, Map as MapIcon } from 'lucide-react';
 import { Blueprint } from '@/pages/Blueprint';
 import type { BlueprintGraph, Note } from '@/lib/types';
 
 interface KnowledgeBlueprintProps {
   graph: BlueprintGraph;
   notes: Note[];
+}
+
+const tooltipText = '🗺️ 已有笔记在图谱上高亮，未覆盖区域显示为迷雾\n📌 侦探墙模式可手动钉住节点、拉线、写注释\n🤖 右侧自动推荐合并、补线、复核等整理建议';
+
+function Tooltip({ text }: { text: string }) {
+  return (
+    <span className="group relative inline-flex cursor-help">
+      <HelpCircle className="h-3.5 w-3.5 text-star-dust/60 transition-colors group-hover:text-cyan" />
+      <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-72 -translate-x-1/2 whitespace-pre-line rounded-xl border border-white/10 bg-elevated px-3 py-2 text-xs leading-5 text-star-dust opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+        {text}
+      </span>
+    </span>
+  );
 }
 
 type SuggestionKind = 'merge' | 'link' | 'conflict' | 'stale';
@@ -32,7 +45,7 @@ function buildSuggestions(graph: BlueprintGraph, notes: Note[]): SuggestionItem[
       kind: 'merge',
       title: `建议合并：${mergeCandidate[0]} 主题簇`,
       detail: `当前有 ${mergeCandidate[1]} 条笔记分布在同一领域，适合先合并成一条更稳定的观点主线。`,
-      hint: '把重复笔记收敛成“一个事实 + 一个观点”的结构。',
+      hint: '把重复笔记收敛成"一个事实 + 一个观点"的结构。',
     });
   }
 
@@ -43,7 +56,7 @@ function buildSuggestions(graph: BlueprintGraph, notes: Note[]): SuggestionItem[
       kind: 'link',
       title: `建议连线：${lonelyNode.label}`,
       detail: `图中有概念节点暂时没有连接，适合手动补一条 supporting / related 关系。`,
-      hint: '把它拖进 Detective Wall，看看能和哪条观点产生关系。',
+      hint: '把它拖进侦探墙，看看能和哪条观点产生关系。',
     });
   }
 
@@ -53,7 +66,7 @@ function buildSuggestions(graph: BlueprintGraph, notes: Note[]): SuggestionItem[
       kind: 'conflict',
       title: `需要复核：${gapNode.label}`,
       detail: '这个节点被标成认知缺口，说明它要么证据不足，要么和现有认知存在冲突。',
-      hint: '优先找 supporting facts 或 opposing facts，而不是先扩展新结论。',
+      hint: '优先找支撑事实或反对事实，而不是先扩展新结论。',
     });
   }
 
@@ -79,12 +92,12 @@ function buildSuggestions(graph: BlueprintGraph, notes: Note[]): SuggestionItem[
         kind: 'link',
         title: '连线建议待补充',
         detail: '当图谱中出现更多孤立节点时，会提示你补上关联。',
-        hint: '优先连接“概念页”和“结论页”。',
+        hint: '优先连接"概念页"和"结论页"。',
       },
       {
         kind: 'conflict',
         title: '冲突检查待补充',
-        detail: '后续可根据 opposing facts、时间线或不同来源自动标记冲突。',
+        detail: '后续可根据反对事实、时间线或不同来源自动标记冲突。',
         hint: '适合用来提醒旧推论是否还成立。',
       },
       {
@@ -109,94 +122,55 @@ function Badge({ kind }: { kind: SuggestionKind }) {
         : kind === 'conflict'
           ? 'border-rose/25 bg-rose/10 text-rose'
           : 'border-purple/25 bg-purple/10 text-purple';
-  const label = kind === 'merge' ? 'Merge' : kind === 'link' ? 'Link' : kind === 'conflict' ? 'Conflict' : 'Stale';
+  const label = kind === 'merge' ? '合并' : kind === 'link' ? '连线' : kind === 'conflict' ? '冲突' : '过期';
 
-  return <span className={`rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-[0.22em] ${tone}`}>{label}</span>;
+  return <span className={`rounded-full border px-2.5 py-1 text-[11px] tracking-wider ${tone}`}>{label}</span>;
 }
 
 export function KnowledgeBlueprint({ graph, notes }: KnowledgeBlueprintProps) {
   const suggestions = useMemo(() => buildSuggestions(graph, notes), [graph, notes]);
 
   return (
-    <div className="space-y-6 p-6">
-      <section className="overflow-hidden rounded-[28px] border border-white/8 bg-panel/85 shadow-2xl">
-        <div className="border-b border-white/5 bg-[radial-gradient(circle_at_top_left,rgba(0,212,255,0.16),transparent_38%),radial-gradient(circle_at_top_right,rgba(168,85,247,0.14),transparent_35%)] px-6 py-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="max-w-3xl space-y-3">
-              <div className="flex items-center gap-2">
-                <MapIcon className="h-5 w-5 text-cyan" />
-                <span className="text-xs uppercase tracking-[0.3em] text-star-dust">Knowledge Blueprint</span>
-              </div>
-              <h1 className="text-2xl font-semibold text-white">认知蓝图</h1>
-              <p className="max-w-2xl text-sm leading-6 text-star-dust">
-                这层视图负责把事实、观点与关系画出来，同时提醒哪些地方还在战争迷雾里，哪些地方更适合拉线、合并或复核。
-              </p>
+    <div className="flex h-full flex-col bg-deep text-white">
+      <header className="border-b border-white/5 bg-panel/70 px-5 py-4 backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-cyan-purple shadow-glow-cyan">
+            <MapIcon className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold">认知蓝图</h1>
+              <Tooltip text={tooltipText} />
             </div>
-
-            <div className="grid gap-2 text-xs text-star-dust sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/8 bg-elevated/70 px-4 py-3">
-                <div className="mb-1 flex items-center gap-2 text-white">
-                  <TriangleAlert className="h-4 w-4 text-rose" />
-                  战争迷雾
-                </div>
-                <p className="leading-5">未正式纳入认知体系，但值得继续探索的区域。</p>
-              </div>
-              <div className="rounded-2xl border border-white/8 bg-elevated/70 px-4 py-3">
-                <div className="mb-1 flex items-center gap-2 text-white">
-                  <Pin className="h-4 w-4 text-cyan" />
-                  Detective Wall
-                </div>
-                <p className="leading-5">允许手动钉住节点、补线、写下注释，先形成思考草图。</p>
-              </div>
-            </div>
+            <p className="text-sm text-star-dust">把事实、观点与关系画出来，看清哪些地方还在迷雾里、哪些适合合并或复核。</p>
           </div>
         </div>
+      </header>
 
-        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="min-h-[720px] border-r border-white/5">
-            <Blueprint graph={graph} notes={notes} />
-          </div>
-
-          <aside className="border-t border-white/5 bg-deep/60 xl:border-t-0">
-            <div className="space-y-4 p-5">
-              <div className="flex items-center gap-2">
-                <Bot className="h-4 w-4 text-purple" />
-                <h2 className="text-sm font-semibold text-white">整理建议</h2>
-              </div>
-              <p className="text-xs leading-5 text-star-dust">
-                这些都是基于当前 notes / graph 的轻量提示，不是最终判定。它们的作用是帮你更快找到需要合并、补线、复核的地方。
-              </p>
-
-              <div className="space-y-3">
-                {suggestions.map((item) => (
-                  <article key={`${item.kind}-${item.title}`} className="rounded-2xl border border-white/8 bg-elevated/80 p-4">
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="text-sm font-medium text-white">{item.title}</h3>
-                        <p className="mt-1 text-xs leading-5 text-star-dust">{item.detail}</p>
-                      </div>
-                      <Badge kind={item.kind} />
-                    </div>
-                    <div className="rounded-xl border border-white/8 bg-panel/70 px-3 py-2 text-xs leading-5 text-star-dust">
-                      {item.hint}
-                    </div>
-                  </article>
-                ))}
-              </div>
-
-              <div className="rounded-2xl border border-cyan/20 bg-cyan/10 p-4">
-                <div className="mb-2 flex items-center gap-2 text-white">
-                  <Link2 className="h-4 w-4 text-cyan" />
-                  连接提示
-                </div>
-                <p className="text-xs leading-5 text-star-dust">
-                  如果一条观点背后没有支撑事实，先补 evidence；如果两条观点语义接近，先合并；如果新旧论据冲突，先标记再判断是否过期。
-                </p>
-              </div>
-            </div>
-          </aside>
+      <main className="grid min-h-0 flex-1 overflow-hidden xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-h-0 border-r border-white/5">
+          <Blueprint graph={graph} notes={notes} />
         </div>
-      </section>
+
+        <aside className="custom-scrollbar overflow-auto border-t border-white/5 bg-deep/60 xl:border-t-0">
+          <div className="space-y-3 p-5">
+            {suggestions.map((item) => (
+              <article key={`${item.kind}-${item.title}`} className="rounded-2xl border border-white/8 bg-elevated/80 p-4">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-medium text-white">{item.title}</h3>
+                    <p className="mt-1 text-xs leading-5 text-star-dust">{item.detail}</p>
+                  </div>
+                  <Badge kind={item.kind} />
+                </div>
+                <div className="rounded-xl border border-white/8 bg-panel/70 px-3 py-2 text-xs leading-5 text-star-dust">
+                  {item.hint}
+                </div>
+              </article>
+            ))}
+          </div>
+        </aside>
+      </main>
     </div>
   );
 }

@@ -1,12 +1,8 @@
-import { useMemo, useRef } from 'react';
-import { ArrowDownToLine, Layers3, Sparkles } from 'lucide-react';
-import { Dashboard } from '@/pages/Dashboard';
+import { HelpCircle, Target } from 'lucide-react';
 import { Planner } from '@/pages/Planner';
-import type { DashboardOverview, Evaluation, PlannerBoard, PlannerFeedbackCreate } from '@/lib/types';
+import type { Evaluation, PlannerBoard, PlannerFeedbackCreate } from '@/lib/types';
 
 interface WarRoomProps {
-  overview: DashboardOverview;
-  vaultName: string;
   board: PlannerBoard | null;
   evaluations: Evaluation[];
   loading: boolean;
@@ -19,9 +15,20 @@ interface WarRoomProps {
   onSendChat: (message: string) => void;
 }
 
+const tooltipText = '🪜 目标树把大项目拆解为可执行的子任务\n📋 点击任务卡片查看任务简报\n⏱️ "我有时间"按钮自动匹配适合的任务\n💬 执行反馈帮助 AI 持续优化计划';
+
+function Tooltip({ text }: { text: string }) {
+  return (
+    <span className="group relative inline-flex cursor-help">
+      <HelpCircle className="h-3.5 w-3.5 text-star-dust/60 transition-colors group-hover:text-cyan" />
+      <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-72 -translate-x-1/2 whitespace-pre-line rounded-xl border border-white/10 bg-elevated px-3 py-2 text-xs leading-5 text-star-dust opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+        {text}
+      </span>
+    </span>
+  );
+}
+
 export function WarRoom({
-  overview,
-  vaultName,
   board,
   evaluations,
   loading,
@@ -33,85 +40,51 @@ export function WarRoom({
   onSendFeedback,
   onSendChat,
 }: WarRoomProps) {
-  const plannerAnchorRef = useRef<HTMLDivElement>(null);
-
-  const openPlanner = useMemo(() => {
-    return () => {
-      plannerAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
-  }, []);
-
   return (
-    <div className="custom-scrollbar h-full overflow-auto bg-deep">
-      <div className="mx-auto flex min-h-full max-w-[1700px] flex-col gap-8 p-6 lg:p-8">
-        <section className="overflow-hidden rounded-[32px] border border-white/8 bg-panel/85 shadow-2xl">
-          <div className="border-b border-white/5 bg-gradient-to-r from-cyan/10 via-purple/10 to-transparent px-6 py-5 lg:px-8">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-star-dust">
-                  <Layers3 className="h-4 w-4 text-cyan" />
-                  War Room
-                </div>
-                <h1 className="font-display text-3xl font-semibold text-white lg:text-4xl">
-                  指挥、评估、排程，放在同一张战术桌上
-                </h1>
-                <p className="max-w-3xl text-sm leading-7 text-star-dust lg:text-base">
-                  顶部先看系统健康、最近进展和快速胜利，下面继续把有价值的想法推进成可执行计划。
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-2xl border border-emerald/20 bg-emerald/10 px-4 py-3">
-                <div className="h-2.5 w-2.5 rounded-full bg-emerald animate-pulse" />
-                <div>
-                  <div className="text-xs uppercase tracking-[0.22em] text-emerald">Current Focus</div>
-                  <div className="text-sm font-medium text-white">
-                    {evaluations.find((item) => item.id === selectedGoalId)?.idea ?? '未选择项目'}
-                  </div>
-                </div>
-              </div>
+    <div className="flex h-full flex-col bg-deep text-white">
+      <header className="border-b border-white/5 bg-panel/70 px-5 py-4 backdrop-blur-md">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-cyan-purple shadow-glow-cyan">
+              <Target className="h-4 w-4 text-white" />
             </div>
-          </div>
-
-          <div className="px-2 pb-2 pt-4">
-            <Dashboard overview={overview} vaultName={vaultName} onOpenPlanner={openPlanner} />
-          </div>
-        </section>
-
-        <section
-          ref={plannerAnchorRef}
-          className="overflow-hidden rounded-[32px] border border-white/8 bg-panel/75 shadow-2xl"
-        >
-          <div className="flex items-center justify-between border-b border-white/5 px-6 py-4 lg:px-8">
             <div>
-              <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-star-dust">
-                <Sparkles className="h-4 w-4 text-purple" />
-                Tactical Execution
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-semibold">战术指挥室</h1>
+                <Tooltip text={tooltipText} />
               </div>
-              <h2 className="text-xl font-semibold text-white">从评估结果进入战术指挥室</h2>
+              <p className="text-sm text-star-dust">指挥、评估、排程，放在同一张战术桌上。</p>
             </div>
-            <button
-              onClick={openPlanner}
-              className="flex items-center gap-2 rounded-xl border border-cyan/20 bg-cyan/10 px-4 py-2 text-sm text-cyan transition-colors hover:bg-cyan/20"
-            >
-              <ArrowDownToLine className="h-4 w-4" />
-              跳到计划区
-            </button>
           </div>
 
-          <Planner
-            board={board}
-            evaluations={evaluations}
-            loading={loading}
-            submitting={submitting}
-            selectedGoalId={selectedGoalId}
-            onSelectGoal={onSelectGoal}
-            onSelectNode={onSelectNode}
-            onAssign={onAssign}
-            onSendFeedback={onSendFeedback}
-            onSendChat={onSendChat}
-          />
-        </section>
-      </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 rounded-2xl border border-emerald/20 bg-emerald/10 px-4 py-3">
+              <div className="h-2.5 w-2.5 rounded-full bg-emerald animate-pulse" />
+              <div>
+                <div className="text-xs uppercase tracking-[0.22em] text-emerald">当前焦点</div>
+                <div className="text-sm font-medium text-white">
+                  {evaluations.find((item) => item.id === selectedGoalId)?.idea ?? '未选择项目'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="custom-scrollbar min-h-0 flex-1 overflow-auto">
+        <Planner
+          board={board}
+          evaluations={evaluations}
+          loading={loading}
+          submitting={submitting}
+          selectedGoalId={selectedGoalId}
+          onSelectGoal={onSelectGoal}
+          onSelectNode={onSelectNode}
+          onAssign={onAssign}
+          onSendFeedback={onSendFeedback}
+          onSendChat={onSendChat}
+        />
+      </main>
     </div>
   );
 }

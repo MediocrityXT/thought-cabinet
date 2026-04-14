@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useEffectEvent, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { getThemeConfig, updateThemeConfig } from '../lib/api';
 import type { ThemeName } from '../lib/types';
 
@@ -20,7 +20,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadTheme = useEffectEvent(async () => {
+  const loadTheme = useCallback(async () => {
     try {
       setError(null);
       const config = await getThemeConfig();
@@ -33,7 +33,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  });
+  }, []);
 
   useEffect(() => {
     void loadTheme();
@@ -53,9 +53,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function refreshTheme() {
+  const refreshTheme = useCallback(async () => {
     await loadTheme();
-  }
+  }, [loadTheme]);
 
   return (
     <ThemeContext.Provider value={{ theme, loading, error, setTheme, refreshTheme }}>
@@ -64,6 +64,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {

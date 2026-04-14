@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type ModuleId = 'hopper' | 'blueprint' | 'committee' | 'war-room';
+export type ModuleId = 'dashboard' | 'hopper' | 'blueprint' | 'committee' | 'war-room';
 
 interface SidebarProps {
   activeModule: ModuleId;
@@ -26,11 +26,16 @@ const modules: { id: ModuleId; label: string; icon: typeof Map }[] = [
 export function Sidebar({ activeModule, onModuleChange, onOpenSettings }: SidebarProps) {
   return (
     <aside className="fixed left-0 top-0 z-50 flex h-full w-20 flex-col items-center border-r border-white/5 bg-panel py-6">
-      <div className="mb-8">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-cyan-purple shadow-glow-cyan">
+      <button onClick={() => onModuleChange('dashboard')} className="mb-8" title="系统概览">
+        <div
+          className={cn(
+            'flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-cyan-purple shadow-glow-cyan transition-opacity',
+            activeModule === 'dashboard' ? 'opacity-100' : 'opacity-70 hover:opacity-100',
+          )}
+        >
           <Sparkles className="h-5 w-5 text-white" />
         </div>
-      </div>
+      </button>
 
       <nav className="flex flex-1 flex-col gap-2">
         {modules.map((module) => {

@@ -1,8 +1,9 @@
-import { startTransition, useEffect, useState } from 'react';
+import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, LoaderCircle, Plus, Save, X } from 'lucide-react';
 import { Sidebar, type ModuleId } from '@/components/layout/Sidebar';
 import { StatusBar } from '@/components/layout/StatusBar';
 import { AssessmentCommittee } from '@/pages/AssessmentCommittee';
+import { Dashboard } from '@/pages/Dashboard';
 import { Hopper } from '@/pages/Hopper';
 import { KnowledgeBlueprint } from '@/pages/KnowledgeBlueprint';
 import { WarRoom } from '@/pages/WarRoom';
@@ -64,14 +65,15 @@ function SettingsSheet({
   const [activeVaultPath, setActiveVaultPath] = useState('');
   const [llm, setLlm] = useState<LLMSettings | null>(null);
 
-  useEffect(() => {
-    if (!settings || !open) {
-      return;
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open && settings) {
+      setActiveTheme(settings.activeTheme);
+      setActiveVaultPath(settings.vault.path);
+      setLlm(cloneLlmSettings(settings.llm));
     }
-    setActiveTheme(settings.activeTheme);
-    setActiveVaultPath(settings.vault.path);
-    setLlm(cloneLlmSettings(settings.llm));
-  }, [open, settings]);
+  }
 
   if (!open || !settings || !llm) {
     return null;
@@ -217,7 +219,7 @@ function SettingsSheet({
 
 export default function NeonTheme() {
   const [workspace, setWorkspace] = useState<WorkspaceSnapshot | null>(null);
-  const [activeModule, setActiveModule] = useState<ModuleId>('hopper');
+  const [activeModule, setActiveModule] = useState<ModuleId>('dashboard');
   const [plannerGoalId, setPlannerGoalId] = useState<string | null>(null);
   const [plannerBoard, setPlannerBoard] = useState<PlannerBoard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -230,14 +232,17 @@ export default function NeonTheme() {
   const [error, setError] = useState<string | null>(null);
   const { refreshTheme } = useTheme();
 
-  async function loadWorkspace() {
+  const plannerGoalIdRef = useRef(plannerGoalId);
+  plannerGoalIdRef.current = plannerGoalId;
+
+  const loadWorkspace = useCallback(async () => {
     try {
       setError(null);
       const snapshot = await getWorkspaceSnapshot();
       const promptSettings = await getRefinerySettings();
       setWorkspace(snapshot);
       setRefinerySettings(promptSettings);
-      const defaultGoalId = plannerGoalId ?? snapshot.evaluations[0]?.id ?? null;
+      const defaultGoalId = plannerGoalIdRef.current ?? snapshot.evaluations[0]?.id ?? null;
       if (defaultGoalId) {
         const board = await getPlannerBoard({ evaluationId: defaultGoalId });
         setPlannerBoard(board);
@@ -252,11 +257,11 @@ export default function NeonTheme() {
       setLoading(false);
       setRefreshing(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     void loadWorkspace();
-  }, []);
+  }, [loadWorkspace]);
 
   async function refreshWorkspace() {
     setRefreshing(true);
@@ -510,6 +515,18 @@ export default function NeonTheme() {
       return null;
     }
     switch (activeModule) {
+      case 'dashboard':
+        return (
+          <div className="flex h-full flex-col bg-deep text-white">
+            <main className="custom-scrollbar min-h-0 flex-1 overflow-auto">
+              <Dashboard
+                overview={workspace.overview}
+                vaultName={workspace.settings.vault.name}
+                onOpenPlanner={() => startTransition(() => setActiveModule('war-room'))}
+              />
+            </main>
+          </div>
+        );
       case 'hopper':
         return (
           <Hopper
@@ -546,8 +563,6 @@ export default function NeonTheme() {
       case 'war-room':
         return (
           <WarRoom
-            overview={workspace.overview}
-            vaultName={workspace.settings.vault.name}
             board={plannerBoard}
             evaluations={workspace.evaluations}
             loading={plannerLoading}
