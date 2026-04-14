@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { getThemeConfig, updateThemeConfig } from '../lib/api';
+import { getTheme, updateTheme } from '../lib/api';
 import type { ThemeName } from '../lib/types';
 
 type ThemeContextValue = {
@@ -23,7 +23,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const loadTheme = useCallback(async () => {
     try {
       setError(null);
-      const config = await getThemeConfig();
+      const config = await getTheme();
       setThemeState(config.activeTheme);
       window.localStorage.setItem('thoughtcabinet.theme', config.activeTheme);
     } catch (loadError) {
@@ -44,7 +44,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem('thoughtcabinet.theme', nextTheme);
     setError(null);
     try {
-      const config = await updateThemeConfig(nextTheme);
+      const config = await updateTheme(nextTheme);
       setThemeState(config.activeTheme);
       window.localStorage.setItem('thoughtcabinet.theme', config.activeTheme);
     } catch (updateError) {

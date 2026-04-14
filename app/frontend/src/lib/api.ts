@@ -2,22 +2,35 @@ import axios from 'axios';
 import type {
   BlueprintGraph,
   Conversation,
+  ConversationMessageCreate,
   ConversationMetadata,
   DashboardOverview,
   Evaluation,
-  LLMSettings,
+  EvaluationCreate,
+  HealthStatus,
   Material,
+  MaterialCreate,
+  MaterialUpdate,
   Note,
+  NoteCreate,
+  NoteUpdate,
+  PlannerAssignRequest,
+  PlannerChatRequest,
   PlannerAssignment,
   PlannerBoard,
   PlannerBrief,
   PlannerFeedback,
   PlannerFeedbackCreate,
   PlannerSchedule,
+  RefineryIntakeRequest,
   RefinerySession,
   RefinerySettings,
+  RefinerySettingsUpdate,
   SettingsPayload,
+  SettingsUpdate,
   Task,
+  TaskCreate,
+  TaskUpdate,
   ThemeConfig,
   ThemeName,
   VaultSummary,
@@ -29,12 +42,17 @@ const api = axios.create({
   timeout: 10000,
 });
 
-export async function getThemeConfig(): Promise<ThemeConfig> {
+export async function getHealth(): Promise<HealthStatus> {
+  const { data } = await api.get<HealthStatus>('/health');
+  return data;
+}
+
+export async function getTheme(): Promise<ThemeConfig> {
   const { data } = await api.get<ThemeConfig>('/config/theme');
   return data;
 }
 
-export async function updateThemeConfig(theme: ThemeName): Promise<ThemeConfig> {
+export async function updateTheme(theme: ThemeName): Promise<ThemeConfig> {
   const { data } = await api.put<ThemeConfig>('/config/theme', { activeTheme: theme });
   return data;
 }
@@ -49,11 +67,7 @@ export async function getSettings(): Promise<SettingsPayload> {
   return data;
 }
 
-export async function updateSettings(payload: {
-  activeTheme?: ThemeName;
-  activeVaultPath?: string;
-  llm?: LLMSettings;
-}): Promise<SettingsPayload> {
+export async function updateSettings(payload: SettingsUpdate): Promise<SettingsPayload> {
   const { data } = await api.put<SettingsPayload>('/settings', payload);
   return data;
 }
@@ -83,14 +97,18 @@ export async function listNotes(): Promise<Note[]> {
   return data;
 }
 
-export async function createNote(payload: {
-  title: string;
-  content: string;
-  domain: string;
-  type: Note['type'];
-  tags: string[];
-}): Promise<Note> {
+export async function createNote(payload: NoteCreate): Promise<Note> {
   const { data } = await api.post<Note>('/notes', payload);
+  return data;
+}
+
+export async function getNote(id: string): Promise<Note> {
+  const { data } = await api.get<Note>(`/notes/${id}`);
+  return data;
+}
+
+export async function updateNote(id: string, payload: NoteUpdate): Promise<Note> {
+  const { data } = await api.put<Note>(`/notes/${id}`, payload);
   return data;
 }
 
@@ -99,13 +117,24 @@ export async function listTasks(): Promise<Task[]> {
   return data;
 }
 
+export async function createTask(payload: TaskCreate): Promise<Task> {
+  const { data } = await api.post<Task>('/tasks', payload);
+  return data;
+}
+
+export async function updateTask(id: string, payload: TaskUpdate): Promise<Task> {
+  const { data } = await api.put<Task>(`/tasks/${id}`, payload);
+  return data;
+}
+
 export async function listEvaluations(): Promise<Evaluation[]> {
   const { data } = await api.get<Evaluation[]>('/evaluations');
   return data;
 }
 
-export async function createEvaluation(idea: string): Promise<Evaluation> {
-  const { data } = await api.post<Evaluation>('/evaluations', { idea });
+export async function createEvaluation(ideaOrPayload: string | EvaluationCreate): Promise<Evaluation> {
+  const payload: EvaluationCreate = typeof ideaOrPayload === 'string' ? { idea: ideaOrPayload } : ideaOrPayload;
+  const { data } = await api.post<Evaluation>('/evaluations', payload);
   return data;
 }
 
@@ -119,7 +148,7 @@ export async function getPlannerBoard(params?: { evaluationId?: string | null; a
   return data;
 }
 
-export async function assignPlannerTask(payload: { evaluationId?: string | null; minutes: number }): Promise<PlannerAssignment> {
+export async function assignPlannerTask(payload: PlannerAssignRequest): Promise<PlannerAssignment> {
   const { data } = await api.post<PlannerAssignment>('/planner/assign', payload);
   return data;
 }
@@ -146,8 +175,8 @@ export async function getPlannerSchedule(evaluationId: string): Promise<PlannerS
   return data;
 }
 
-export async function sendPlannerChat(evaluationId: string, message: string): Promise<PlannerBoard> {
-  const { data } = await api.post<PlannerBoard>(`/planner/goals/${evaluationId}/chat`, { message });
+export async function chatPlannerGoal(evaluationId: string, payload: PlannerChatRequest): Promise<PlannerBoard> {
+  const { data } = await api.post<PlannerBoard>(`/planner/goals/${evaluationId}/chat`, payload);
   return data;
 }
 
@@ -156,30 +185,35 @@ export async function listMaterials(): Promise<Material[]> {
   return data;
 }
 
+export async function getMaterial(id: string): Promise<Material> {
+  const { data } = await api.get<Material>(`/refinery/materials/${id}`);
+  return data;
+}
+
 export async function getRefinerySettings(): Promise<RefinerySettings> {
   const { data } = await api.get<RefinerySettings>('/refinery/settings');
   return data;
 }
 
-export async function updateRefinerySettings(defaultPrompt: string): Promise<RefinerySettings> {
-  const { data } = await api.put<RefinerySettings>('/refinery/settings', { defaultPrompt });
+export async function updateRefinerySettings(payload: string | RefinerySettingsUpdate): Promise<RefinerySettings> {
+  const requestPayload: RefinerySettingsUpdate = typeof payload === 'string' ? { defaultPrompt: payload } : payload;
+  const { data } = await api.put<RefinerySettings>('/refinery/settings', requestPayload);
   return data;
 }
 
-export async function intakeRefineryMaterial(input: string, title?: string): Promise<RefinerySession> {
-  const { data } = await api.post<RefinerySession>('/refinery/intake', { input, title });
+export async function intakeRefineryMaterial(inputOrPayload: string | RefineryIntakeRequest, title?: string): Promise<RefinerySession> {
+  const payload: RefineryIntakeRequest = typeof inputOrPayload === 'string' ? { input: inputOrPayload, title } : inputOrPayload;
+  const { data } = await api.post<RefinerySession>('/refinery/intake', payload);
   return data;
 }
 
-export async function addMaterial(input: string, title?: string): Promise<Material> {
-  const { data } = await api.post<Material>('/refinery/materials', { input, title });
+export async function addMaterial(inputOrPayload: string | MaterialCreate, title?: string): Promise<Material> {
+  const payload: MaterialCreate = typeof inputOrPayload === 'string' ? { input: inputOrPayload, title } : inputOrPayload;
+  const { data } = await api.post<Material>('/refinery/materials', payload);
   return data;
 }
 
-export async function updateRefineryMaterial(
-  id: string,
-  payload: { title?: string; content?: string; report?: string; summary?: string; status?: Material['status'] },
-): Promise<Material> {
+export async function updateRefineryMaterial(id: string, payload: MaterialUpdate): Promise<Material> {
   const { data } = await api.put<Material>(`/refinery/materials/${id}`, payload);
   return data;
 }
@@ -199,11 +233,8 @@ export async function startConversation(initialMessage: string, contextId?: stri
   return data;
 }
 
-export async function sendConversationMessage(id: string, content: string): Promise<Conversation> {
-  const { data } = await api.post<Conversation>(`/refinery/conversations/${id}/messages`, {
-    role: 'user',
-    content,
-  });
+export async function sendMessage(id: string, payload: ConversationMessageCreate): Promise<Conversation> {
+  const { data } = await api.post<Conversation>(`/refinery/conversations/${id}/messages`, payload);
   return data;
 }
 

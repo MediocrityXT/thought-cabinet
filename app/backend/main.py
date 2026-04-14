@@ -1412,7 +1412,7 @@ async def create_note(note: NoteCreate) -> Note:
     return Note(**created)
 
 
-@app.get("/api/notes/{id:path}", response_model=Note)
+@app.get("/api/notes/{id}", response_model=Note)
 async def get_note(id: str) -> Note:
     note = MarkdownDB.get("notes", id)
     if not note:
@@ -1420,7 +1420,7 @@ async def get_note(id: str) -> Note:
     return Note(**note)
 
 
-@app.put("/api/notes/{id:path}", response_model=Note)
+@app.put("/api/notes/{id}", response_model=Note)
 async def update_note(id: str, note_update: NoteUpdate) -> Note:
     note = MarkdownDB.get("notes", id)
     if not note:
@@ -1497,35 +1497,35 @@ async def assign_planner_task(payload: PlannerAssignRequest) -> PlannerAssignmen
     return planner_assignment_for_minutes(payload.minutes, payload.evaluationId)
 
 
-@app.get("/api/planner/goals/{evaluation_id}/brief", response_model=PlannerBrief)
-async def get_planner_brief(evaluation_id: str, nodeId: Optional[str] = Query(default=None)) -> PlannerBrief:
-    board = build_planner_board(evaluation_id=evaluation_id, active_node_id=nodeId)
+@app.get("/api/planner/goals/{evaluationId}/brief", response_model=PlannerBrief)
+async def get_planner_brief(evaluationId: str, nodeId: Optional[str] = Query(default=None)) -> PlannerBrief:
+    board = build_planner_board(evaluation_id=evaluationId, active_node_id=nodeId)
     return board.brief
 
 
-@app.get("/api/planner/goals/{evaluation_id}/feedback", response_model=List[PlannerFeedback])
-async def get_planner_feedback(evaluation_id: str) -> List[PlannerFeedback]:
-    _ = build_planner_board(evaluation_id=evaluation_id)
-    return planner_feedback_items(evaluation_id)
+@app.get("/api/planner/goals/{evaluationId}/feedback", response_model=List[PlannerFeedback])
+async def get_planner_feedback(evaluationId: str) -> List[PlannerFeedback]:
+    _ = build_planner_board(evaluation_id=evaluationId)
+    return planner_feedback_items(evaluationId)
 
 
-@app.post("/api/planner/goals/{evaluation_id}/feedback", response_model=PlannerFeedback, status_code=201)
-async def add_planner_feedback(evaluation_id: str, payload: PlannerFeedbackCreate) -> PlannerFeedback:
-    _ = build_planner_board(evaluation_id=evaluation_id, active_node_id=payload.nodeId)
-    return create_planner_feedback(evaluation_id, payload)
+@app.post("/api/planner/goals/{evaluationId}/feedback", response_model=PlannerFeedback, status_code=201)
+async def add_planner_feedback(evaluationId: str, payload: PlannerFeedbackCreate) -> PlannerFeedback:
+    _ = build_planner_board(evaluation_id=evaluationId, active_node_id=payload.nodeId)
+    return create_planner_feedback(evaluationId, payload)
 
 
-@app.get("/api/planner/goals/{evaluation_id}/schedule", response_model=PlannerSchedule)
-async def get_planner_schedule(evaluation_id: str) -> PlannerSchedule:
-    board = build_planner_board(evaluation_id=evaluation_id)
+@app.get("/api/planner/goals/{evaluationId}/schedule", response_model=PlannerSchedule)
+async def get_planner_schedule(evaluationId: str) -> PlannerSchedule:
+    board = build_planner_board(evaluation_id=evaluationId)
     return board.schedule
 
 
-@app.post("/api/planner/goals/{evaluation_id}/chat", response_model=PlannerBoard)
-async def chat_with_planner(evaluation_id: str, payload: PlannerChatRequest) -> PlannerBoard:
-    board = build_planner_board(evaluation_id=evaluation_id)
+@app.post("/api/planner/goals/{evaluationId}/chat", response_model=PlannerBoard)
+async def chat_with_planner(evaluationId: str, payload: PlannerChatRequest) -> PlannerBoard:
+    board = build_planner_board(evaluation_id=evaluationId)
     create_planner_feedback(
-        evaluation_id,
+        evaluationId,
         PlannerFeedbackCreate(
             nodeId=board.activeNodeId or board.nodes[0].id,
             taskId=next((node.taskId for node in board.nodes if node.id == board.activeNodeId), None),
@@ -1535,7 +1535,7 @@ async def chat_with_planner(evaluation_id: str, payload: PlannerChatRequest) -> 
             actualMinutes=None,
         ),
     )
-    return build_planner_board(evaluation_id=evaluation_id, active_node_id=board.activeNodeId)
+    return build_planner_board(evaluation_id=evaluationId, active_node_id=board.activeNodeId)
 
 
 @app.get("/api/refinery/materials", response_model=List[Material])

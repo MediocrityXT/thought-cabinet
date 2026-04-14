@@ -449,10 +449,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                idea:
-                  type: string
+              $ref: '#/components/schemas/EvaluationCreate'
       responses:
         '201':
           description: Evaluation created
@@ -646,13 +643,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                role:
-                  type: string
-                  enum: [user, system]
-                content:
-                  type: string
+              $ref: '#/components/schemas/ConversationMessageCreate'
       responses:
         '200':
           description: AI Response appended to conversation
@@ -960,37 +951,50 @@ components:
           type: string
           enum: [idea, evaluating, active, archived]
         assessment:
-          type: object
-          properties:
-            strengths:
-              type: array
-              items:
-                type: string
-            weaknesses:
-              type: array
-              items:
-                type: string
-            opportunities:
-              type: array
-              items:
-                type: string
-            threats:
-              type: array
-              items:
-                type: string
-            roastComment:
-              type: string
-            scores:
-              type: object
-              properties:
-                innovation:
-                  type: integer
-                market:
-                  type: integer
-                feasibility:
-                  type: integer
-                team:
-                  type: integer
+          $ref: '#/components/schemas/Assessment'
+
+    EvaluationCreate:
+      type: object
+      required: [idea]
+      properties:
+        idea:
+          type: string
+
+    AssessmentScores:
+      type: object
+      properties:
+        innovation:
+          type: integer
+        market:
+          type: integer
+        feasibility:
+          type: integer
+        team:
+          type: integer
+
+    Assessment:
+      type: object
+      properties:
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        opportunities:
+          type: array
+          items:
+            type: string
+        threats:
+          type: array
+          items:
+            type: string
+        roastComment:
+          type: string
+        scores:
+          $ref: '#/components/schemas/AssessmentScores'
 
     Material:
       type: object
@@ -1097,18 +1101,31 @@ components:
             messages:
               type: array
               items:
-                type: object
-                properties:
-                  role:
-                    type: string
-                    enum: [user, assistant, system]
-                  content:
-                    type: string
-                  timestamp:
-                    type: string
-                    format: date-time
+                $ref: '#/components/schemas/ConversationMessage'
             content:
               type: string
+
+    ConversationMessage:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [user, assistant, system]
+        content:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ConversationMessageCreate:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [user, system]
+        content:
+          type: string
 
     HealthStatus:
       type: object
