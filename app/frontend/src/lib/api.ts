@@ -132,9 +132,9 @@ export async function listEvaluations(): Promise<Evaluation[]> {
   return data;
 }
 
-export async function createEvaluation(ideaOrPayload: string | EvaluationCreate): Promise<Evaluation> {
-  const payload: EvaluationCreate = typeof ideaOrPayload === 'string' ? { idea: ideaOrPayload } : ideaOrPayload;
-  const { data } = await api.post<Evaluation>('/evaluations', payload);
+export async function createEvaluation(payload: string | EvaluationCreate): Promise<Evaluation> {
+  const body: EvaluationCreate = typeof payload === 'string' ? { idea: payload } : payload;
+  const { data } = await api.post<Evaluation>('/evaluations', body);
   return data;
 }
 
@@ -196,8 +196,8 @@ export async function getRefinerySettings(): Promise<RefinerySettings> {
 }
 
 export async function updateRefinerySettings(payload: string | RefinerySettingsUpdate): Promise<RefinerySettings> {
-  const requestPayload: RefinerySettingsUpdate = typeof payload === 'string' ? { defaultPrompt: payload } : payload;
-  const { data } = await api.put<RefinerySettings>('/refinery/settings', requestPayload);
+  const body: RefinerySettingsUpdate = typeof payload === 'string' ? { defaultPrompt: payload } : payload;
+  const { data } = await api.put<RefinerySettings>('/refinery/settings', body);
   return data;
 }
 

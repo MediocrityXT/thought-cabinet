@@ -439,6 +439,18 @@ def normalize_tags(tags: Optional[List[str]]) -> List[str]:
     return list(dict.fromkeys(tag.strip().lower() for tag in tags if tag.strip()))
 
 
+def validate_item_id(item_id: str) -> str:
+    if not item_id:
+        raise HTTPException(status_code=400, detail="Item id is required")
+    if "/" in item_id or "\\" in item_id:
+        raise HTTPException(status_code=400, detail="Item id cannot contain path separators")
+    if item_id in {".", ".."} or item_id.startswith("."):
+        raise HTTPException(status_code=400, detail="Item id cannot be a relative path reference")
+    if ":" in item_id:
+        raise HTTPException(status_code=400, detail="Item id contains unsupported characters")
+    return item_id
+
+
 def infer_domain(text: str) -> str:
     lowered = text.lower()
     if any(word in lowered for word in ["react", "rust", "ai", "rag", "api", "database"]):
@@ -1414,6 +1426,7 @@ async def create_note(note: NoteCreate) -> Note:
 
 @app.get("/api/notes/{id}", response_model=Note)
 async def get_note(id: str) -> Note:
+    id = validate_item_id(id)
     note = MarkdownDB.get("notes", id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -1422,6 +1435,7 @@ async def get_note(id: str) -> Note:
 
 @app.put("/api/notes/{id}", response_model=Note)
 async def update_note(id: str, note_update: NoteUpdate) -> Note:
+    id = validate_item_id(id)
     note = MarkdownDB.get("notes", id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
