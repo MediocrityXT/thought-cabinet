@@ -1183,6 +1183,16 @@ components:
 
     WorkspaceSnapshot:
       type: object
+      required:
+        - settings
+        - overview
+        - graph
+        - notes
+        - tasks
+        - evaluations
+        - materials
+        - conversationMetas
+        - activeConversation
       properties:
         settings:
           $ref: '#/components/schemas/SettingsPayload'
@@ -1211,9 +1221,8 @@ components:
           items:
             $ref: '#/components/schemas/ConversationMetadata'
         activeConversation:
-          oneOf:
-            - $ref: '#/components/schemas/Conversation'
-            - type: 'null'
+          $ref: '#/components/schemas/Conversation'
+          nullable: true
 
     GraphNode:
       type: object
