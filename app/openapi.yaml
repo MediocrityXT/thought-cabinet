@@ -32,6 +32,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/DashboardOverview'
 
+  /workspace:
+    get:
+      summary: Get one-shot workspace snapshot for initial app hydration
+      operationId: getWorkspaceSnapshot
+      responses:
+        '200':
+          description: Aggregated workspace payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceSnapshot'
+
   /blueprint/graph:
     get:
       summary: Get knowledge blueprint graph
@@ -1168,6 +1180,40 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Task'
+
+    WorkspaceSnapshot:
+      type: object
+      properties:
+        settings:
+          $ref: '#/components/schemas/SettingsPayload'
+        overview:
+          $ref: '#/components/schemas/DashboardOverview'
+        graph:
+          $ref: '#/components/schemas/BlueprintGraph'
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        evaluations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Evaluation'
+        materials:
+          type: array
+          items:
+            $ref: '#/components/schemas/Material'
+        conversationMetas:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationMetadata'
+        activeConversation:
+          oneOf:
+            - $ref: '#/components/schemas/Conversation'
+            - type: 'null'
 
     GraphNode:
       type: object
