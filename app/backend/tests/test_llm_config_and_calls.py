@@ -10,6 +10,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import main  # noqa: E402
+import llm  # noqa: E402
 from api_config import DEFAULT_API_KEY, DEFAULT_BASE_URL, parse_api_config, read_api_config  # noqa: E402
 from config_store import load_config, save_config  # noqa: E402
 
@@ -47,9 +48,9 @@ class ApiConfigTests(unittest.TestCase):
 
 
 class LLMFormattingTests(unittest.TestCase):
-    @patch("main.urlopen")
-    @patch("main.read_api_config")
-    @patch("main.load_config")
+    @patch("llm.urlopen")
+    @patch("llm.read_api_config")
+    @patch("llm.load_config")
     def test_llm_completion_uses_openai_chat_completions_format(self, mock_load_config, mock_read_api_config, mock_urlopen) -> None:
         mock_load_config.return_value = {
             "llm": {
@@ -75,8 +76,8 @@ class LLMFormattingTests(unittest.TestCase):
         self.assertEqual(payload["messages"][0]["content"], "hello")
         self.assertEqual(request.get_header("Authorization"), "Bearer sk-test")
 
-    @patch("main.read_api_config")
-    @patch("main.load_config")
+    @patch("llm.read_api_config")
+    @patch("llm.load_config")
     def test_llm_completion_rejects_placeholder_api_key(self, mock_load_config, mock_read_api_config) -> None:
         mock_load_config.return_value = {
             "llm": {
