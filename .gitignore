@@ -56,3 +56,6 @@ app/backend/.tmp/
 app/backend/.pip-cache/
 app/frontend/.npm-cache/
 logs/
+
+# Local Windows-style API config artifact on non-Windows hosts
+C:\\Users\\admin\\api.yaml
