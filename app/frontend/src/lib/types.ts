@@ -100,9 +100,9 @@ export interface Note {
 export interface NoteCreate {
   title: string;
   content: string;
-  domain: string;
-  type: NoteType;
-  tags: string[];
+  domain?: string;
+  type?: NoteType;
+  tags?: string[];
 }
 
 export interface NoteUpdate {

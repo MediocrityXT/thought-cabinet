@@ -1476,6 +1476,7 @@ async def create_task(task: TaskCreate) -> Task:
 
 @app.put("/api/tasks/{id}", response_model=Task)
 async def update_task(id: str, task_update: TaskUpdate) -> Task:
+    id = validate_item_id(id)
     task = MarkdownDB.get("tasks", id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -1572,6 +1573,7 @@ async def update_refinery_settings(payload: RefinerySettingsUpdate) -> RefineryS
 
 @app.get("/api/refinery/materials/{id}", response_model=Material)
 async def get_material(id: str) -> Material:
+    id = validate_item_id(id)
     material = MarkdownDB.get("materials", id)
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
@@ -1580,6 +1582,7 @@ async def get_material(id: str) -> Material:
 
 @app.put("/api/refinery/materials/{id}", response_model=Material)
 async def update_material(id: str, payload: MaterialUpdate) -> Material:
+    id = validate_item_id(id)
     material = MarkdownDB.get("materials", id)
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
@@ -1627,6 +1630,7 @@ async def list_conversations() -> List[ConversationMetadata]:
 
 @app.get("/api/refinery/conversations/{id}", response_model=Conversation)
 async def get_conversation(id: str) -> Conversation:
+    id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -1658,6 +1662,7 @@ async def start_conversation(payload: ConversationCreate) -> Conversation:
 
 @app.post("/api/refinery/conversations/{id}/messages", response_model=Conversation)
 async def send_message(id: str, payload: MessageCreate) -> Conversation:
+    id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -1688,6 +1693,7 @@ async def send_message(id: str, payload: MessageCreate) -> Conversation:
 
 @app.post("/api/refinery/conversations/{id}/reset", response_model=Conversation)
 async def reset_refinery_conversation(id: str) -> Conversation:
+    id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -1714,6 +1720,7 @@ async def reset_refinery_conversation(id: str) -> Conversation:
 
 @app.post("/api/refinery/conversations/{id}/publish-note", response_model=Note, status_code=201)
 async def publish_refinery_note(id: str) -> Note:
+    id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
