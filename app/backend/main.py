@@ -1652,6 +1652,15 @@ async def publish_refinery_note(id: str) -> Note:
     return Note(**note)
 
 
+from routes import blueprint_router, dashboard_router, evaluator_router, planner_router, refinery_router
+
+app.include_router(dashboard_router)
+app.include_router(blueprint_router)
+app.include_router(evaluator_router)
+app.include_router(planner_router)
+app.include_router(refinery_router)
+
+
 if __name__ == "__main__":
     import uvicorn
 
