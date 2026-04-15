@@ -77,7 +77,9 @@ def llm_completion(module: ModuleName, messages: List[Dict[str, str]], temperatu
     if not isinstance(choices, list) or not choices:
         raise HTTPException(status_code=502, detail="LLM response missing choices")
 
-    first = choices[0] if isinstance(choices[0], dict) else {}
+    first = choices[0]
+    if not isinstance(first, dict):
+        first = {}
     message = first.get("message", {}) if isinstance(first, dict) else {}
     content = message.get("content") if isinstance(message, dict) else None
     if isinstance(content, list):

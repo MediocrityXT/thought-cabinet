@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from api_config import ensure_api_config, read_api_config
 from config_store import API_CONFIG_PATH, MODULE_KEYS, default_blank_vault_path, default_sample_vault_path, load_config, save_config
 from db import MarkdownDB
-from llm import llm_completion
+from llm import ModuleName, llm_completion
 
 ThemeName = Literal[
     "NEON",
@@ -33,7 +33,6 @@ ThemeName = Literal[
     "HOME",
     "WARROOM",
 ]
-ModuleName = Literal["dashboard", "refinery", "organizer", "evaluator", "blueprint", "planner"]
 NoteType = Literal["known", "unknown", "gap"]
 TaskPriority = Literal["low", "medium", "high"]
 TaskStatus = Literal["todo", "in_progress", "done"]
