@@ -1224,7 +1224,6 @@ async def startup_event() -> None:
     MarkdownDB.ensure_vault(MarkdownDB.active_vault_path(), create_obsidian=False)
 
 
-@app.get("/api/health")
 async def health() -> Dict[str, Any]:
     overview = build_dashboard()
     return {"status": "ok", "health": overview.health, "updatedAt": now_iso()}
@@ -1271,12 +1270,10 @@ async def select_vault(payload: VaultSelectRequest) -> VaultSummary:
     return VaultSummary(**MarkdownDB.switch_vault(payload.path))
 
 
-@app.get("/api/dashboard/overview", response_model=DashboardOverview)
 async def dashboard_overview() -> DashboardOverview:
     return build_dashboard()
 
 
-@app.get("/api/workspace", response_model=WorkspaceSnapshot)
 async def workspace_snapshot() -> WorkspaceSnapshot:
     conversations = MarkdownDB.list("conversations")
     conversation_metas = [
@@ -1297,7 +1294,6 @@ async def workspace_snapshot() -> WorkspaceSnapshot:
     )
 
 
-@app.get("/api/blueprint/graph", response_model=BlueprintGraph)
 async def blueprint_graph() -> BlueprintGraph:
     return build_blueprint_graph()
 
@@ -1409,19 +1405,16 @@ async def update_task(id: str, task_update: TaskUpdate) -> Task:
     return Task(**updated)
 
 
-@app.get("/api/evaluations", response_model=List[Evaluation])
 async def list_evaluations() -> List[Evaluation]:
     return [Evaluation(**item) for item in MarkdownDB.list("evaluations")]
 
 
-@app.post("/api/evaluations", response_model=Evaluation, status_code=201)
 async def create_evaluation(payload: EvaluationCreate) -> Evaluation:
     data = generate_assessment(payload.idea)
     created = MarkdownDB.create("evaluations", data, f"# Evaluation for {payload.idea}\n\n请继续验证用户、频率和替代方案。")
     return Evaluation(**created)
 
 
-@app.get("/api/planner/board", response_model=PlannerBoard)
 async def get_planner_board(
     evaluationId: Optional[str] = Query(default=None),
     activeNodeId: Optional[str] = Query(default=None),
@@ -1429,36 +1422,30 @@ async def get_planner_board(
     return build_planner_board(evaluation_id=evaluationId, active_node_id=activeNodeId)
 
 
-@app.post("/api/planner/assign", response_model=PlannerAssignment)
 async def assign_planner_task(payload: PlannerAssignRequest) -> PlannerAssignment:
     return planner_assignment_for_minutes(payload.minutes, payload.evaluationId)
 
 
-@app.get("/api/planner/goals/{evaluationId}/brief", response_model=PlannerBrief)
 async def get_planner_brief(evaluationId: str, nodeId: Optional[str] = Query(default=None)) -> PlannerBrief:
     board = build_planner_board(evaluation_id=evaluationId, active_node_id=nodeId)
     return board.brief
 
 
-@app.get("/api/planner/goals/{evaluationId}/feedback", response_model=List[PlannerFeedback])
 async def get_planner_feedback(evaluationId: str) -> List[PlannerFeedback]:
     _ = build_planner_board(evaluation_id=evaluationId)
     return planner_feedback_items(evaluationId)
 
 
-@app.post("/api/planner/goals/{evaluationId}/feedback", response_model=PlannerFeedback, status_code=201)
 async def add_planner_feedback(evaluationId: str, payload: PlannerFeedbackCreate) -> PlannerFeedback:
     _ = build_planner_board(evaluation_id=evaluationId, active_node_id=payload.nodeId)
     return create_planner_feedback(evaluationId, payload)
 
 
-@app.get("/api/planner/goals/{evaluationId}/schedule", response_model=PlannerSchedule)
 async def get_planner_schedule(evaluationId: str) -> PlannerSchedule:
     board = build_planner_board(evaluation_id=evaluationId)
     return board.schedule
 
 
-@app.post("/api/planner/goals/{evaluationId}/chat", response_model=PlannerBoard)
 async def chat_with_planner(evaluationId: str, payload: PlannerChatRequest) -> PlannerBoard:
     board = build_planner_board(evaluation_id=evaluationId)
     create_planner_feedback(
@@ -1475,17 +1462,14 @@ async def chat_with_planner(evaluationId: str, payload: PlannerChatRequest) -> P
     return build_planner_board(evaluation_id=evaluationId, active_node_id=board.activeNodeId)
 
 
-@app.get("/api/refinery/materials", response_model=List[Material])
 async def list_materials() -> List[Material]:
     return [Material(**item) for item in MarkdownDB.list("materials")]
 
 
-@app.get("/api/refinery/settings", response_model=RefinerySettings)
 async def get_refinery_settings() -> RefinerySettings:
     return refinery_settings()
 
 
-@app.put("/api/refinery/settings", response_model=RefinerySettings)
 async def update_refinery_settings(payload: RefinerySettingsUpdate) -> RefinerySettings:
     config = load_config()
     config["refinery"]["defaultPrompt"] = payload.defaultPrompt
@@ -1493,7 +1477,6 @@ async def update_refinery_settings(payload: RefinerySettingsUpdate) -> RefineryS
     return refinery_settings()
 
 
-@app.get("/api/refinery/materials/{id}", response_model=Material)
 async def get_material(id: str) -> Material:
     id = validate_item_id(id)
     material = MarkdownDB.get("materials", id)
@@ -1502,7 +1485,6 @@ async def get_material(id: str) -> Material:
     return Material(**material)
 
 
-@app.put("/api/refinery/materials/{id}", response_model=Material)
 async def update_material(id: str, payload: MaterialUpdate) -> Material:
     id = validate_item_id(id)
     material = MarkdownDB.get("materials", id)
@@ -1519,7 +1501,6 @@ async def update_material(id: str, payload: MaterialUpdate) -> Material:
     return Material(**updated)
 
 
-@app.post("/api/refinery/materials", response_model=Material, status_code=201)
 async def add_material(payload: MaterialCreate) -> Material:
     synthesized = synthesize_material(payload)
     created = MarkdownDB.create(
@@ -1537,20 +1518,17 @@ async def add_material(payload: MaterialCreate) -> Material:
     return Material(**created)
 
 
-@app.post("/api/refinery/intake", response_model=RefinerySession, status_code=201)
 async def intake_refinery_material(payload: MaterialCreate) -> RefinerySession:
     material = await add_material(payload)
     conversation = create_refinery_conversation(material.id)
     return RefinerySession(material=material, conversation=conversation, settings=refinery_settings())
 
 
-@app.get("/api/refinery/conversations", response_model=List[ConversationMetadata])
 async def list_conversations() -> List[ConversationMetadata]:
     items = MarkdownDB.list("conversations")
     return [ConversationMetadata(id=item["id"], title=item["title"], updatedAt=item.get("updatedAt")) for item in items]
 
 
-@app.get("/api/refinery/conversations/{id}", response_model=Conversation)
 async def get_conversation(id: str) -> Conversation:
     id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
@@ -1559,7 +1537,6 @@ async def get_conversation(id: str) -> Conversation:
     return Conversation(**conversation)
 
 
-@app.post("/api/refinery/conversations", response_model=Conversation, status_code=201)
 async def start_conversation(payload: ConversationCreate) -> Conversation:
     if payload.contextId and MarkdownDB.get("materials", payload.contextId):
         return create_refinery_conversation(payload.contextId, payload.initialMessage)
@@ -1582,7 +1559,6 @@ async def start_conversation(payload: ConversationCreate) -> Conversation:
     return Conversation(**created)
 
 
-@app.post("/api/refinery/conversations/{id}/messages", response_model=Conversation)
 async def send_message(id: str, payload: MessageCreate) -> Conversation:
     id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
@@ -1613,7 +1589,6 @@ async def send_message(id: str, payload: MessageCreate) -> Conversation:
     return Conversation(**updated)
 
 
-@app.post("/api/refinery/conversations/{id}/reset", response_model=Conversation)
 async def reset_refinery_conversation(id: str) -> Conversation:
     id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
@@ -1640,7 +1615,6 @@ async def reset_refinery_conversation(id: str) -> Conversation:
     return Conversation(**updated)
 
 
-@app.post("/api/refinery/conversations/{id}/publish-note", response_model=Note, status_code=201)
 async def publish_refinery_note(id: str) -> Note:
     id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
