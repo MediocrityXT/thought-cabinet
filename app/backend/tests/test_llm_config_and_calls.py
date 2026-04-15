@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import main  # noqa: E402
 import llm  # noqa: E402
 from api_config import DEFAULT_API_KEY, DEFAULT_BASE_URL, parse_api_config, read_api_config  # noqa: E402
-from config_store import load_config, save_config  # noqa: E402
+from config_store import API_CONFIG_PATH, load_config, save_config  # noqa: E402
 
 
 class FakeHTTPResponse:
@@ -56,7 +56,7 @@ class LLMFormattingTests(unittest.TestCase):
             "llm": {
                 "defaultModel": "gpt-test",
                 "moduleModels": {"refinery": ""},
-                "apiConfigPath": r"C:\Users\admin\api.yaml",
+                "apiConfigPath": API_CONFIG_PATH,
             }
         }
         mock_read_api_config.return_value = {
@@ -83,7 +83,7 @@ class LLMFormattingTests(unittest.TestCase):
             "llm": {
                 "defaultModel": "gpt-test",
                 "moduleModels": {"refinery": ""},
-                "apiConfigPath": r"C:\Users\admin\api.yaml",
+                "apiConfigPath": API_CONFIG_PATH,
             }
         }
         mock_read_api_config.return_value = {
@@ -156,7 +156,7 @@ class SettingsPersistenceTests(unittest.IsolatedAsyncioTestCase):
                 apiKey="sk-test-update",
                 defaultModel="gpt-4.1-mini",
                 moduleModels=main.ModuleModels(),
-                apiConfigPath=r"C:\Users\admin\api.yaml",
+                apiConfigPath=API_CONFIG_PATH,
             )
         )
 
@@ -176,7 +176,7 @@ class SettingsPersistenceTests(unittest.IsolatedAsyncioTestCase):
                 apiKey="sk-test-update",
                 defaultModel="gpt-4.1-mini",
                 moduleModels=main.ModuleModels(),
-                apiConfigPath=r"C:\Users\admin\api.yaml",
+                apiConfigPath=API_CONFIG_PATH,
             ),
         )
         with patch("main.current_settings", return_value=dummy_settings):

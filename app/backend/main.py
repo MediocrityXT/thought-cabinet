@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from api_config import ensure_api_config, read_api_config
-from config_store import MODULE_KEYS, default_blank_vault_path, default_sample_vault_path, load_config, save_config
+from config_store import API_CONFIG_PATH, MODULE_KEYS, default_blank_vault_path, default_sample_vault_path, load_config, save_config
 from db import MarkdownDB
 from llm import llm_completion
 
@@ -68,7 +68,7 @@ class LLMSettings(BaseModel):
     apiKey: str
     defaultModel: str
     moduleModels: ModuleModels
-    apiConfigPath: str = r"C:\Users\admin\api.yaml"
+    apiConfigPath: str = API_CONFIG_PATH
 
 
 class RefinerySettings(BaseModel):
@@ -795,7 +795,7 @@ def create_refinery_conversation(context_id: str, initial_message: str = "请基
 
 def current_settings() -> SettingsPayload:
     config = load_config()
-    config_path = str(config.get("llm", {}).get("apiConfigPath", r"C:\Users\admin\api.yaml"))
+    config_path = str(config.get("llm", {}).get("apiConfigPath", API_CONFIG_PATH))
     try:
         api_config = read_api_config(config_path)
     except (ValueError, OSError) as exc:
@@ -1220,7 +1220,7 @@ def bootstrap_sample_vaults() -> None:
 @app.on_event("startup")
 async def startup_event() -> None:
     config = load_config()
-    ensure_api_config(str(config.get("llm", {}).get("apiConfigPath", r"C:\Users\admin\api.yaml")))
+    ensure_api_config(str(config.get("llm", {}).get("apiConfigPath", API_CONFIG_PATH)))
     bootstrap_sample_vaults()
     MarkdownDB.ensure_vault(MarkdownDB.active_vault_path(), create_obsidian=False)
 
@@ -1247,7 +1247,7 @@ async def update_settings(payload: SettingsUpdate) -> SettingsPayload:
         config = load_config()
         llm_config = config.setdefault("llm", {})
     if payload.llm is not None:
-        config_path = str(llm_config.get("apiConfigPath", r"C:\Users\admin\api.yaml"))
+        config_path = str(llm_config.get("apiConfigPath", API_CONFIG_PATH))
         config["llm"] = {
             "defaultModel": payload.llm.defaultModel,
             "moduleModels": payload.llm.moduleModels.model_dump(),
