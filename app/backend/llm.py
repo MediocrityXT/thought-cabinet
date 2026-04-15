@@ -8,7 +8,7 @@ from urllib.request import Request, urlopen
 from fastapi import HTTPException
 
 from api_config import read_api_config
-from config_store import load_config
+from config_store import API_CONFIG_PATH, load_config
 
 ModuleName = Literal["dashboard", "refinery", "organizer", "evaluator", "blueprint", "planner"]
 
@@ -28,7 +28,7 @@ def resolve_model(module: ModuleName) -> str:
 def llm_api_path() -> str:
     config = load_config()
     llm_config = config.get("llm", {})
-    return str(llm_config.get("apiConfigPath", r"C:\Users\admin\api.yaml"))
+    return str(llm_config.get("apiConfigPath", API_CONFIG_PATH))
 
 
 def llm_completion(module: ModuleName, messages: List[Dict[str, str]], temperature: float = 0.3) -> str:
