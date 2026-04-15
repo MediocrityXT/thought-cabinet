@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter
 
-import main as core
 
-router = APIRouter()
-
-router.add_api_route(
-    "/api/blueprint/graph",
-    core.blueprint_graph,
-    methods=["GET"],
-    response_model=core.BlueprintGraph,
-)
+def build_router(core: Any) -> APIRouter:
+    router = APIRouter()
+    router.add_api_route(
+        "/api/blueprint/graph",
+        core.blueprint_graph,
+        methods=["GET"],
+        response_model=core.BlueprintGraph,
+    )
+    return router

@@ -4,6 +4,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Literal, Optional
 from urllib.parse import urlparse
@@ -16,6 +17,13 @@ from api_config import ensure_api_config, read_api_config
 from config_store import API_CONFIG_PATH, MODULE_KEYS, default_blank_vault_path, default_sample_vault_path, load_config, save_config
 from db import MarkdownDB
 from llm import ModuleName, llm_completion
+from routes import (
+    build_blueprint_router,
+    build_dashboard_router,
+    build_evaluator_router,
+    build_planner_router,
+    build_refinery_router,
+)
 
 ThemeName = Literal[
     "NEON",
@@ -1652,13 +1660,12 @@ async def publish_refinery_note(id: str) -> Note:
     return Note(**note)
 
 
-from routes import blueprint_router, dashboard_router, evaluator_router, planner_router, refinery_router
-
-app.include_router(dashboard_router)
-app.include_router(blueprint_router)
-app.include_router(evaluator_router)
-app.include_router(planner_router)
-app.include_router(refinery_router)
+_core_module = sys.modules[__name__]
+app.include_router(build_dashboard_router(_core_module))
+app.include_router(build_blueprint_router(_core_module))
+app.include_router(build_evaluator_router(_core_module))
+app.include_router(build_planner_router(_core_module))
+app.include_router(build_refinery_router(_core_module))
 
 
 if __name__ == "__main__":
