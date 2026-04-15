@@ -13,7 +13,7 @@ from config_store import API_CONFIG_PATH, load_config
 ModuleName = Literal["dashboard", "refinery", "organizer", "evaluator", "blueprint", "planner"]
 
 
-def resolve_model(module: ModuleName) -> str:
+def _resolve_model(module: ModuleName) -> str:
     config = load_config()
     llm_config = config.get("llm", {})
     module_models = llm_config.get("moduleModels", {})
@@ -25,14 +25,14 @@ def resolve_model(module: ModuleName) -> str:
     return default_model or "gpt-4.1-mini"
 
 
-def llm_api_path() -> str:
+def _llm_api_path() -> str:
     config = load_config()
     llm_config = config.get("llm", {})
     return str(llm_config.get("apiConfigPath", API_CONFIG_PATH))
 
 
 def llm_completion(module: ModuleName, messages: List[Dict[str, str]], temperature: float = 0.3) -> str:
-    config_path = llm_api_path()
+    config_path = _llm_api_path()
     try:
         api_config = read_api_config(config_path)
     except (ValueError, OSError) as exc:
@@ -44,7 +44,7 @@ def llm_completion(module: ModuleName, messages: List[Dict[str, str]], temperatu
         raise HTTPException(status_code=400, detail=f"API_KEY missing in {config_path}")
 
     payload: Dict[str, Any] = {
-        "model": resolve_model(module),
+        "model": _resolve_model(module),
         "messages": messages,
         "temperature": temperature,
     }
