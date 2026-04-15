@@ -20,8 +20,8 @@ import {
   intakeRefineryMaterial,
   publishRefineryNote,
   resetRefineryConversation,
-  sendPlannerChat,
-  sendConversationMessage,
+  chatPlannerGoal,
+  sendMessage,
   startConversation,
   updateRefineryMaterial,
   updateRefinerySettings,
@@ -323,7 +323,7 @@ export default function NeonTheme() {
     setSubmitting(true);
     try {
       const conversation = workspace.activeConversation
-        ? await sendConversationMessage(workspace.activeConversation.id, content)
+        ? await sendMessage(workspace.activeConversation.id, { role: 'user', content })
         : await startConversation(content, workspace.materials[0]?.id);
       setWorkspace((current) =>
         current
@@ -480,7 +480,7 @@ export default function NeonTheme() {
     }
     setSubmitting(true);
     try {
-      const board = await sendPlannerChat(plannerGoalId, message);
+      const board = await chatPlannerGoal(plannerGoalId, { message });
       setPlannerBoard(board);
       setPlannerGoalId(board.evaluationId);
     } finally {

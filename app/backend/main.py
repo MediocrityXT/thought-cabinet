@@ -439,6 +439,18 @@ def normalize_tags(tags: Optional[List[str]]) -> List[str]:
     return list(dict.fromkeys(tag.strip().lower() for tag in tags if tag.strip()))
 
 
+def validate_item_id(item_id: str) -> str:
+    if not item_id:
+        raise HTTPException(status_code=400, detail="Item id is required")
+    if "/" in item_id or "\\" in item_id:
+        raise HTTPException(status_code=400, detail="Item id cannot contain path separators")
+    if item_id in {".", ".."} or item_id.startswith("."):
+        raise HTTPException(status_code=400, detail="Item id cannot be a relative path reference")
+    if ":" in item_id:
+        raise HTTPException(status_code=400, detail="Item id contains unsupported characters")
+    return item_id
+
+
 def infer_domain(text: str) -> str:
     lowered = text.lower()
     if any(word in lowered for word in ["react", "rust", "ai", "rag", "api", "database"]):
@@ -1412,16 +1424,18 @@ async def create_note(note: NoteCreate) -> Note:
     return Note(**created)
 
 
-@app.get("/api/notes/{id:path}", response_model=Note)
+@app.get("/api/notes/{id}", response_model=Note)
 async def get_note(id: str) -> Note:
+    id = validate_item_id(id)
     note = MarkdownDB.get("notes", id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
     return Note(**note)
 
 
-@app.put("/api/notes/{id:path}", response_model=Note)
+@app.put("/api/notes/{id}", response_model=Note)
 async def update_note(id: str, note_update: NoteUpdate) -> Note:
+    id = validate_item_id(id)
     note = MarkdownDB.get("notes", id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -1462,6 +1476,7 @@ async def create_task(task: TaskCreate) -> Task:
 
 @app.put("/api/tasks/{id}", response_model=Task)
 async def update_task(id: str, task_update: TaskUpdate) -> Task:
+    id = validate_item_id(id)
     task = MarkdownDB.get("tasks", id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -1497,35 +1512,35 @@ async def assign_planner_task(payload: PlannerAssignRequest) -> PlannerAssignmen
     return planner_assignment_for_minutes(payload.minutes, payload.evaluationId)
 
 
-@app.get("/api/planner/goals/{evaluation_id}/brief", response_model=PlannerBrief)
-async def get_planner_brief(evaluation_id: str, nodeId: Optional[str] = Query(default=None)) -> PlannerBrief:
-    board = build_planner_board(evaluation_id=evaluation_id, active_node_id=nodeId)
+@app.get("/api/planner/goals/{evaluationId}/brief", response_model=PlannerBrief)
+async def get_planner_brief(evaluationId: str, nodeId: Optional[str] = Query(default=None)) -> PlannerBrief:
+    board = build_planner_board(evaluation_id=evaluationId, active_node_id=nodeId)
     return board.brief
 
 
-@app.get("/api/planner/goals/{evaluation_id}/feedback", response_model=List[PlannerFeedback])
-async def get_planner_feedback(evaluation_id: str) -> List[PlannerFeedback]:
-    _ = build_planner_board(evaluation_id=evaluation_id)
-    return planner_feedback_items(evaluation_id)
+@app.get("/api/planner/goals/{evaluationId}/feedback", response_model=List[PlannerFeedback])
+async def get_planner_feedback(evaluationId: str) -> List[PlannerFeedback]:
+    _ = build_planner_board(evaluation_id=evaluationId)
+    return planner_feedback_items(evaluationId)
 
 
-@app.post("/api/planner/goals/{evaluation_id}/feedback", response_model=PlannerFeedback, status_code=201)
-async def add_planner_feedback(evaluation_id: str, payload: PlannerFeedbackCreate) -> PlannerFeedback:
-    _ = build_planner_board(evaluation_id=evaluation_id, active_node_id=payload.nodeId)
-    return create_planner_feedback(evaluation_id, payload)
+@app.post("/api/planner/goals/{evaluationId}/feedback", response_model=PlannerFeedback, status_code=201)
+async def add_planner_feedback(evaluationId: str, payload: PlannerFeedbackCreate) -> PlannerFeedback:
+    _ = build_planner_board(evaluation_id=evaluationId, active_node_id=payload.nodeId)
+    return create_planner_feedback(evaluationId, payload)
 
 
-@app.get("/api/planner/goals/{evaluation_id}/schedule", response_model=PlannerSchedule)
-async def get_planner_schedule(evaluation_id: str) -> PlannerSchedule:
-    board = build_planner_board(evaluation_id=evaluation_id)
+@app.get("/api/planner/goals/{evaluationId}/schedule", response_model=PlannerSchedule)
+async def get_planner_schedule(evaluationId: str) -> PlannerSchedule:
+    board = build_planner_board(evaluation_id=evaluationId)
     return board.schedule
 
 
-@app.post("/api/planner/goals/{evaluation_id}/chat", response_model=PlannerBoard)
-async def chat_with_planner(evaluation_id: str, payload: PlannerChatRequest) -> PlannerBoard:
-    board = build_planner_board(evaluation_id=evaluation_id)
+@app.post("/api/planner/goals/{evaluationId}/chat", response_model=PlannerBoard)
+async def chat_with_planner(evaluationId: str, payload: PlannerChatRequest) -> PlannerBoard:
+    board = build_planner_board(evaluation_id=evaluationId)
     create_planner_feedback(
-        evaluation_id,
+        evaluationId,
         PlannerFeedbackCreate(
             nodeId=board.activeNodeId or board.nodes[0].id,
             taskId=next((node.taskId for node in board.nodes if node.id == board.activeNodeId), None),
@@ -1535,7 +1550,7 @@ async def chat_with_planner(evaluation_id: str, payload: PlannerChatRequest) -> 
             actualMinutes=None,
         ),
     )
-    return build_planner_board(evaluation_id=evaluation_id, active_node_id=board.activeNodeId)
+    return build_planner_board(evaluation_id=evaluationId, active_node_id=board.activeNodeId)
 
 
 @app.get("/api/refinery/materials", response_model=List[Material])
@@ -1558,6 +1573,7 @@ async def update_refinery_settings(payload: RefinerySettingsUpdate) -> RefineryS
 
 @app.get("/api/refinery/materials/{id}", response_model=Material)
 async def get_material(id: str) -> Material:
+    id = validate_item_id(id)
     material = MarkdownDB.get("materials", id)
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
@@ -1566,6 +1582,7 @@ async def get_material(id: str) -> Material:
 
 @app.put("/api/refinery/materials/{id}", response_model=Material)
 async def update_material(id: str, payload: MaterialUpdate) -> Material:
+    id = validate_item_id(id)
     material = MarkdownDB.get("materials", id)
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
@@ -1613,6 +1630,7 @@ async def list_conversations() -> List[ConversationMetadata]:
 
 @app.get("/api/refinery/conversations/{id}", response_model=Conversation)
 async def get_conversation(id: str) -> Conversation:
+    id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -1644,6 +1662,7 @@ async def start_conversation(payload: ConversationCreate) -> Conversation:
 
 @app.post("/api/refinery/conversations/{id}/messages", response_model=Conversation)
 async def send_message(id: str, payload: MessageCreate) -> Conversation:
+    id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -1674,6 +1693,7 @@ async def send_message(id: str, payload: MessageCreate) -> Conversation:
 
 @app.post("/api/refinery/conversations/{id}/reset", response_model=Conversation)
 async def reset_refinery_conversation(id: str) -> Conversation:
+    id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -1700,6 +1720,7 @@ async def reset_refinery_conversation(id: str) -> Conversation:
 
 @app.post("/api/refinery/conversations/{id}/publish-note", response_model=Note, status_code=201)
 async def publish_refinery_note(id: str) -> Note:
+    id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")

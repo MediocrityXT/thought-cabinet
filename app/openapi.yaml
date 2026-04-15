@@ -32,6 +32,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/DashboardOverview'
 
+  /workspace:
+    get:
+      summary: Get one-shot workspace snapshot for initial app hydration
+      operationId: getWorkspaceSnapshot
+      responses:
+        '200':
+          description: Aggregated workspace payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceSnapshot'
+
   /blueprint/graph:
     get:
       summary: Get knowledge blueprint graph
@@ -437,10 +449,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                idea:
-                  type: string
+              $ref: '#/components/schemas/EvaluationCreate'
       responses:
         '201':
           description: Evaluation created
@@ -634,13 +643,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                role:
-                  type: string
-                  enum: [user, system]
-                content:
-                  type: string
+              $ref: '#/components/schemas/ConversationMessageCreate'
       responses:
         '200':
           description: AI Response appended to conversation
@@ -948,37 +951,62 @@ components:
           type: string
           enum: [idea, evaluating, active, archived]
         assessment:
-          type: object
-          properties:
-            strengths:
-              type: array
-              items:
-                type: string
-            weaknesses:
-              type: array
-              items:
-                type: string
-            opportunities:
-              type: array
-              items:
-                type: string
-            threats:
-              type: array
-              items:
-                type: string
-            roastComment:
-              type: string
-            scores:
-              type: object
-              properties:
-                innovation:
-                  type: integer
-                market:
-                  type: integer
-                feasibility:
-                  type: integer
-                team:
-                  type: integer
+          $ref: '#/components/schemas/Assessment'
+
+    EvaluationCreate:
+      type: object
+      required: [idea]
+      properties:
+        idea:
+          type: string
+
+    AssessmentScores:
+      type: object
+      required:
+        - innovation
+        - market
+        - feasibility
+        - team
+      properties:
+        innovation:
+          type: integer
+        market:
+          type: integer
+        feasibility:
+          type: integer
+        team:
+          type: integer
+
+    Assessment:
+      type: object
+      required:
+        - strengths
+        - weaknesses
+        - opportunities
+        - threats
+        - roastComment
+        - scores
+      properties:
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        opportunities:
+          type: array
+          items:
+            type: string
+        threats:
+          type: array
+          items:
+            type: string
+        roastComment:
+          type: string
+        scores:
+          $ref: '#/components/schemas/AssessmentScores'
 
     Material:
       type: object
@@ -1085,18 +1113,35 @@ components:
             messages:
               type: array
               items:
-                type: object
-                properties:
-                  role:
-                    type: string
-                    enum: [user, assistant, system]
-                  content:
-                    type: string
-                  timestamp:
-                    type: string
-                    format: date-time
+                $ref: '#/components/schemas/ConversationMessage'
             content:
               type: string
+
+    ConversationMessage:
+      type: object
+      required:
+        - role
+        - content
+        - timestamp
+      properties:
+        role:
+          type: string
+          enum: [user, assistant, system]
+        content:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ConversationMessageCreate:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [user, system]
+        content:
+          type: string
 
     HealthStatus:
       type: object
@@ -1168,6 +1213,49 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Task'
+
+    WorkspaceSnapshot:
+      type: object
+      required:
+        - settings
+        - overview
+        - graph
+        - notes
+        - tasks
+        - evaluations
+        - materials
+        - conversationMetas
+        - activeConversation
+      properties:
+        settings:
+          $ref: '#/components/schemas/SettingsPayload'
+        overview:
+          $ref: '#/components/schemas/DashboardOverview'
+        graph:
+          $ref: '#/components/schemas/BlueprintGraph'
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        evaluations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Evaluation'
+        materials:
+          type: array
+          items:
+            $ref: '#/components/schemas/Material'
+        conversationMetas:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationMetadata'
+        activeConversation:
+          $ref: '#/components/schemas/Conversation'
+          nullable: true
 
     GraphNode:
       type: object

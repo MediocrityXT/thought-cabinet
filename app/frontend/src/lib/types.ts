@@ -29,6 +29,12 @@ export interface ThemeConfig {
   activeTheme: ThemeName;
 }
 
+export interface HealthStatus {
+  status: string;
+  health: number;
+  updatedAt?: string;
+}
+
 export interface ModuleModels {
   dashboard: string;
   refinery: string;
@@ -62,6 +68,12 @@ export interface SettingsPayload {
   llm: LLMSettings;
 }
 
+export interface SettingsUpdate {
+  activeTheme?: ThemeName;
+  activeVaultPath?: string;
+  llm?: LLMSettings;
+}
+
 export interface WorkspaceSnapshot {
   settings: SettingsPayload;
   overview: DashboardOverview;
@@ -85,6 +97,23 @@ export interface Note {
   updatedAt?: string;
 }
 
+export interface NoteCreate {
+  title: string;
+  content: string;
+  domain?: string;
+  type?: NoteType;
+  tags?: string[];
+}
+
+export interface NoteUpdate {
+  title?: string;
+  content?: string;
+  append?: boolean;
+  domain?: string;
+  type?: NoteType;
+  tags?: string[];
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -97,6 +126,28 @@ export interface Task {
   progress?: number;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface TaskCreate {
+  title: string;
+  domain: string;
+  timeEstimate: number;
+  priority?: TaskPriority;
+  status?: TaskStatus;
+  category?: TaskCategory;
+  impactScore?: number;
+  progress?: number;
+}
+
+export interface TaskUpdate {
+  title?: string;
+  domain?: string;
+  timeEstimate?: number;
+  priority?: TaskPriority;
+  status?: TaskStatus;
+  category?: TaskCategory;
+  impactScore?: number;
+  progress?: number;
 }
 
 export interface AssessmentScores {
@@ -127,6 +178,10 @@ export interface Evaluation {
   updatedAt?: string;
 }
 
+export interface EvaluationCreate {
+  idea: string;
+}
+
 export interface Material {
   id: string;
   title: string;
@@ -139,8 +194,31 @@ export interface Material {
   updatedAt?: string;
 }
 
+export interface MaterialCreate {
+  input: string;
+  title?: string;
+  kind?: 'url' | 'text';
+}
+
+export interface MaterialUpdate {
+  title?: string;
+  content?: string;
+  report?: string;
+  summary?: string;
+  status?: MaterialStatus;
+}
+
 export interface RefinerySettings {
   defaultPrompt: string;
+}
+
+export interface RefinerySettingsUpdate {
+  defaultPrompt: string;
+}
+
+export interface RefineryIntakeRequest {
+  input: string;
+  title?: string;
 }
 
 export interface RefinerySession {
@@ -159,6 +237,11 @@ export interface ConversationMessage {
   role: MessageRole;
   content: string;
   timestamp: string;
+}
+
+export interface ConversationMessageCreate {
+  role: Extract<MessageRole, 'user' | 'system'>;
+  content: string;
 }
 
 export interface Conversation extends ConversationMetadata {
@@ -297,4 +380,13 @@ export interface PlannerAssignment {
   selectedNode: PlannerNode;
   brief: PlannerBrief;
   rationale: string;
+}
+
+export interface PlannerAssignRequest {
+  evaluationId?: string | null;
+  minutes: number;
+}
+
+export interface PlannerChatRequest {
+  message: string;
 }
