@@ -962,6 +962,11 @@ components:
 
     AssessmentScores:
       type: object
+      required:
+        - innovation
+        - market
+        - feasibility
+        - team
       properties:
         innovation:
           type: integer
@@ -974,6 +979,13 @@ components:
 
     Assessment:
       type: object
+      required:
+        - strengths
+        - weaknesses
+        - opportunities
+        - threats
+        - roastComment
+        - scores
       properties:
         strengths:
           type: array
@@ -1107,6 +1119,10 @@ components:
 
     ConversationMessage:
       type: object
+      required:
+        - role
+        - content
+        - timestamp
       properties:
         role:
           type: string
