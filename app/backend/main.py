@@ -12,8 +12,10 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from config_store import MODULE_KEYS, default_blank_vault_path, default_sample_vault_path, load_config, save_config
+from api_config import ensure_api_config, read_api_config
+from config_store import API_CONFIG_PATH, MODULE_KEYS, default_blank_vault_path, default_sample_vault_path, load_config, save_config
 from db import MarkdownDB
+from llm import ModuleName, llm_completion
 
 ThemeName = Literal[
     "NEON",
@@ -31,7 +33,6 @@ ThemeName = Literal[
     "HOME",
     "WARROOM",
 ]
-ModuleName = Literal["dashboard", "refinery", "organizer", "evaluator", "blueprint", "planner"]
 NoteType = Literal["known", "unknown", "gap"]
 TaskPriority = Literal["low", "medium", "high"]
 TaskStatus = Literal["todo", "in_progress", "done"]
@@ -66,6 +67,7 @@ class LLMSettings(BaseModel):
     apiKey: str
     defaultModel: str
     moduleModels: ModuleModels
+    apiConfigPath: str = API_CONFIG_PATH
 
 
 class RefinerySettings(BaseModel):
@@ -418,7 +420,7 @@ class PlannerBoard(BaseModel):
     feedback: List[PlannerFeedback]
 
 
-app = FastAPI(title="ThoughtCabinet Core API", version="2.0.0")
+app = FastAPI(title="ThoughtCabinet Core API", version="0.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -435,6 +437,18 @@ def normalize_tags(tags: Optional[List[str]]) -> List[str]:
     return list(dict.fromkeys(tag.strip().lower() for tag in tags if tag.strip()))
 
 
+def validate_item_id(item_id: str) -> str:
+    if not item_id:
+        raise HTTPException(status_code=400, detail="Item id is required")
+    if "/" in item_id or "\\" in item_id:
+        raise HTTPException(status_code=400, detail="Item id cannot contain path separators")
+    if item_id in {".", ".."} or item_id.startswith("."):
+        raise HTTPException(status_code=400, detail="Item id cannot be a relative path reference")
+    if ":" in item_id:
+        raise HTTPException(status_code=400, detail="Item id contains unsupported characters")
+    return item_id
+
+
 def infer_domain(text: str) -> str:
     lowered = text.lower()
     if any(word in lowered for word in ["react", "rust", "ai", "rag", "api", "database"]):
@@ -448,7 +462,7 @@ def infer_domain(text: str) -> str:
     return "General"
 
 
-def generate_assessment(idea: str) -> Dict[str, Any]:
+def generate_assessment_seed(idea: str) -> Dict[str, Any]:
     signal = sum(ord(char) for char in idea)
     innovation = 2 + signal % 4
     market = 2 + (signal // 7) % 4
@@ -510,16 +524,66 @@ def refinery_settings() -> RefinerySettings:
     return RefinerySettings(defaultPrompt=load_config()["refinery"]["defaultPrompt"])
 
 
-def synthesize_refinery_report(title: str, body: str) -> str:
-    excerpt = body.replace("\n", " ").strip()
+def _extract_json_object(raw: str) -> Dict[str, Any]:
+    candidate = raw.strip()
+    try:
+        parsed = json.loads(candidate)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+
+    start = candidate.find("{")
+    end = candidate.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        raise HTTPException(status_code=502, detail="LLM response does not contain a JSON object")
+    try:
+        parsed = json.loads(candidate[start : end + 1])
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to parse JSON from LLM response: {exc}") from exc
+    if not isinstance(parsed, dict):
+        raise HTTPException(status_code=502, detail="LLM JSON payload must be an object")
+    return parsed
+
+
+def _llm_completion(module: ModuleName, messages: List[Dict[str, str]], temperature: float = 0.3) -> str:
+    return llm_completion(module, messages, temperature)
+
+
+def _normalize_score(value: Any, fallback: int) -> int:
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        number = fallback
+    return max(1, min(5, number))
+
+
+def _normalize_percent(value: Any, fallback: int) -> int:
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        number = fallback
+    return max(0, min(100, number))
+
+
+def _normalize_string_list(value: Any, fallback: List[str]) -> List[str]:
+    if isinstance(value, list):
+        normalized = [str(item).strip() for item in value if str(item).strip()]
+        if normalized:
+            return normalized[:5]
+    return fallback
+
+
+def synthesize_refinery_report(title: str, summary: str, raw_excerpt: str) -> str:
+    excerpt = raw_excerpt.replace("\n", " ").strip()
     if len(excerpt) > 180:
         excerpt = f"{excerpt[:180]}..."
     return (
         "> [!IMPORTANT] 30 秒速读报告\n"
-        f"> 核心论点：{title} 主要在讨论一个可执行判断，而不是纯收藏信息。\n"
-        f"> 关键证据：{excerpt or '材料长度较短，建议直接围绕原文意图展开讨论。'}\n"
-        "> 争议点：如果直接接受这份材料，最容易忽略的前提是它的适用边界。\n"
-        "> 下一步值得讨论的问题：这份材料和你已有知识库里哪条判断冲突？"
+        f"> 核心论点：{summary or f'{title} 需要被压缩成一条可验证判断。'}\n"
+        f"> 关键证据：{excerpt or '当前只有链接或简短输入，建议在对话中补齐上下文。'}\n"
+        "> 争议点：这条材料最容易被忽略的是适用边界与反例。\n"
+        "> 下一步值得讨论的问题：它最值得沉淀成哪条事实或观点？"
     )
 
 
@@ -528,54 +592,176 @@ def build_refinery_prompt(material_body: str) -> str:
 
 
 def synthesize_material(payload: MaterialCreate) -> Dict[str, str]:
-    inferred_kind = payload.kind or ("url" if re.match(r"^https?://", payload.input.strip(), flags=re.IGNORECASE) else "text")
+    normalized_input = payload.input.strip()
+    if not normalized_input:
+        raise HTTPException(status_code=400, detail="Material input is required")
+
+    inferred_kind = payload.kind or ("url" if re.match(r"^https?://", normalized_input, flags=re.IGNORECASE) else "text")
     if inferred_kind == "url":
-        parsed = urlparse(payload.input.strip())
+        parsed = urlparse(normalized_input)
         host = parsed.netloc or "source"
-        title = payload.title or parsed.path.strip("/").replace("-", " ").title() or host
-        source_url = payload.input.strip()
-        body = (
-            f"# {title}\n\n"
-            f"- Source: {source_url}\n"
-            f"- Captured: {now_iso()}\n\n"
-            "作者试图给出一套可执行方法，而不是抽象口号。这里最值得保留的是论证链、反例和下一步可验证动作。"
+        title_hint = payload.title or parsed.path.strip("/").replace("-", " ").title() or host
+        source_url = normalized_input
+        raw_context = (
+            f"Source URL: {source_url}\n"
+            f"Title hint: {title_hint}\n"
+            "The article body is not available locally. Generate a cautious first-pass report, "
+            "explicitly acknowledging that the content is inferred from the link metadata."
         )
     else:
-        normalized = payload.input.strip()
-        title = payload.title or normalized.splitlines()[0][:28] or f"Text Capture {datetime.now().strftime('%H:%M')}"
+        title_hint = payload.title or normalized_input.splitlines()[0][:28] or f"Text Capture {datetime.now().strftime('%H:%M')}"
         source_url = "text://clipboard"
-        body = normalized
-    report = synthesize_refinery_report(title, body)
-    summary = f"{title} 已生成短文本报告，可以直接进入对话精炼。"
-    content = f"# {title}\n\n- Source: {source_url}\n- Captured: {now_iso()}\n\n{body}\n\n{report}\n"
-    prompt = build_refinery_prompt(body)
+        raw_context = normalized_input
+
+    completion = _llm_completion(
+        "refinery",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "你是 ThoughtCabinet 的知识精炼助手。请严格返回 JSON 对象，不要输出 markdown 代码块。"
+                    '字段必须包含 title, summary, report, content, status。'
+                    "其中 report 必须是 Markdown callout，status 只能是 unread/reading/refined。"
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"kind: {inferred_kind}\n"
+                    f"title_hint: {title_hint}\n"
+                    f"source_url: {source_url}\n"
+                    f"default_prompt: {refinery_settings().defaultPrompt}\n\n"
+                    "请输出一份用于知识精炼流程的材料。content 需为完整 Markdown，且应包含原始上下文和“30 秒速读报告”。\n\n"
+                    f"source_context:\n{raw_context}"
+                ),
+            },
+        ],
+        temperature=0.35,
+    )
+    parsed_json = _extract_json_object(completion)
+    title = str(parsed_json.get("title", "")).strip() or title_hint
+    summary = str(parsed_json.get("summary", "")).strip() or f"{title} 已生成短文本报告，可以直接进入对话精炼。"
+    report = str(parsed_json.get("report", "")).strip() or synthesize_refinery_report(title, summary, raw_context)
+    content = str(parsed_json.get("content", "")).strip()
+    if not content:
+        if inferred_kind == "url":
+            body = (
+                f"# {title}\n\n"
+                f"- Source: {source_url}\n"
+                f"- Captured: {now_iso()}\n\n"
+                "## Raw Context\n\n"
+                "当前尚未抓取正文，先基于链接标题和来源建立初始阅读上下文。\n\n"
+                f"{report}\n"
+            )
+        else:
+            body = (
+                f"# {title}\n\n"
+                f"- Source: {source_url}\n"
+                f"- Captured: {now_iso()}\n\n"
+                f"{normalized_input}\n\n"
+                f"{report}\n"
+            )
+        content = body
+    elif report not in content:
+        content = f"{content.rstrip()}\n\n{report}\n"
+    status = str(parsed_json.get("status", "unread")).strip().lower()
+    if status not in {"unread", "reading", "refined"}:
+        status = "unread"
+    prompt_source = normalized_input if inferred_kind == "text" else f"# {title}\n\n- Source: {source_url}\n\n{summary}\n\n{report}"
     return {
         "title": title,
         "sourceUrl": source_url,
         "summary": summary,
         "report": report,
         "content": content,
-        "prompt": prompt,
-        "status": "unread",
+        "prompt": build_refinery_prompt(prompt_source),
+        "status": status,
+    }
+
+
+def generate_assessment(idea: str) -> Dict[str, Any]:
+    seed = generate_assessment_seed(idea)
+    completion = _llm_completion(
+        "evaluator",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "你是产品评估助手。输出严格 JSON 对象，不要 markdown，不要代码块。"
+                    "字段: impact(0-100), feasibility(0-100), domain, status(idea|evaluating|active|archived),"
+                    "assessment={strengths[], weaknesses[], opportunities[], threats[], roastComment, scores={innovation,market,feasibility,team}(1-5)}。"
+                ),
+            },
+            {
+                "role": "user",
+                "content": f"idea: {idea}\n请返回中文评估结果。",
+            },
+        ],
+        temperature=0.45,
+    )
+    payload = _extract_json_object(completion)
+    raw_assessment = payload.get("assessment", {})
+    if not isinstance(raw_assessment, dict):
+        raw_assessment = {}
+    raw_scores = raw_assessment.get("scores", {})
+    if not isinstance(raw_scores, dict):
+        raw_scores = {}
+
+    seed_assessment = seed["assessment"]
+    seed_scores = seed_assessment["scores"]
+    status = str(payload.get("status", seed["status"])).strip()
+    if status not in {"idea", "evaluating", "active", "archived"}:
+        status = seed["status"]
+
+    return {
+        "idea": idea,
+        "impact": _normalize_percent(payload.get("impact"), seed["impact"]),
+        "feasibility": _normalize_percent(payload.get("feasibility"), seed["feasibility"]),
+        "domain": str(payload.get("domain", "")).strip() or infer_domain(idea),
+        "status": status,
+        "assessment": {
+            "strengths": _normalize_string_list(raw_assessment.get("strengths"), seed_assessment["strengths"]),
+            "weaknesses": _normalize_string_list(raw_assessment.get("weaknesses"), seed_assessment["weaknesses"]),
+            "opportunities": _normalize_string_list(raw_assessment.get("opportunities"), seed_assessment["opportunities"]),
+            "threats": _normalize_string_list(raw_assessment.get("threats"), seed_assessment["threats"]),
+            "roastComment": str(raw_assessment.get("roastComment", "")).strip() or seed_assessment["roastComment"],
+            "scores": {
+                "innovation": _normalize_score(raw_scores.get("innovation"), seed_scores["innovation"]),
+                "market": _normalize_score(raw_scores.get("market"), seed_scores["market"]),
+                "feasibility": _normalize_score(raw_scores.get("feasibility"), seed_scores["feasibility"]),
+                "team": _normalize_score(raw_scores.get("team"), seed_scores["team"]),
+            },
+        },
     }
 
 
 def generate_refinery_reply(message: str, context_title: Optional[str], report: Optional[str] = None, prompt: Optional[str] = None) -> str:
-    summary = (
-        f"基于 {context_title or '当前上下文'}，我会先把问题拆成三个层次："
-        "\n\n1. 原文到底在声称什么？"
-        "\n2. 这个结论成立的前提是什么？"
-        "\n3. 哪一部分值得提炼成你的永久笔记？"
-    )
+    context = context_title or "当前上下文"
+    messages: List[Dict[str, str]] = [
+        {
+            "role": "system",
+            "content": (
+                "你是 ThoughtCabinet 的 Socratic 精炼助手。请使用中文，回答简洁、具体、可执行。"
+                "优先帮助用户把材料压缩成可验证的事实、可复用的观点或可发布的永久笔记。"
+            ),
+        }
+    ]
     if prompt:
-        summary = f"当前精炼 Prompt 已附带原文材料和 JSON schema。\n\n{summary}"
-    if report:
-        summary = f"{report}\n\n{summary}"
-    if re.search(r"总结|summary|tl;dr", message, flags=re.IGNORECASE):
-        return f"{summary}\n\n简版结论：这条材料值得保留，但需要补一句“为什么这对我重要”。"
-    if re.search(r"区别|difference|比较", message, flags=re.IGNORECASE):
-        return f"{summary}\n\n比较建议：先写共同目标，再写约束差异，最后写适用边界。"
-    return f"{summary}\n\n你刚才提到“{message[:36]}”，下一步建议把它改写成一句可验证判断。"
+        messages.append(
+            {
+                "role": "system",
+                "content": f"当前精炼 Prompt 与材料上下文如下：\n{prompt}",
+            }
+        )
+    elif report:
+        messages.append({"role": "assistant", "content": report})
+    messages.append(
+        {
+            "role": "user",
+            "content": f"上下文标题：{context}\n用户消息：{message}",
+        }
+    )
+    return _llm_completion("refinery", messages=messages, temperature=0.55)
 
 
 def create_refinery_conversation(context_id: str, initial_message: str = "请基于短文本报告继续精炼这份材料。") -> Conversation:
@@ -608,15 +794,21 @@ def create_refinery_conversation(context_id: str, initial_message: str = "请基
 
 def current_settings() -> SettingsPayload:
     config = load_config()
+    config_path = str(config.get("llm", {}).get("apiConfigPath", API_CONFIG_PATH))
+    try:
+        api_config = read_api_config(config_path)
+    except (ValueError, OSError) as exc:
+        raise HTTPException(status_code=500, detail=f"Invalid api config at {config_path}: {exc}") from exc
     return SettingsPayload(
         activeTheme=config["activeTheme"],
         vault=VaultSummary(**MarkdownDB.get_vault_summary()),
         availableVaults=[VaultSummary(**item) for item in MarkdownDB.list_available_vaults()],
         llm=LLMSettings(
-            baseUrl=config["llm"]["baseUrl"],
-            apiKey=config["llm"]["apiKey"],
+            baseUrl=api_config["baseUrl"],
+            apiKey=api_config["apiKey"],
             defaultModel=config["llm"]["defaultModel"],
             moduleModels=ModuleModels(**config["llm"]["moduleModels"]),
+            apiConfigPath=config_path,
         ),
     )
 
@@ -1001,8 +1193,8 @@ def bootstrap_sample_vaults() -> None:
             {"id": "quick-distill-note", "metadata": {"title": "提炼知识蒸馏写作笔记", "domain": "写作", "timeEstimate": 20, "priority": "low", "status": "todo", "category": "quick_win", "impactScore": 60, "progress": 0}, "content": "- 写一条为什么这条判断重要"},
         ],
         "evaluations": [
-            {"id": "eval-agent-notes", "metadata": generate_assessment("面向 Obsidian 的 AI 笔记管家"), "content": "# Evaluation\n\n需要验证真实用户是否愿意让系统代为整理。"},
-            {"id": "eval-reading-workbench", "metadata": generate_assessment("沉浸式阅读精炼工作台"), "content": "# Evaluation\n\n核心风险在于是否足够高频和可复用。"},
+            {"id": "eval-agent-notes", "metadata": generate_assessment_seed("面向 Obsidian 的 AI 笔记管家"), "content": "# Evaluation\n\n需要验证真实用户是否愿意让系统代为整理。"},
+            {"id": "eval-reading-workbench", "metadata": generate_assessment_seed("沉浸式阅读精炼工作台"), "content": "# Evaluation\n\n核心风险在于是否足够高频和可复用。"},
         ],
         "materials": [
             {"id": "material-rag-future", "metadata": {"title": "为什么 RAG 仍然重要", "sourceUrl": "https://example.com/rag", "summary": "文章讨论了长上下文不能完全替代检索增强。", "status": "reading"}, "content": "# 为什么 RAG 仍然重要\n\n文章强调检索、引用和评测依旧是可靠系统的核心。"},
@@ -1026,6 +1218,8 @@ def bootstrap_sample_vaults() -> None:
 
 @app.on_event("startup")
 async def startup_event() -> None:
+    config = load_config()
+    ensure_api_config(str(config.get("llm", {}).get("apiConfigPath", API_CONFIG_PATH)))
     bootstrap_sample_vaults()
     MarkdownDB.ensure_vault(MarkdownDB.active_vault_path(), create_obsidian=False)
 
@@ -1044,17 +1238,19 @@ async def get_settings() -> SettingsPayload:
 @app.put("/api/settings", response_model=SettingsPayload)
 async def update_settings(payload: SettingsUpdate) -> SettingsPayload:
     config = load_config()
+    llm_config = config.setdefault("llm", {})
     if payload.activeTheme is not None:
         config["activeTheme"] = payload.activeTheme
     if payload.activeVaultPath:
         MarkdownDB.switch_vault(payload.activeVaultPath)
         config = load_config()
+        llm_config = config.setdefault("llm", {})
     if payload.llm is not None:
+        config_path = str(llm_config.get("apiConfigPath", API_CONFIG_PATH))
         config["llm"] = {
-            "baseUrl": payload.llm.baseUrl,
-            "apiKey": payload.llm.apiKey,
             "defaultModel": payload.llm.defaultModel,
             "moduleModels": payload.llm.moduleModels.model_dump(),
+            "apiConfigPath": config_path,
         }
     save_config(config)
     return current_settings()
@@ -1150,16 +1346,18 @@ async def create_note(note: NoteCreate) -> Note:
     return Note(**created)
 
 
-@app.get("/api/notes/{id:path}", response_model=Note)
+@app.get("/api/notes/{id}", response_model=Note)
 async def get_note(id: str) -> Note:
+    id = validate_item_id(id)
     note = MarkdownDB.get("notes", id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
     return Note(**note)
 
 
-@app.put("/api/notes/{id:path}", response_model=Note)
+@app.put("/api/notes/{id}", response_model=Note)
 async def update_note(id: str, note_update: NoteUpdate) -> Note:
+    id = validate_item_id(id)
     note = MarkdownDB.get("notes", id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -1200,6 +1398,7 @@ async def create_task(task: TaskCreate) -> Task:
 
 @app.put("/api/tasks/{id}", response_model=Task)
 async def update_task(id: str, task_update: TaskUpdate) -> Task:
+    id = validate_item_id(id)
     task = MarkdownDB.get("tasks", id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -1235,35 +1434,35 @@ async def assign_planner_task(payload: PlannerAssignRequest) -> PlannerAssignmen
     return planner_assignment_for_minutes(payload.minutes, payload.evaluationId)
 
 
-@app.get("/api/planner/goals/{evaluation_id}/brief", response_model=PlannerBrief)
-async def get_planner_brief(evaluation_id: str, nodeId: Optional[str] = Query(default=None)) -> PlannerBrief:
-    board = build_planner_board(evaluation_id=evaluation_id, active_node_id=nodeId)
+@app.get("/api/planner/goals/{evaluationId}/brief", response_model=PlannerBrief)
+async def get_planner_brief(evaluationId: str, nodeId: Optional[str] = Query(default=None)) -> PlannerBrief:
+    board = build_planner_board(evaluation_id=evaluationId, active_node_id=nodeId)
     return board.brief
 
 
-@app.get("/api/planner/goals/{evaluation_id}/feedback", response_model=List[PlannerFeedback])
-async def get_planner_feedback(evaluation_id: str) -> List[PlannerFeedback]:
-    _ = build_planner_board(evaluation_id=evaluation_id)
-    return planner_feedback_items(evaluation_id)
+@app.get("/api/planner/goals/{evaluationId}/feedback", response_model=List[PlannerFeedback])
+async def get_planner_feedback(evaluationId: str) -> List[PlannerFeedback]:
+    _ = build_planner_board(evaluation_id=evaluationId)
+    return planner_feedback_items(evaluationId)
 
 
-@app.post("/api/planner/goals/{evaluation_id}/feedback", response_model=PlannerFeedback, status_code=201)
-async def add_planner_feedback(evaluation_id: str, payload: PlannerFeedbackCreate) -> PlannerFeedback:
-    _ = build_planner_board(evaluation_id=evaluation_id, active_node_id=payload.nodeId)
-    return create_planner_feedback(evaluation_id, payload)
+@app.post("/api/planner/goals/{evaluationId}/feedback", response_model=PlannerFeedback, status_code=201)
+async def add_planner_feedback(evaluationId: str, payload: PlannerFeedbackCreate) -> PlannerFeedback:
+    _ = build_planner_board(evaluation_id=evaluationId, active_node_id=payload.nodeId)
+    return create_planner_feedback(evaluationId, payload)
 
 
-@app.get("/api/planner/goals/{evaluation_id}/schedule", response_model=PlannerSchedule)
-async def get_planner_schedule(evaluation_id: str) -> PlannerSchedule:
-    board = build_planner_board(evaluation_id=evaluation_id)
+@app.get("/api/planner/goals/{evaluationId}/schedule", response_model=PlannerSchedule)
+async def get_planner_schedule(evaluationId: str) -> PlannerSchedule:
+    board = build_planner_board(evaluation_id=evaluationId)
     return board.schedule
 
 
-@app.post("/api/planner/goals/{evaluation_id}/chat", response_model=PlannerBoard)
-async def chat_with_planner(evaluation_id: str, payload: PlannerChatRequest) -> PlannerBoard:
-    board = build_planner_board(evaluation_id=evaluation_id)
+@app.post("/api/planner/goals/{evaluationId}/chat", response_model=PlannerBoard)
+async def chat_with_planner(evaluationId: str, payload: PlannerChatRequest) -> PlannerBoard:
+    board = build_planner_board(evaluation_id=evaluationId)
     create_planner_feedback(
-        evaluation_id,
+        evaluationId,
         PlannerFeedbackCreate(
             nodeId=board.activeNodeId or board.nodes[0].id,
             taskId=next((node.taskId for node in board.nodes if node.id == board.activeNodeId), None),
@@ -1273,7 +1472,7 @@ async def chat_with_planner(evaluation_id: str, payload: PlannerChatRequest) -> 
             actualMinutes=None,
         ),
     )
-    return build_planner_board(evaluation_id=evaluation_id, active_node_id=board.activeNodeId)
+    return build_planner_board(evaluation_id=evaluationId, active_node_id=board.activeNodeId)
 
 
 @app.get("/api/refinery/materials", response_model=List[Material])
@@ -1296,6 +1495,7 @@ async def update_refinery_settings(payload: RefinerySettingsUpdate) -> RefineryS
 
 @app.get("/api/refinery/materials/{id}", response_model=Material)
 async def get_material(id: str) -> Material:
+    id = validate_item_id(id)
     material = MarkdownDB.get("materials", id)
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
@@ -1304,6 +1504,7 @@ async def get_material(id: str) -> Material:
 
 @app.put("/api/refinery/materials/{id}", response_model=Material)
 async def update_material(id: str, payload: MaterialUpdate) -> Material:
+    id = validate_item_id(id)
     material = MarkdownDB.get("materials", id)
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
@@ -1351,6 +1552,7 @@ async def list_conversations() -> List[ConversationMetadata]:
 
 @app.get("/api/refinery/conversations/{id}", response_model=Conversation)
 async def get_conversation(id: str) -> Conversation:
+    id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -1382,6 +1584,7 @@ async def start_conversation(payload: ConversationCreate) -> Conversation:
 
 @app.post("/api/refinery/conversations/{id}/messages", response_model=Conversation)
 async def send_message(id: str, payload: MessageCreate) -> Conversation:
+    id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -1412,6 +1615,7 @@ async def send_message(id: str, payload: MessageCreate) -> Conversation:
 
 @app.post("/api/refinery/conversations/{id}/reset", response_model=Conversation)
 async def reset_refinery_conversation(id: str) -> Conversation:
+    id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -1438,6 +1642,7 @@ async def reset_refinery_conversation(id: str) -> Conversation:
 
 @app.post("/api/refinery/conversations/{id}/publish-note", response_model=Note, status_code=201)
 async def publish_refinery_note(id: str) -> Note:
+    id = validate_item_id(id)
     conversation = MarkdownDB.get("conversations", id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")

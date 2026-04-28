@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useEffectEvent, useState } from 'react';
-import { getThemeConfig, updateThemeConfig } from '../lib/api';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { getTheme, updateTheme } from '../lib/api';
 import type { ThemeName } from '../lib/types';
 
 type ThemeContextValue = {
@@ -20,10 +20,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadTheme = useEffectEvent(async () => {
+  const loadTheme = useCallback(async () => {
     try {
       setError(null);
-      const config = await getThemeConfig();
+      const config = await getTheme();
       setThemeState(config.activeTheme);
       window.localStorage.setItem('thoughtcabinet.theme', config.activeTheme);
     } catch (loadError) {
@@ -33,7 +33,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  });
+  }, []);
 
   useEffect(() => {
     void loadTheme();
@@ -44,7 +44,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem('thoughtcabinet.theme', nextTheme);
     setError(null);
     try {
-      const config = await updateThemeConfig(nextTheme);
+      const config = await updateTheme(nextTheme);
       setThemeState(config.activeTheme);
       window.localStorage.setItem('thoughtcabinet.theme', config.activeTheme);
     } catch (updateError) {
@@ -53,9 +53,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function refreshTheme() {
+  const refreshTheme = useCallback(async () => {
     await loadTheme();
-  }
+  }, [loadTheme]);
 
   return (
     <ThemeContext.Provider value={{ theme, loading, error, setTheme, refreshTheme }}>
@@ -64,6 +64,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {

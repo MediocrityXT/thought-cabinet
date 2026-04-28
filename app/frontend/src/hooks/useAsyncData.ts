@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DependencyList } from 'react';
 
 type AsyncState<T> = {
@@ -13,11 +13,14 @@ export function useAsyncData<T>(loader: () => Promise<T>, deps: DependencyList =
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const runLoader = useEffectEvent(async () => {
+  const loaderRef = useRef(loader);
+  loaderRef.current = loader;
+
+  const runLoader = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const next = await loader();
+      const next = await loaderRef.current();
       setData(next);
     } catch (loadError) {
       console.error(loadError);
@@ -25,11 +28,12 @@ export function useAsyncData<T>(loader: () => Promise<T>, deps: DependencyList =
     } finally {
       setLoading(false);
     }
-  });
+  }, []);
 
   useEffect(() => {
     void runLoader();
-  }, [runLoader, ...deps]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
 
   return {
     data,

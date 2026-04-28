@@ -1,16 +1,14 @@
 import {
-  FlaskConical,
-  FolderTree,
-  LayoutDashboard,
   Map,
+  PackagePlus,
+  Scale,
   Settings,
   Sparkles,
   Target,
-  Scale,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type ModuleId = 'dashboard' | 'refinery' | 'organizer' | 'evaluator' | 'blueprint' | 'planner';
+export type ModuleId = 'dashboard' | 'hopper' | 'blueprint' | 'committee' | 'war-room';
 
 interface SidebarProps {
   activeModule: ModuleId;
@@ -18,23 +16,26 @@ interface SidebarProps {
   onOpenSettings: () => void;
 }
 
-const modules: { id: ModuleId; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: 'dashboard', label: '指挥舱', icon: LayoutDashboard },
-  { id: 'refinery', label: '精炼厂', icon: FlaskConical },
-  { id: 'organizer', label: '整理器', icon: FolderTree },
-  { id: 'evaluator', label: '评估局', icon: Scale },
+const modules: { id: ModuleId; label: string; icon: typeof Map }[] = [
+  { id: 'hopper', label: '投料口', icon: PackagePlus },
   { id: 'blueprint', label: '认知蓝图', icon: Map },
-  { id: 'planner', label: '指挥室', icon: Target },
+  { id: 'committee', label: '评估委员会', icon: Scale },
+  { id: 'war-room', label: '战术指挥室', icon: Target },
 ];
 
 export function Sidebar({ activeModule, onModuleChange, onOpenSettings }: SidebarProps) {
   return (
     <aside className="fixed left-0 top-0 z-50 flex h-full w-20 flex-col items-center border-r border-white/5 bg-panel py-6">
-      <div className="mb-8">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-cyan-purple shadow-glow-cyan">
+      <button onClick={() => onModuleChange('dashboard')} className="mb-8" title="系统概览">
+        <div
+          className={cn(
+            'flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-cyan-purple shadow-glow-cyan transition-opacity',
+            activeModule === 'dashboard' ? 'opacity-100' : 'opacity-70 hover:opacity-100',
+          )}
+        >
           <Sparkles className="h-5 w-5 text-white" />
         </div>
-      </div>
+      </button>
 
       <nav className="flex flex-1 flex-col gap-2">
         {modules.map((module) => {

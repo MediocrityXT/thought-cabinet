@@ -1,13 +1,12 @@
-import { startTransition, useEffect, useState } from 'react';
+import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, LoaderCircle, Plus, Save, X } from 'lucide-react';
 import { Sidebar, type ModuleId } from '@/components/layout/Sidebar';
 import { StatusBar } from '@/components/layout/StatusBar';
-import { Blueprint } from '@/pages/Blueprint';
+import { AssessmentCommittee } from '@/pages/AssessmentCommittee';
 import { Dashboard } from '@/pages/Dashboard';
-import { Evaluator } from '@/pages/Evaluator';
-import { Organizer } from '@/pages/Organizer';
-import { Planner } from '@/pages/Planner';
-import { Refinery } from '@/pages/Refinery';
+import { Hopper } from '@/pages/Hopper';
+import { KnowledgeBlueprint } from '@/pages/KnowledgeBlueprint';
+import { WarRoom } from '@/pages/WarRoom';
 import { useTheme } from '@/context/ThemeContext';
 import {
   assignPlannerTask,
@@ -21,8 +20,8 @@ import {
   intakeRefineryMaterial,
   publishRefineryNote,
   resetRefineryConversation,
-  sendPlannerChat,
-  sendConversationMessage,
+  chatPlannerGoal,
+  sendMessage,
   startConversation,
   updateRefineryMaterial,
   updateRefinerySettings,
@@ -37,6 +36,7 @@ function cloneLlmSettings(llm: LLMSettings): LLMSettings {
     apiKey: llm.apiKey,
     defaultModel: llm.defaultModel,
     moduleModels: { ...llm.moduleModels },
+    apiConfigPath: llm.apiConfigPath,
   };
 }
 
@@ -65,14 +65,15 @@ function SettingsSheet({
   const [activeVaultPath, setActiveVaultPath] = useState('');
   const [llm, setLlm] = useState<LLMSettings | null>(null);
 
-  useEffect(() => {
-    if (!settings || !open) {
-      return;
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open && settings) {
+      setActiveTheme(settings.activeTheme);
+      setActiveVaultPath(settings.vault.path);
+      setLlm(cloneLlmSettings(settings.llm));
     }
-    setActiveTheme(settings.activeTheme);
-    setActiveVaultPath(settings.vault.path);
-    setLlm(cloneLlmSettings(settings.llm));
-  }, [open, settings]);
+  }
 
   if (!open || !settings || !llm) {
     return null;
@@ -150,12 +151,15 @@ function SettingsSheet({
           <section className="space-y-4">
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-[0.24em] text-star-dust">LLM</h3>
+              <p className="mt-1 text-xs text-star-dust">
+                Base URL / API Key 当前为只读，来源于 <span className="font-mono">C:\Users\admin\api.yaml</span>
+              </p>
             </div>
             <label className="block space-y-2">
               <span className="text-sm text-white">Base URL</span>
               <input
                 value={llm.baseUrl}
-                onChange={(event) => setLlm({ ...llm, baseUrl: event.target.value })}
+                readOnly
                 className="w-full rounded-lg border border-white/10 bg-elevated px-4 py-3 text-white placeholder:text-star-dust focus:border-cyan focus:outline-none"
               />
             </label>
@@ -164,7 +168,7 @@ function SettingsSheet({
               <input
                 type="password"
                 value={llm.apiKey}
-                onChange={(event) => setLlm({ ...llm, apiKey: event.target.value })}
+                readOnly
                 className="w-full rounded-lg border border-white/10 bg-elevated px-4 py-3 text-white placeholder:text-star-dust focus:border-cyan focus:outline-none"
               />
             </label>
@@ -228,14 +232,17 @@ export default function NeonTheme() {
   const [error, setError] = useState<string | null>(null);
   const { refreshTheme } = useTheme();
 
-  async function loadWorkspace() {
+  const plannerGoalIdRef = useRef(plannerGoalId);
+  plannerGoalIdRef.current = plannerGoalId;
+
+  const loadWorkspace = useCallback(async () => {
     try {
       setError(null);
       const snapshot = await getWorkspaceSnapshot();
       const promptSettings = await getRefinerySettings();
       setWorkspace(snapshot);
       setRefinerySettings(promptSettings);
-      const defaultGoalId = plannerGoalId ?? snapshot.evaluations[0]?.id ?? null;
+      const defaultGoalId = plannerGoalIdRef.current ?? snapshot.evaluations[0]?.id ?? null;
       if (defaultGoalId) {
         const board = await getPlannerBoard({ evaluationId: defaultGoalId });
         setPlannerBoard(board);
@@ -250,11 +257,11 @@ export default function NeonTheme() {
       setLoading(false);
       setRefreshing(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     void loadWorkspace();
-  }, []);
+  }, [loadWorkspace]);
 
   async function refreshWorkspace() {
     setRefreshing(true);
@@ -316,7 +323,7 @@ export default function NeonTheme() {
     setSubmitting(true);
     try {
       const conversation = workspace.activeConversation
-        ? await sendConversationMessage(workspace.activeConversation.id, content)
+        ? await sendMessage(workspace.activeConversation.id, { role: 'user', content })
         : await startConversation(content, workspace.materials[0]?.id);
       setWorkspace((current) =>
         current
@@ -473,7 +480,7 @@ export default function NeonTheme() {
     }
     setSubmitting(true);
     try {
-      const board = await sendPlannerChat(plannerGoalId, message);
+      const board = await chatPlannerGoal(plannerGoalId, { message });
       setPlannerBoard(board);
       setPlannerGoalId(board.evaluationId);
     } finally {
@@ -509,10 +516,20 @@ export default function NeonTheme() {
     }
     switch (activeModule) {
       case 'dashboard':
-        return <Dashboard overview={workspace.overview} vaultName={workspace.settings.vault.name} onOpenPlanner={() => setActiveModule('planner')} />;
-      case 'refinery':
         return (
-          <Refinery
+          <div className="flex h-full flex-col bg-deep text-white">
+            <main className="custom-scrollbar min-h-0 flex-1 overflow-auto">
+              <Dashboard
+                overview={workspace.overview}
+                vaultName={workspace.settings.vault.name}
+                onOpenPlanner={() => startTransition(() => setActiveModule('war-room'))}
+              />
+            </main>
+          </div>
+        );
+      case 'hopper':
+        return (
+          <Hopper
             materials={workspace.materials}
             activeConversation={workspace.activeConversation}
             settings={refinerySettings}
@@ -524,13 +541,12 @@ export default function NeonTheme() {
             onPublishNote={handlePublishRefineryNote}
             onSavePrompt={handleSaveRefineryPrompt}
             onSaveMaterialMarkdown={handleSaveRefineryMaterial}
+            notes={workspace.notes}
           />
         );
-      case 'organizer':
-        return <Organizer notes={workspace.notes} saving={submitting} onCreateNote={handleCreateNote} />;
-      case 'evaluator':
+      case 'committee':
         return (
-          <Evaluator
+          <AssessmentCommittee
             evaluations={workspace.evaluations}
             notes={workspace.notes}
             creating={submitting}
@@ -538,15 +554,15 @@ export default function NeonTheme() {
             onSaveSerendipity={(content) => handleCreateNote({ title: content.slice(0, 24), content, domain: 'Evaluator', type: 'unknown', tags: ['serendipity'] })}
             onPromoteToPlanner={(evaluationId) => {
               void loadPlannerBoard(evaluationId);
-              startTransition(() => setActiveModule('planner'));
+              startTransition(() => setActiveModule('war-room'));
             }}
           />
         );
       case 'blueprint':
-        return <Blueprint graph={workspace.graph} notes={workspace.notes} />;
-      case 'planner':
+        return <KnowledgeBlueprint graph={workspace.graph} notes={workspace.notes} />;
+      case 'war-room':
         return (
-          <Planner
+          <WarRoom
             board={plannerBoard}
             evaluations={workspace.evaluations}
             loading={plannerLoading}

@@ -8,6 +8,7 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 VAULTS_DIR = os.path.join(BASE_DIR, "vaults")
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
+API_CONFIG_PATH = os.path.join("app", "data", "api.yaml")
 APP_FOLDER = ".thoughtcabinet"
 INBOX_FOLDER = "inbox"
 MODULE_KEYS = ["dashboard", "refinery", "organizer", "evaluator", "blueprint", "planner"]
@@ -30,10 +31,9 @@ def default_config() -> Dict[str, Any]:
             "inboxFolder": INBOX_FOLDER,
         },
         "llm": {
-            "baseUrl": "https://api.openai.com/v1",
-            "apiKey": "",
             "defaultModel": "gpt-4.1-mini",
             "moduleModels": {module: "" for module in MODULE_KEYS},
+            "apiConfigPath": API_CONFIG_PATH,
         },
         "refinery": {
             "defaultPrompt": (
@@ -55,8 +55,10 @@ def with_defaults(config: Dict[str, Any]) -> Dict[str, Any]:
     merged = default_config()
     merged["activeTheme"] = config.get("activeTheme", merged["activeTheme"])
     merged["vault"].update(config.get("vault", {}))
-    merged["llm"].update({key: value for key, value in config.get("llm", {}).items() if key != "moduleModels"})
-    merged["llm"]["moduleModels"].update(config.get("llm", {}).get("moduleModels", {}))
+    llm_config = config.get("llm", {})
+    merged["llm"]["defaultModel"] = llm_config.get("defaultModel", merged["llm"]["defaultModel"])
+    merged["llm"]["apiConfigPath"] = API_CONFIG_PATH
+    merged["llm"]["moduleModels"].update(llm_config.get("moduleModels", {}))
     merged["refinery"].update(config.get("refinery", {}))
     return merged
 
