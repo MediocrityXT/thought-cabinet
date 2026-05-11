@@ -5,6 +5,7 @@ import os
 from typing import Any, Dict
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+REPO_ROOT = os.path.dirname(BASE_DIR)
 DATA_DIR = os.path.join(BASE_DIR, "data")
 VAULTS_DIR = os.path.join(BASE_DIR, "vaults")
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
@@ -20,6 +21,10 @@ def default_sample_vault_path() -> str:
 
 def default_blank_vault_path() -> str:
     return os.path.join(VAULTS_DIR, "blank-vault")
+
+
+def resolve_repo_path(path: str) -> str:
+    return path if os.path.isabs(path) else os.path.abspath(os.path.join(REPO_ROOT, path))
 
 
 def default_config() -> Dict[str, Any]:

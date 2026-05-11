@@ -4,7 +4,7 @@ import os
 import re
 from typing import Dict
 
-from config_store import API_CONFIG_PATH
+from config_store import API_CONFIG_PATH, resolve_repo_path
 
 DEFAULT_BASE_URL = "https://api.chatanywhere.tech/v1/chat/completions"
 DEFAULT_API_KEY = "sk-xxxx"
@@ -57,6 +57,7 @@ def parse_api_config(content: str) -> Dict[str, str]:
 
 
 def ensure_api_config(path: str = API_CONFIG_PATH) -> str:
+    path = resolve_repo_path(path)
     directory = os.path.dirname(path)
     try:
         if directory:
@@ -70,7 +71,7 @@ def ensure_api_config(path: str = API_CONFIG_PATH) -> str:
 
 
 def read_api_config(path: str = API_CONFIG_PATH) -> Dict[str, str]:
-    ensure_api_config(path)
+    path = ensure_api_config(path)
     try:
         with open(path, "r", encoding="utf-8") as file:
             content = file.read()
@@ -86,7 +87,7 @@ def write_api_config(base_url: str, api_key: str, path: str = API_CONFIG_PATH) -
         raise ValueError("BASE_URL cannot be empty")
     if not normalized_api_key:
         raise ValueError("API_KEY cannot be empty")
-    ensure_api_config(path)
+    path = ensure_api_config(path)
     try:
         with open(path, "w", encoding="utf-8") as file:
             file.write(render_api_config(normalized_base_url, normalized_api_key))
