@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpenText, FileCog, FileText, Link2, Save, Send, Sparkles, Trash2, X } from 'lucide-react';
+import { BookOpenText, ChevronLeft, ChevronRight, FileCog, FileText, Link2, Save, Send, Sparkles, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Conversation, Material, RefinerySettings } from '@/lib/types';
 
@@ -43,12 +43,16 @@ function PromptSheet({
   onSave: (nextValue: string) => Promise<void>;
 }) {
   const [draft, setDraft] = useState(value);
+  const [prevValue, setPrevValue] = useState(value);
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
+  if (open !== prevOpen || value !== prevValue) {
+    setPrevOpen(open);
+    setPrevValue(value);
     if (open) {
       setDraft(value);
     }
-  }, [open, value]);
+  }
 
   if (!open) {
     return null;
@@ -104,6 +108,8 @@ export function Refinery({
   const [promptOpen, setPromptOpen] = useState(false);
   const [editorDraft, setEditorDraft] = useState('');
   const [draftMaterialId, setDraftMaterialId] = useState<string | null>(null);
+  const [queueOpen, setQueueOpen] = useState(true);
+  const [chatOpen, setChatOpen] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const activeMaterial = useMemo(
@@ -115,10 +121,13 @@ export function Refinery({
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeConversation]);
 
-  useEffect(() => {
+  const materialSyncKey = `${activeMaterial?.id}:${activeMaterial?.content}:${activeMaterial?.report}`;
+  const [prevMaterialSyncKey, setPrevMaterialSyncKey] = useState(materialSyncKey);
+  if (materialSyncKey !== prevMaterialSyncKey) {
+    setPrevMaterialSyncKey(materialSyncKey);
     setEditorDraft(materialMarkdown(activeMaterial));
     setDraftMaterialId(activeMaterial?.id ?? null);
-  }, [activeMaterial?.id, activeMaterial?.content, activeMaterial?.report]);
+  }
 
   useEffect(() => {
     if (!activeMaterial || draftMaterialId !== activeMaterial.id || editorDraft === materialMarkdown(activeMaterial)) {
@@ -148,9 +157,18 @@ export function Refinery({
 
   const calloutPreview = useMemo(() => extractCallout(editorDraft), [editorDraft]);
 
+  const gridCols = queueOpen && chatOpen
+    ? 'grid-cols-[260px_minmax(0,1fr)_340px]'
+    : queueOpen
+      ? 'grid-cols-[260px_minmax(0,1fr)_48px]'
+      : chatOpen
+        ? 'grid-cols-[48px_minmax(0,1fr)_340px]'
+        : 'grid-cols-[48px_minmax(0,1fr)_48px]';
+
   return (
     <>
       <div className="flex h-full flex-col animate-fade-in">
+        {/* Input bar */}
         <div className="border-b border-white/5 bg-panel p-4">
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
@@ -174,48 +192,73 @@ export function Refinery({
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)_480px] overflow-hidden">
-          <aside className="flex min-h-0 flex-col border-r border-white/5 bg-panel/80">
-            <div className="border-b border-white/5 px-4 py-4">
-              <div className="mb-1 flex items-center gap-2">
-                <BookOpenText className="h-4 w-4 text-cyan" />
-                <span className="text-sm font-medium text-white">稍后阅读</span>
-              </div>
-              <p className="text-xs text-star-dust">所有投料都会进入这里，未发布永久笔记前默认都在待消化状态。</p>
-            </div>
-            <div className="custom-scrollbar min-h-0 flex-1 space-y-2 overflow-auto p-3">
-              {materials.map((material) => {
-                const isActive = material.id === activeMaterial?.id;
-                return (
-                  <button
-                    key={material.id}
-                    onClick={() => void onOpenMaterial(material.id)}
-                    className={cn(
-                      'w-full rounded-2xl border p-4 text-left transition-all',
-                      isActive ? 'border-cyan/30 bg-cyan/10 shadow-glow-cyan' : 'border-white/5 bg-elevated/80 hover:border-cyan/20',
-                    )}
-                  >
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="line-clamp-1 text-sm font-medium text-white">{material.title}</span>
-                      <span
-                        className={cn(
-                          'rounded-full border px-2 py-0.5 text-[11px]',
-                          material.status === 'refined'
-                            ? 'border-emerald/30 bg-emerald/10 text-emerald'
-                            : 'border-amber/30 bg-amber/10 text-amber',
-                        )}
-                      >
-                        {material.status === 'refined' ? '已发布' : '待精炼'}
-                      </span>
-                    </div>
-                    <p className="line-clamp-2 text-xs leading-5 text-star-dust">{material.summary}</p>
-                  </button>
-                );
-              })}
-            </div>
-          </aside>
+        {/* Three-column layout */}
+        <div className={cn('grid min-h-0 flex-1 overflow-hidden transition-[grid-template-columns] duration-200', gridCols)}>
 
-          <section className="custom-scrollbar min-h-0 overflow-auto border-r border-white/5">
+          {/* Left: Reading queue (collapsible) */}
+          {queueOpen ? (
+            <aside className="flex min-h-0 flex-col border-r border-white/5 bg-panel/80">
+              <div className="flex items-center justify-between border-b border-white/5 px-4 py-4">
+                <div className="flex items-center gap-2">
+                  <BookOpenText className="h-4 w-4 text-cyan" />
+                  <span className="text-sm font-medium text-white">稍后阅读</span>
+                </div>
+                <button
+                  onClick={() => setQueueOpen(false)}
+                  className="rounded-lg p-1 text-star-dust transition-colors hover:bg-white/10 hover:text-white"
+                  title="收起阅读队列"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="custom-scrollbar min-h-0 flex-1 space-y-2 overflow-auto p-3">
+                {materials.map((material) => {
+                  const isActive = material.id === activeMaterial?.id;
+                  return (
+                    <button
+                      key={material.id}
+                      onClick={() => void onOpenMaterial(material.id)}
+                      className={cn(
+                        'w-full rounded-2xl border p-4 text-left transition-all',
+                        isActive ? 'border-cyan/30 bg-cyan/10 shadow-glow-cyan' : 'border-white/5 bg-elevated/80 hover:border-cyan/20',
+                      )}
+                    >
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <span className="line-clamp-1 text-sm font-medium text-white">{material.title}</span>
+                        <span
+                          className={cn(
+                            'rounded-full border px-2 py-0.5 text-[11px]',
+                            material.status === 'refined'
+                              ? 'border-emerald/30 bg-emerald/10 text-emerald'
+                              : 'border-amber/30 bg-amber/10 text-amber',
+                          )}
+                        >
+                          {material.status === 'refined' ? '已发布' : '待精炼'}
+                        </span>
+                      </div>
+                      <p className="line-clamp-2 text-xs leading-5 text-star-dust">{material.summary}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
+          ) : (
+            <aside className="flex flex-col items-center border-r border-white/5 bg-panel/80 py-4">
+              <button
+                onClick={() => setQueueOpen(true)}
+                className="rounded-lg p-2 text-star-dust transition-colors hover:bg-white/10 hover:text-white"
+                title="展开阅读队列"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <div className="mt-2 flex flex-1 items-start justify-center">
+                <span className="writing-vertical text-xs tracking-widest text-star-dust/60">稍后阅读</span>
+              </div>
+            </aside>
+          )}
+
+          {/* Middle: Editor */}
+          <section className="custom-scrollbar min-h-0 overflow-auto">
             <div className="p-6">
               {activeMaterial ? (
                 <>
@@ -265,76 +308,100 @@ export function Refinery({
             </div>
           </section>
 
-          <section className="flex min-h-0 flex-col bg-panel/50">
-            <div className="border-b border-white/5 px-4 py-4">
-              <div className="mb-2 flex items-center gap-2">
-                <FileText className="h-4 w-4 text-cyan" />
-                <span className="text-sm font-medium text-white">精炼对话</span>
-              </div>
-              <p className="text-xs text-star-dust">围绕短文本报告继续讨论；发布时会把报告和对话一起写进正式笔记。</p>
-            </div>
-
-            <div className="custom-scrollbar min-h-0 flex-1 space-y-4 overflow-auto p-4">
-              {(activeConversation?.messages ?? []).map((message, index) => (
-                <div key={`${message.timestamp}-${index}`} className={cn('flex gap-3', message.role === 'user' ? 'flex-row-reverse' : '')}>
-                  <div
-                    className={cn(
-                      'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full',
-                      message.role === 'assistant' ? 'bg-purple/20' : 'bg-cyan/20',
-                    )}
-                  >
-                    {message.role === 'assistant' ? <Sparkles className="h-4 w-4 text-purple" /> : <Send className="h-4 w-4 text-cyan" />}
+          {/* Right: Chat (collapsible) */}
+          {chatOpen ? (
+            <section className="flex min-h-0 flex-col border-l border-white/5 bg-panel/50">
+              <div className="border-b border-white/5 px-4 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-cyan" />
+                    <span className="text-sm font-medium text-white">精炼对话</span>
                   </div>
-                  <div
-                    className={cn(
-                      'max-w-[88%] rounded-2xl px-4 py-3 text-sm',
-                      message.role === 'assistant' ? 'border border-purple/20 bg-elevated text-white/90' : 'bg-cyan/10 text-white',
-                    )}
+                  <button
+                    onClick={() => setChatOpen(false)}
+                    className="rounded-lg p-1 text-star-dust transition-colors hover:bg-white/10 hover:text-white"
+                    title="收起对话"
                   >
-                    <div className="whitespace-pre-line leading-7">{message.content}</div>
-                  </div>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                 </div>
-              ))}
-              <div ref={chatEndRef} />
-            </div>
+              </div>
 
-            <div className="border-t border-white/5 p-4">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => void onResetConversation()}
-                  title="清空本轮对话"
-                  disabled={submitting || !activeConversation}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-star-dust transition-colors hover:border-rose/20 hover:text-white disabled:opacity-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-                <input
-                  type="text"
-                  placeholder="继续围绕短报告讨论..."
-                  className="flex-1 rounded-lg border border-white/10 bg-elevated px-4 py-2.5 text-sm text-white placeholder:text-star-dust focus:border-cyan focus:outline-none"
-                  value={inputMessage}
-                  onChange={(event) => setInputMessage(event.target.value)}
-                  onKeyDown={(event) => event.key === 'Enter' && void handleSendMessage()}
-                />
-                <button
-                  onClick={() => void handleSendMessage()}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-cyan-purple transition-all hover:brightness-110"
-                >
-                  <Send className="h-4 w-4 text-white" />
-                </button>
+              <div className="custom-scrollbar min-h-0 flex-1 space-y-4 overflow-auto p-4">
+                {(activeConversation?.messages ?? []).map((message, index) => (
+                  <div key={`${message.timestamp}-${index}`} className={cn('flex gap-3', message.role === 'user' ? 'flex-row-reverse' : '')}>
+                    <div
+                      className={cn(
+                        'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full',
+                        message.role === 'assistant' ? 'bg-purple/20' : 'bg-cyan/20',
+                      )}
+                    >
+                      {message.role === 'assistant' ? <Sparkles className="h-4 w-4 text-purple" /> : <Send className="h-4 w-4 text-cyan" />}
+                    </div>
+                    <div
+                      className={cn(
+                        'max-w-[88%] rounded-2xl px-4 py-3 text-sm',
+                        message.role === 'assistant' ? 'border border-purple/20 bg-elevated text-white/90' : 'bg-cyan/10 text-white',
+                      )}
+                    >
+                      <div className="whitespace-pre-line leading-7">{message.content}</div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={chatEndRef} />
               </div>
-              <div className="mt-3">
-                <button
-                  onClick={() => void onPublishNote()}
-                  disabled={submitting || !activeConversation}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-cyan-purple px-4 py-2.5 font-medium text-white transition-all hover:brightness-110 disabled:opacity-50"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  生成永久笔记
-                </button>
+
+              <div className="border-t border-white/5 p-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => void onResetConversation()}
+                    title="清空本轮对话"
+                    disabled={submitting || !activeConversation}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-star-dust transition-colors hover:border-rose/20 hover:text-white disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <input
+                    type="text"
+                    placeholder="继续围绕短报告讨论..."
+                    className="flex-1 rounded-lg border border-white/10 bg-elevated px-4 py-2.5 text-sm text-white placeholder:text-star-dust focus:border-cyan focus:outline-none"
+                    value={inputMessage}
+                    onChange={(event) => setInputMessage(event.target.value)}
+                    onKeyDown={(event) => event.key === 'Enter' && void handleSendMessage()}
+                  />
+                  <button
+                    onClick={() => void handleSendMessage()}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-cyan-purple transition-all hover:brightness-110"
+                  >
+                    <Send className="h-4 w-4 text-white" />
+                  </button>
+                </div>
+                <div className="mt-3">
+                  <button
+                    onClick={() => void onPublishNote()}
+                    disabled={submitting || !activeConversation}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-cyan-purple px-4 py-2.5 font-medium text-white transition-all hover:brightness-110 disabled:opacity-50"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    生成永久笔记
+                  </button>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          ) : (
+            <aside className="flex flex-col items-center border-l border-white/5 bg-panel/50 py-4">
+              <button
+                onClick={() => setChatOpen(true)}
+                className="rounded-lg p-2 text-star-dust transition-colors hover:bg-white/10 hover:text-white"
+                title="展开对话"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <div className="mt-2 flex flex-1 items-start justify-center">
+                <span className="writing-vertical text-xs tracking-widest text-star-dust/60">精炼对话</span>
+              </div>
+            </aside>
+          )}
         </div>
       </div>
 

@@ -46,5 +46,14 @@ Thumbs.db
 
 # Runtime vaults
 app/vaults/
+app/data/api.yaml
 !app/frontend/src/lib/
 !app/frontend/src/lib/**
+
+# Local install caches
+.tmp-pip/
+.tmp-pip2/
+app/backend/.tmp/
+app/backend/.pip-cache/
+app/frontend/.npm-cache/
+logs/

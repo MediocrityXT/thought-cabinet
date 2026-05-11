@@ -53,11 +53,14 @@ export function Blueprint({ graph, notes }: BlueprintProps) {
     return selectedDomain === '全部' ? notes : notes.filter((note) => note.domain === selectedDomain);
   }, [notes, selectedDomain]);
 
-  useEffect(() => {
+  const [prevDomainKey, setPrevDomainKey] = useState<string | null>(null);
+  const domainKey = `${selectedDomain}:${visibleNotes.map((n) => n.id).join(',')}`;
+  if (domainKey !== prevDomainKey) {
+    setPrevDomainKey(domainKey);
     setBoardNotes(visibleNotes.slice(0, 4).map((note, index) => ({ ...note, ...cardPosition(index) })));
     setBoardConnections([]);
     setPendingLinkId(null);
-  }, [selectedDomain, visibleNotes]);
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -253,7 +256,7 @@ export function Blueprint({ graph, notes }: BlueprintProps) {
               }}
             />
 
-            <div className="absolute bottom-4 left-4 rounded-lg border border-white/10 bg-panel/90 p-4">
+            <div className="absolute bottom-4 left-4 z-10 rounded-lg border border-white/10 bg-panel/90 p-4">
               <div className="mb-3 text-sm font-medium text-white">图例</div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2"><div className="h-3 w-3 rounded-full bg-cyan" /><span className="text-xs text-star-dust">已掌握</span></div>
@@ -262,7 +265,7 @@ export function Blueprint({ graph, notes }: BlueprintProps) {
               </div>
             </div>
 
-            <div className="absolute right-4 top-4 rounded-lg border border-white/10 bg-panel/90 p-4">
+            <div className="absolute right-4 top-4 z-10 rounded-lg border border-white/10 bg-panel/90 p-4">
               <div className="mb-3 text-sm font-medium text-white">{selectedDomain} 覆盖</div>
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between gap-8"><span className="text-star-dust">已掌握</span><span className="text-cyan">{visibleGraphNodes.filter((node) => node.type === 'known').length}</span></div>
